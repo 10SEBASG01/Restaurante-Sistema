@@ -1,0 +1,161 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+<style>
+    /* Encabezado y Estadísticas */
+    .header-panel { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; }
+    .header-info h1 { margin: 0; font-size: 24px; color: #333; font-weight: 600; }
+    .header-info p { color: #666; margin-top: 5px; font-size: 14px; }
+    
+    /* Barra de Filtros */
+    .filters-bar { display: flex; gap: 10px; align-items: center; }
+    .filters-bar input[type="text"], .filters-bar select {
+        padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px;
+        outline: none; font-size: 14px; color: #4a5568; background-color: #f8fafc;
+    }
+    .filters-bar input[type="text"]:focus, .filters-bar select:focus { border-color: #c49a45; }
+    
+    .btn-gold { background-color: #c49a45; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: 0.3s; white-space: nowrap; }
+    .btn-gold:hover { background-color: #b0883b; }
+    
+    /* Contenedor de la Tabla */
+    .table-container { background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); overflow: hidden; border: 1px solid #f0f0f0; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { padding: 18px 20px; color: #718096; font-weight: 500; font-size: 13px; border-bottom: 1px solid #e2e8f0; background-color: #fafbfc; }
+    td { padding: 15px 20px; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #2d3748; vertical-align: middle; }
+    tr:hover { background-color: #f8fafc; }
+    
+    /* Avatar e Identidad */
+    .user-identity { display: flex; align-items: center; gap: 12px; }
+    .avatar { 
+        width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; 
+        align-items: center; font-size: 13px; font-weight: bold; background-color: #fcf4e3; color: #c49a45;
+    }
+    .user-name { font-weight: 600; color: #1a202c; display: block; }
+    
+    /* Etiquetas de Roles y Estados */
+    .rol-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+    .rol-admin { background-color: #fcf4e3; color: #c49a45; }
+    .rol-mesero { background-color: #f3e8ff; color: #8b5cf6; }
+    .rol-cajero { background-color: #e6f8ec; color: #22c55e; }
+    .rol-cocina { background-color: #ffe4e6; color: #f43f5e; }
+    .rol-gerente { background-color: #e0f2fe; color: #0ea5e9; }
+    
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    .dot-active { background-color: #22c55e; }
+    .dot-inactive { background-color: #ef4444; }
+    .text-active { color: #22c55e; font-weight: 500;}
+    .text-inactive { color: #ef4444; font-weight: 500;}
+
+    /* Botones de Acción (Iconos) */
+    .action-icons { display: flex; gap: 12px; }
+    .action-icons a { color: #a0aec0; font-size: 16px; text-decoration: none; transition: 0.2s; }
+    .action-icons a:hover.edit { color: #3b82f6; }
+    .action-icons a:hover.shield { color: #8b5cf6; }
+    .action-icons a:hover.delete { color: #ef4444; }
+    .no-permissions { font-size: 12px; color: #a0aec0; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; }
+</style>
+
+<div class="header-panel">
+    <div class="header-info">
+        <h1>Gestión de Usuarios y Permisos</h1>
+        <p>{{ total_usuarios }} usuarios registrados · {{ usuarios_activos }} activos</p>
+    </div>
+    
+    <form method="GET" class="filters-bar">
+        <input type="text" name="q" value="{{ query }}" placeholder="🔍 Buscar usuario..." onkeypress="if(event.keyCode == 13){ this.form.submit(); }">
+        <select name="rol" onchange="this.form.submit()">
+            <option value="Todos">Roles: Todos</option>
+            {% for clave, valor in roles_disponibles %}
+                <option value="{{ clave }}" {% if rol_filter == clave %}selected{% endif %}>{{ valor }}</option>
+            {% endfor %}
+        </select>
+        <select name="estado" onchange="this.form.submit()">
+            <option value="Todos">Estado: Todos</option>
+            <option value="Activo" {% if estado_filter == 'Activo' %}selected{% endif %}>Activo</option>
+            <option value="Inactivo" {% if estado_filter == 'Inactivo' %}selected{% endif %}>Inactivo</option>
+        </select>
+        {% if request.user.rol == 'administrador' or perms.usuarios.add_usuario %}
+            <a href="{% url 'crear_usuario' %}" class="btn-gold">+ Nuevo Usuario</a>
+        {% endif %}
+    </form>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Correo Electrónico</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Último Acceso</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for usuario in usuarios %}
+            <tr>
+                <td>
+                    <div class="user-identity">
+                        <div class="avatar">{{ usuario.first_name|first|default:usuario.username|first|upper }}</div>
+                        <span class="user-name">{{ usuario.get_full_name|default:usuario.username }}</span>
+                    </div>
+                </td>
+                <td>{{ usuario.email }}</td>
+                <td>
+                    <span class="rol-badge 
+                        {% if usuario.rol == 'administrador' %}rol-admin
+                        {% elif usuario.rol == 'mesero' %}rol-mesero
+                        {% elif usuario.rol == 'cajero' %}rol-cajero
+                        {% elif usuario.rol == 'jefe_cocina' %}rol-cocina
+                        {% else %}rol-gerente{% endif %}">
+                        {{ usuario.get_rol_display }}
+                    </span>
+                </td>
+                <td>
+                    {% if usuario.is_active %}
+                        <span class="status-dot dot-active"></span><span class="text-active">Activo</span>
+                    {% else %}
+                        <span class="status-dot dot-inactive"></span><span class="text-inactive">Inactivo</span>
+                    {% endif %}
+                </td>
+                <td style="color: #718096; font-size: 13px;">
+                    {{ usuario.last_login|date:"d M, H:i"|default:"Nunca ha ingresado" }}
+                </td>
+                <td>
+                    {% if request.user.rol == 'administrador' %}
+                        <div class="action-icons">
+                            <a href="{% url 'editar_usuario' usuario.pk %}" class="edit" title="Editar">✏️</a>
+                            <a href="{% url 'asignar_permisos' usuario.pk %}" class="shield" title="Permisos">🛡️</a>
+                            {% if request.user != usuario %}
+                                <a href="{% url 'eliminar_usuario' usuario.pk %}" class="delete" title="Eliminar">🗑️</a>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        {% if usuario.rol == 'administrador' or request.user == usuario %}
+                            <span class="no-permissions">🔒 Protegido</span>
+                        {% else %}
+                            {% if perms.usuarios.change_usuario or perms.usuarios.delete_usuario %}
+                                <div class="action-icons">
+                                    {% if perms.usuarios.change_usuario %}
+                                        <a href="{% url 'editar_usuario' usuario.pk %}" class="edit" title="Editar">✏️</a>
+                                    {% endif %}
+                                    {% if perms.usuarios.delete_usuario %}
+                                        <a href="{% url 'eliminar_usuario' usuario.pk %}" class="delete" title="Eliminar">🗑️</a>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="no-permissions">🔒 Sin acceso</span>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align:center; padding: 40px; color:#a0aec0;">No se encontraron usuarios con esos filtros.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

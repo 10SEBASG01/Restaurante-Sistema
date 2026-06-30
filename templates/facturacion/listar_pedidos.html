@@ -1,0 +1,243 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+<style>
+    .facturacion-container {
+        padding: 30px 0;
+    }
+    .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+    .header-section h2 {
+        font-size: 24px;
+        font-weight: 600;
+        color: #18181b;
+        margin-bottom: 5px;
+    }
+    .header-section p {
+        color: #8a8a8e;
+        font-size: 13px;
+    }
+    
+    /* 🎯 BOTONES DE ACCIÓN SUPERIOR */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+    }
+    .btn-action-secondary {
+        background-color: #ffffff;
+        color: #4b5563;
+        border: 1px solid #e5e7eb;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        transition: 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-action-secondary:hover {
+        background-color: #f9fafb;
+        color: #1f2937;
+        border-color: #d1d5db;
+    }
+    .btn-action-primary {
+        background-color: #c49a45; /* Color dorado/marrón de tu panel */
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        transition: 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-action-primary:hover {
+        background-color: #c49a45;
+    }
+
+    .tabs-filtros {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #f0f0f0;
+        padding-bottom: 10px;
+    }
+    .tab-item {
+        font-size: 13px;
+        font-weight: 600;
+        padding: 6px 12px;
+        border-radius: 20px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .tab-item.active {
+        background-color: #e6f7ed;
+        color: #28a745;
+    }
+    .tabla-card {
+        background: #ffffff;
+        border: 1px solid #f0f0f0;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.01);
+        overflow: hidden;
+    }
+    .tabla-pedidos {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+    .tabla-pedidos th {
+        padding: 16px;
+        font-size: 12px;
+        color: #8a8a8e;
+        font-weight: 500;
+        border-bottom: 1px solid #f0f0f0;
+        background-color: #fafafa;
+    }
+    .tabla-pedidos td {
+        padding: 16px;
+        font-size: 13px;
+        color: #444;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: middle;
+    }
+    
+    .badge-estado {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        display: inline-block;
+        text-transform: capitalize;
+    }
+    .badge-pendiente {
+        background-color: #fdf2f2;
+        color: #ef4444;
+    }
+    .badge-preparacion {
+        background-color: #fdf5e6;
+        color: #df8a11;
+    }
+    .badge-listo {
+        background-color: #f0fdf4;
+        color: #16a34a;
+    }
+    .badge-entregado {
+        background-color: #eff6ff;
+        color: #2563eb;
+    }
+
+    .btn-cobrar {
+        background-color: #18181b;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 500;
+        transition: 0.2s;
+    }
+    .btn-cobrar:hover:not(.disabled) {
+        background-color: #444;
+    }
+    .btn-cobrar.disabled {
+        background-color: #e5e7eb;
+        color: #9ca3af;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    .vacio-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #8a8a8e;
+    }
+    .vacio-state i {
+        font-size: 36px;
+        color: #ccc;
+        margin-bottom: 15px;
+        display: block;
+    }
+</style>
+
+<div class="facturacion-container">
+    <div class="header-section">
+        <div>
+            <h2>Gestión de Facturación</h2>
+            <p>Consola de caja · Pedidos listos para procesar el cobro correspondiente</p>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'historial_facturas' %}" class="btn-action-secondary">
+                <i class="fa-solid fa-clock-rotate-left"></i> Historial de Facturas
+            </a>
+            <a href="{% url 'configuracion_facturacion' %}" class="btn-action-primary">
+                <i class="fa-solid fa-gear"></i> Configuración de Facturación
+            </a>
+        </div>
+    </div>
+
+    <div class="tabs-filtros">
+        <span class="tab-item active">
+            <i class="fa-solid fa-circle" style="font-size: 8px;"></i> 
+            {{ pedidos.count }} Listos para Cobrar
+        </span>
+    </div>
+
+    <div class="tabla-card">
+        {% if pedidos %}
+            <table class="tabla-pedidos">
+                <thead>
+                    <tr>
+                        <th>Código Pedido</th>
+                        <th>Mesa</th>
+                        <th>Cliente / Grupo</th>
+                        <th>Estado</th>
+                        <th style="text-align: right;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pedido in pedidos %}
+                        <tr>
+                            <td style="font-weight: 600; color: #18181b;">#{{ pedido.id_pedido }}</td>
+                            <td>Mesa {{ pedido.id_mesa.numero }}</td>
+                            <td>{{ pedido.id_mesa.cliente_nombre|default:"Consumidor Final" }}</td>
+                            <td>
+                                {% if pedido.estado_pedido == 'pendiente' %}
+                                    <span class="badge-estado badge-pendiente">{{ pedido.get_estado_pedido_display }}</span>
+                                {% elif pedido.estado_pedido == 'en_preparacion' %}
+                                    <span class="badge-estado badge-preparacion">{{ pedido.get_estado_pedido_display }}</span>
+                                {% elif pedido.estado_pedido == 'listo' %}
+                                    <span class="badge-estado badge-listo">{{ pedido.get_estado_pedido_display }}</span>
+                                {% elif pedido.estado_pedido == 'entregado' %}
+                                    <span class="badge-estado badge-entregado">{{ pedido.get_estado_pedido_display }}</span>
+                                {% else %}
+                                    <span class="badge-estado" style="background-color: #fafafa; color: #aaa;">{{ pedido.get_estado_pedido_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: right;">
+                                <a href="{% url 'crear_factura' pedido.id_pedido %}" class="btn-cobrar {% if pedido.estado_pedido != 'entregado' %}disabled{% endif %}">
+                                    <i class="fa-solid fa-hand-holding-dollar"></i> Cobrar
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="vacio-state">
+                <i class="fa-regular fa-calendar-xmark"></i>
+                <p>No hay pedidos pendientes de pago en este momento.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

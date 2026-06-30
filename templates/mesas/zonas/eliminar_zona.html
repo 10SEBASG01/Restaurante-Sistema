@@ -1,0 +1,32 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+<style>
+    .delete-container { display: flex; justify-content: center; align-items: center; height: 70vh; }
+    .delete-card { background: white; border-radius: 16px; padding: 40px; max-width: 450px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; border-top: 5px solid #ef4444; }
+    .delete-icon { width: 70px; height: 70px; background-color: #fef2f2; color: #ef4444; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; margin: 0 auto 20px auto; }
+    .delete-title { font-size: 24px; color: #1e293b; margin: 0 0 10px 0; font-weight: 700; }
+    .delete-text { color: #64748b; font-size: 15px; margin-bottom: 30px; line-height: 1.5; }
+    .actions { display: flex; gap: 15px; justify-content: center; }
+    .btn-cancel { background-color: #f1f5f9; color: #475569; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.3s; }
+    .btn-cancel:hover { background-color: #e2e8f0; }
+    .btn-danger { background-color: #ef4444; color: white; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.3s; }
+    .btn-danger:hover { background-color: #dc2626; }
+</style>
+
+<div class="delete-container">
+    <div class="delete-card">
+        <div class="delete-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h2 class="delete-title">¿Confirmar Eliminación?</h2>
+        <p class="delete-text">
+            Estás a punto de eliminar permanentemente la zona <strong>"{{ zona.nombre_zona }}"</strong>. 
+            Esta acción no se puede deshacer de forma directa.
+        </p>
+        <form method="POST" class="actions">
+            {% csrf_token %}
+            <a href="{% url 'listar_zonas' %}" class="btn-cancel">No, Cancelar</a>
+            <button type="submit" class="btn-danger">Sí, Eliminar</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

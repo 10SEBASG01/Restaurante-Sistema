@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sabor & Arte RESTAURANTE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --gold-primary: #bc8e36;
+            --gold-light: #dfcaa4;
+            --bg-color: #faf9f7;
+            --text-dark: #2c2c2c;
+            --text-gray: #7a7a7a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Tenedores de fondo (Decoración) */
+        .bg-decoration {
+            position: absolute;
+            width: 300px;
+            opacity: 0.15;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        .bg-decoration svg {
+            width: 100%;
+            height: auto;
+            stroke: var(--gold-primary);
+            fill: none;
+            stroke-width: 1;
+        }
+
+        .bg-left {
+            left: -50px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .bg-right {
+            right: -50px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Tarjeta Principal */
+        .card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 420px;
+            padding: 50px 40px;
+            border-radius: 8px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.06);
+            text-align: center;
+            z-index: 2;
+            margin-bottom: 60px; /* Espacio para el footer */
+        }
+
+        /* Logo y Títulos */
+        .logo-icon {
+            width: 45px;
+            height: 45px;
+            margin: 0 auto 10px;
+            color: var(--gold-primary);
+        }
+
+        h1.brand-name {
+            font-family: 'Great Vibes', cursive;
+            font-size: 3.5rem;
+            color: var(--gold-primary);
+            font-weight: 400;
+            margin-bottom: 5px;
+            line-height: 1;
+        }
+
+        h2.brand-subtitle {
+            font-size: 1rem;
+            color: var(--text-dark);
+            letter-spacing: 2px;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+
+        /* Separador con el punto */
+        .divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 35px;
+            width: 60%;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: "";
+            height: 1px;
+            flex-grow: 1;
+            background-color: var(--gold-light);
+        }
+
+        .divider .dot {
+            width: 5px;
+            height: 5px;
+            background-color: var(--gold-primary);
+            border-radius: 50%;
+            margin: 0 10px;
+        }
+
+        /* Botones */
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background-color: var(--gold-primary);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 16px 20px;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 15px;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+
+        .btn:last-child {
+            margin-bottom: 0;
+        }
+
+        .btn:hover {
+            background-color: #a87b2c;
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn svg {
+            width: 22px;
+            height: 22px;
+            margin-right: 12px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Footer */
+        footer {
+            position: absolute;
+            bottom: 25px;
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+            border-top: 1px solid #e5e5e5;
+            padding-top: 15px;
+            font-size: 0.75rem;
+            color: var(--text-gray);
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-decoration bg-left" id="bg-dec-1">
+        <svg viewBox="0 0 100 100">
+            <path d="M30,70 L70,30 M35,25 L35,40 L70,30 M65,75 L65,60 L30,70" stroke-width="2"/>
+            <line x1="20" y1="80" x2="80" y2="20" stroke-width="2"/>
+            <line x1="20" y1="20" x2="80" y2="80" stroke-width="2"/>
+        </svg>
+    </div>
+
+    <div class="bg-decoration bg-right" id="bg-dec-2">
+        <svg viewBox="0 0 100 100">
+            <path d="M30,70 L70,30 M35,25 L35,40 L70,30 M65,75 L65,60 L30,70" stroke-width="2"/>
+            <line x1="20" y1="80" x2="80" y2="20" stroke-width="2"/>
+            <line x1="20" y1="20" x2="80" y2="80" stroke-width="2"/>
+        </svg>
+    </div>
+
+    <div class="card" id="main-card-1">
+        
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="6" y1="18" x2="18" y2="6"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+            <path d="M7,5 L9,7 L11,5"></path>
+            <path d="M13,19 L15,17 L17,19"></path>
+        </svg>
+
+        <h1 class="brand-name" id="title-1">Sabor & Arte</h1>
+        <h2 class="brand-subtitle" id="subtitle-1">RESTAURANTE</h2>
+        
+        <div class="divider" id="divider-1">
+            <div class="dot"></div>
+        </div>
+
+        <a href="{% url 'publico:menu_publico' %}" class="btn" id="btn-menu-1">
+            <svg viewBox="0 0 24 24">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                <line x1="9" y1="7" x2="15" y2="7"></line>
+                <line x1="9" y1="11" x2="15" y2="11"></line>
+            </svg>
+            Ver menú
+        </a>
+
+        <a href="{% url 'publico:reserva_publica' %}" class="btn" id="btn-reserve-2">
+            <svg viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+                <circle cx="12" cy="15" r="1.5" fill="currentColor"></circle>
+            </svg>
+            Reservar
+        </a>
+
+    </div>
+
+    <footer id="footer-1">
+        © 2026 Sabor & Arte RESTAURANTE. Todos los derechos reservados. | Soporte Técnico
+    </footer>
+
+</body>
+</html>

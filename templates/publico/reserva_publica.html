@@ -1,0 +1,435 @@
+{% extends 'base_publico.html' %}
+
+{% block content %}
+<style>
+    /* Contenedor principal */
+    .reserva-container {
+        width: 100%;
+        max-width: 850px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.05);
+        padding: 45px;
+        border: 1px solid #f5f5f5;
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cabecera del formulario */
+    .header-wrapper {
+        text-align: center;
+        margin-bottom: 35px;
+    }
+
+    .page-title {
+        font-family: 'Great Vibes', cursive;
+        font-size: 3.5rem;
+        color: var(--gold-primary, #bc8e36);
+        margin-bottom: 5px;
+        font-weight: 400;
+        line-height: 1;
+    }
+
+    .page-subtitle {
+        color: var(--text-gray, #7a7a7a);
+        font-size: 0.95rem;
+        letter-spacing: 0.5px;
+        margin-top: 8px;
+        font-family: 'Montserrat', sans-serif;
+    }
+
+    /* Alertas de éxito */
+    .alert-success {
+        background-color: #fbf8f2;
+        color: var(--gold-primary, #bc8e36);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--gold-light, #dfcaa4);
+        font-size: 14px;
+    }
+
+    /* Grid para organizar a 2 columnas */
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+    }
+
+    .full-width {
+        grid-column: span 2;
+    }
+
+    /* Grupos de campos e iconos */
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-dark, #2c2c2c);
+    }
+
+    .form-group label i {
+        color: var(--gold-primary, #bc8e36);
+        font-size: 15px;
+    }
+
+    /* Inputs y Textareas */
+    .form-group input, 
+    .form-group select, 
+    .form-group textarea {
+        padding: 14px 16px;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        font-size: 14px;
+        color: var(--text-dark, #2c2c2c);
+        background-color: var(--bg-color, #faf9f7);
+        outline: none;
+        transition: all 0.3s ease;
+        width: 100%;
+        box-sizing: border-box;
+        font-family: 'Montserrat', sans-serif;
+    }
+
+    .form-group input:focus, 
+    .form-group select:focus, 
+    .form-group textarea:focus {
+        border-color: var(--gold-primary, #bc8e36);
+        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(188, 142, 54, 0.15);
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    /* Errores de validación de Django */
+    ul.errorlist {
+        background-color: #fef2f2;
+        border: 1px solid #fee2e2;
+        color: #ef4444;
+        padding: 10px 14px;
+        border-radius: 6px;
+        margin-top: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        list-style: none;
+    }
+
+    /* Panel de Mesas */
+    .panel-mesas {
+        margin-top: 30px;
+        background: var(--bg-color, #faf9f7);
+        padding: 25px;
+        border-radius: 12px;
+        border: 1px solid #f0f0f0;
+    }
+
+    .panel-mesas h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-dark, #2c2c2c);
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .panel-mesas h3 i {
+        color: var(--gold-primary, #bc8e36);
+    }
+
+    .mesas-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 15px;
+    }
+
+    .mesa-card {
+        background: #ffffff;
+        border: 1px solid #e5e5e5;
+        border-radius: 10px;
+        padding: 15px 10px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .mesa-card:hover {
+        border-color: var(--gold-primary, #bc8e36);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+    }
+
+    .mesa-card.selected {
+        border-color: var(--gold-primary, #bc8e36);
+        background: #fdfaf5;
+        box-shadow: 0 0 0 2px rgba(188, 142, 54, 0.2);
+    }
+
+    .mesa-card i {
+        font-size: 22px;
+        color: var(--gold-primary, #bc8e36);
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .mesa-name {
+        font-weight: 700;
+        color: var(--text-dark, #2c2c2c);
+        font-size: 14px;
+    }
+
+    .mesa-card small {
+        color: var(--text-gray, #7a7a7a);
+        font-size: 12px;
+        display: block;
+    }
+
+    .mesa-zona {
+        display: inline-block;
+        margin-top: 6px;
+        background-color: #f8f9fa;
+        color: var(--gold-primary, #bc8e36);
+        border: 1px solid #e5e5e5;
+        border-radius: 4px;
+        padding: 3px 8px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    #mesa-seleccionada {
+        margin-top: 15px;
+        font-weight: 600;
+        color: var(--gold-primary, #bc8e36);
+        text-align: center;
+        font-size: 14px;
+    }
+
+    .error-label {
+        background-color: #fef2f2;
+        border: 1px solid #fee2e2;
+        color: #ef4444;
+        padding: 10px 14px;
+        border-radius: 6px;
+        margin-top: 10px;
+        font-size: 13px;
+        font-weight: 500;
+        display: block;
+    }
+
+    /* Botones de acción */
+    .form-actions {
+        margin-top: 40px;
+        padding-top: 30px;
+        border-top: 1px solid #f0f0f0;
+        display: flex;
+        justify-content: center;
+    }
+
+    .btn-enviar {
+        background-color: var(--gold-primary, #bc8e36);
+        color: white;
+        padding: 15px 40px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 16px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-family: 'Montserrat', sans-serif;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .btn-enviar:hover {
+        background-color: #a87b2c;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(188, 142, 54, 0.2);
+    }
+
+    /* Responsivo */
+    @media (max-width: 768px) {
+        .form-grid { grid-template-columns: 1fr; }
+        .full-width { grid-column: 1; }
+        .reserva-container { padding: 30px 20px; }
+    }
+</style>
+
+<div class="reserva-container">
+    <div class="header-wrapper">
+        <h1 class="page-title">{{ titulo|default:"Reservar Mesa" }}</h1>
+        <p class="page-subtitle">Completa el formulario para registrar tu solicitud de reserva.</p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            {% if 'reserva_publica' in message.tags %}
+                <div class="alert-success">
+                    <i class="fa-solid fa-circle-check"></i> {{ message }}
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST" novalidate>
+        {% csrf_token %}
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="{{ form.cliente.id_for_label }}"><i class="fa-regular fa-user"></i> Nombre Completo</label>
+                {{ form.cliente }}
+                {{ form.cliente.errors }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.cedula.id_for_label }}"><i class="fa-regular fa-id-card"></i> Cédula de Identidad</label>
+                {{ form.cedula }}
+                {{ form.cedula.errors }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.correo.id_for_label }}"><i class="fa-regular fa-envelope"></i> Correo Electrónico</label>
+                {{ form.correo }}
+                {{ form.correo.errors }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.telefono.id_for_label }}"><i class="fa-solid fa-phone"></i> Teléfono móvil</label>
+                {{ form.telefono }}
+                {{ form.telefono.errors }}
+            </div>
+
+            <div class="form-group full-width">
+                <label for="{{ form.direccion.id_for_label }}"><i class="fa-solid fa-location-dot"></i> Dirección</label>
+                {{ form.direccion }}
+                {{ form.direccion.errors }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.fecha.id_for_label }}"><i class="fa-regular fa-calendar"></i> Fecha</label>
+                {{ form.fecha }}
+                {{ form.fecha.errors }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.hora.id_for_label }}"><i class="fa-regular fa-clock"></i> Hora de llegada</label>
+                {{ form.hora }}
+                {{ form.hora.errors }}
+            </div>
+
+            <div class="form-group full-width">
+                <label for="{{ form.observaciones.id_for_label }}"><i class="fa-regular fa-comment-dots"></i> Notas u Observaciones especiales</label>
+                {{ form.observaciones }}
+                {{ form.observaciones.errors }}
+            </div>
+        </div>
+
+        <div style="display:none;">
+            {{ form.mesa }}
+            {{ form.personas }}
+        </div>
+
+        <div class="panel-mesas">
+            <h3><i class="fa-solid fa-chair"></i> Distribución de Mesas Libres</h3>
+            <div class="mesas-selector">
+                {% for mesa in mesas_libres %}
+                    <div class="mesa-card" data-id="{{ mesa.id }}" onclick="seleccionarMesa('{{ mesa.id }}', this)">
+                        <i class="fa-solid fa-table"></i>
+                        <div class="mesa-name">Mesa {{ mesa.numero }}</div>
+                        <small>{{ mesa.capacidad }} personas</small>
+                        <span class="mesa-zona">
+                            <i class="fa-solid fa-location-dot" style="font-size: 9px; margin-bottom:0; display:inline;"></i> 
+                            {% if mesa.ubicacion %}{{ mesa.ubicacion.nombre_zona }}{% else %}Sin Zona{% endif %}
+                        </span>
+                    </div>
+                {% empty %}
+                    <div style="grid-column: 1 / -1; text-align: center; color: #9ca3af; padding: 20px;">
+                        <p>No hay mesas libres en este momento.</p>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <div id="mesa-seleccionada">Selecciona una mesa disponible de la lista</div>
+            
+            {% if form.mesa.errors or form.personas.errors %}
+                <span class="error-label">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Selección de Mesa: Este campo es obligatorio.
+                </span>
+            {% endif %}
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-enviar">
+                <i class="fa-solid fa-calendar-check"></i> Enviar Solicitud de Reserva
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function seleccionarMesa(valor, elemento) {
+    // 1. Quitar los bordes dorados de selección de las otras tarjetas
+    document.querySelectorAll('.mesa-card').forEach(card => card.classList.remove('selected'));
+    
+    // 2. Aplicar la selección visual a la tarjeta clickeada
+    elemento.classList.add('selected');
+    
+    // 3. Capturar dinámicamente los inputs del formulario que Django pintó
+    let inputMesa = document.getElementById('{{ form.mesa.id_for_label }}') || document.getElementById('id_mesa');
+    let inputPersonas = document.getElementById('{{ form.personas.id_for_label }}') || document.getElementById('id_personas');
+
+    if (inputMesa) {
+        inputMesa.value = valor; // Inyecta el ID numérico limpio (ej: 1)
+    }
+
+    // 4. Obtener la capacidad numérica e inyectarla al campo de personas
+    let textoPersonas = elemento.querySelector('small').innerText;
+    let numeros = textoPersonas.match(/\d+/g);
+    if (numeros && inputPersonas) {
+        inputPersonas.value = numeros[0];
+    }
+    
+    // 5. Actualizar el texto del estado de selección inferior
+    let nombreMesa = elemento.querySelector('.mesa-name').innerText;
+    document.getElementById('mesa-seleccionada').innerHTML = 'Mesa elegida: ' + nombreMesa;
+}
+
+// Conservar el estado dorado de la mesa si la validación del backend retorna algún error en otros campos
+window.addEventListener('DOMContentLoaded', function() {
+    let inputMesa = document.getElementById('{{ form.mesa.id_for_label }}') || document.getElementById('id_mesa');
+    if (inputMesa && inputMesa.value) {
+        let mesaActual = inputMesa.value;
+        document.querySelectorAll('.mesa-card').forEach(card => {
+            if (card.getAttribute('data-id') === mesaActual) {
+                card.classList.add('selected');
+                let nombreMesa = card.querySelector('.mesa-name').innerText;
+                document.getElementById('mesa-seleccionada').innerHTML = 'Mesa elegida: ' + nombreMesa;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

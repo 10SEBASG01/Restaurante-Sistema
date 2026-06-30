@@ -1,0 +1,84 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+<style>
+    .denied-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 80vh;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .denied-card {
+        background: rgba(255, 255, 255, 0.98);
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04), 0 2px 10px rgba(0, 0, 0, 0.02);
+        padding: 50px 40px;
+        max-width: 450px;
+        text-align: center;
+        border: 1px solid rgba(240, 240, 240, 0.8);
+        border-top: 5px solid #ef4444; /* Borde rojo superior de alerta */
+    }
+
+    .icon-wrapper {
+        width: 80px;
+        height: 80px;
+        background-color: #fef2f2;
+        color: #ef4444;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 32px;
+        margin: 0 auto 25px auto;
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0.05);
+    }
+
+    .denied-title {
+        font-size: 24px;
+        color: #1e293b;
+        font-weight: 700;
+        margin: 0 0 12px 0;
+        letter-spacing: -0.5px;
+    }
+
+    .denied-text {
+        color: #64748b;
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 30px;
+    }
+
+    .btn-return {
+        background-color: #1e293b;
+        color: white;
+        padding: 12px 28px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 15px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.3s;
+    }
+
+    .btn-return:hover {
+        background-color: #0f172a;
+        transform: translateY(-2px);
+    }
+</style>
+
+<div class="denied-container">
+    <div class="denied-card">
+        <div class="icon-wrapper">
+            <i class="fa-solid fa-lock"></i>
+        </div>
+        <h1 class="denied-title">Acceso Restringido</h1>
+        <p class="denied-text">Lo sentimos, <strong>{{ request.user.first_name }}</strong>. Tu rol actual (<span style="text-transform: capitalize; color: #ef4444; font-weight: 600;">{{ request.user.rol }}</span>) no tiene los privilegios necesarios para ver o modificar esta sección.</p>
+        
+       
+    </div>
+</div>
+{% endblock %}

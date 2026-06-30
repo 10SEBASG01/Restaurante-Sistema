@@ -1,0 +1,388 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+
+<style>
+    /* Variables de colores basadas en el diseño original */
+    :root {
+        --primary-yellow: #c49a45;
+        --bg-white: #ffffff;
+        --border-color: #f0f0f0;
+        
+        --status-green-bg: #e8f7ec;
+        --status-green-text: #27a857;
+        --status-orange-bg: #fdf5e6;
+        --status-orange-text: #df8a11;
+        --status-red-bg: #fce8e8;
+        --status-red-text: #e03b3b;
+    }
+
+    /* Estructura del Header y Acciones (Filtros) */
+    .header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 30px 0;
+        margin-bottom: 10px;
+    }
+
+    .page-title h2 {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #18181b;
+    }
+
+    .page-title p {
+        color: #8a8a8e;
+        font-size: 13px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        margin: 0;
+    }
+
+    .search-box, .filter-box {
+        background: var(--bg-white);
+        border: 1px solid var(--border-color);
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #666;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .search-box input, .filter-box select {
+        border: none;
+        outline: none;
+        font-size: 13px;
+        background: transparent;
+        color: #333;
+    }
+
+    .search-box input {
+        width: 220px;
+    }
+
+    .btn-primary {
+        background-color: var(--primary-yellow);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        transition: 0.2s;
+    }
+
+    .btn-primary:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+
+    .btn-submit-search {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #666;
+    }
+
+    /* Tarjetas de Estadísticas (Estilo Píldora) */
+    .status-cards {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .status-card {
+        background: var(--bg-white);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        border: 1px solid var(--border-color);
+    }
+
+    .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+
+    .card-green { color: var(--status-green-text); }
+    .card-green .dot { background-color: var(--status-green-text); }
+    
+    .card-orange { color: var(--status-orange-text); }
+    .card-orange .dot { background-color: var(--status-orange-text); }
+    
+    .card-red { color: var(--status-red-text); }
+    .card-red .dot { background-color: var(--status-red-text); }
+
+    /* Tabla */
+    .table-container {
+        background: var(--bg-white);
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    thead {
+        border-bottom: 1px solid var(--border-color);
+        background: var(--bg-white);
+    }
+
+    th {
+        text-align: left;
+        padding: 20px 25px;
+        font-size: 12px;
+        color: #8a8a8e;
+        font-weight: 500;
+    }
+
+    td {
+        padding: 16px 25px;
+        font-size: 13px;
+        border-bottom: 1px solid var(--border-color);
+        color: #444;
+        vertical-align: middle;
+    }
+
+    tbody tr:hover {
+        background-color: #fafafa;
+    }
+
+    .codigo {
+        color: var(--primary-yellow);
+        font-weight: 600;
+    }
+
+    .client-info {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .client-name {
+        font-weight: 500;
+        color: #222;
+    }
+
+    .client-phone {
+        font-size: 11px;
+        color: #8a8a8e;
+    }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-block;
+    }
+
+    .status-confirmada {
+        background-color: var(--status-green-bg);
+        color: var(--status-green-text);
+    }
+
+    .status-pendiente {
+        background-color: var(--status-orange-bg);
+        color: var(--status-orange-text);
+    }
+
+    .status-cancelada {
+        background-color: var(--status-red-bg);
+        color: var(--status-red-text);
+    }
+
+    /* Botón dedicado de Observaciones */
+    .obs-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: #f0f7ff;
+        color: #3b82f6;
+        padding: 6px 12px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: 1px solid #dbeafe;
+    }
+
+    .obs-btn:hover {
+        background-color: #dbeafe;
+        transform: translateY(-1px);
+    }
+
+    /* Acciones de Edición/Eliminación */
+    .actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .action-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        text-decoration: none;
+        transition: 0.2s;
+    }
+
+    .edit-btn { color: #8a8a8e; }
+    .delete-btn { color: var(--status-red-text); }
+    
+    .action-btn:hover { opacity: 0.6; }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px;
+        color: #8a8a8e;
+        font-size: 14px;
+    }
+</style>
+
+<div class="header-top">
+    <div class="page-title">
+        <h2>Gestión de Reservas</h2>
+        <p>Administración de reservas del restaurante</p>
+    </div>
+    
+    <form method="get" class="header-actions">
+        
+        <div class="search-box">
+            <button type="submit" class="btn-submit-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ busqueda }}" 
+                placeholder="Buscar reserva o cliente..."
+            >
+        </div>
+
+        <div class="filter-box">
+            <select name="estado" onchange="this.form.submit()">
+                <option value="">Todos</option>
+                <option value="CONFIRMADA" {% if estado_actual == 'CONFIRMADA' %}selected{% endif %}>Confirmadas</option>
+                <option value="PENDIENTE" {% if estado_actual == 'PENDIENTE' %}selected{% endif %}>Pendientes</option>
+                <option value="CANCELADA" {% if estado_actual == 'CANCELADA' %}selected{% endif %}>Canceladas</option>
+            </select>
+        </div>
+
+        <a href="{% url 'reservas:crear' %}" class="btn-primary">
+            <i class="fa-solid fa-plus"></i>
+            Nueva Reserva
+        </a>
+    </form>
+</div>
+
+<div class="status-cards">
+    <div class="status-card card-green">
+        <div class="dot"></div> {{ confirmadas|default:"0" }} Confirmadas
+    </div>
+    <div class="status-card card-orange">
+        <div class="dot"></div> {{ pendientes|default:"0" }} Pendientes
+    </div>
+    <div class="status-card card-red">
+        <div class="dot"></div> {{ canceladas|default:"0" }} Canceladas
+    </div>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Personas</th>
+                <th>Mesa</th>
+                <th>Estado</th>
+                <th style="text-align:center;">Observaciones</th>
+                <th style="text-align:center;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reserva in reservas %}
+            <tr id="reserva-{{ reserva.id }}">
+                <td class="codigo">{{ reserva.codigo }}</td>
+                <td>
+                    <div class="client-info">
+                        <span class="client-name">{{ reserva.cliente }}</span>
+                        <span class="client-phone">
+                            <i class="fa-solid fa-phone" style="font-size: 10px; margin-right: 4px;"></i>
+                            {{ reserva.telefono }}
+                        </span>
+                    </div>
+                </td>
+                <td>{{ reserva.fecha }}</td>
+                <td>{{ reserva.hora }}</td>
+                <td>{{ reserva.personas }} personas</td>
+                <td>{{ reserva.mesa }}</td>
+                <td>
+                    {% if reserva.estado == 'CONFIRMADA' %}
+                        <span class="status-badge status-confirmada">Confirmada</span>
+                    {% elif reserva.estado == 'PENDIENTE' %}
+                        <span class="status-badge status-pendiente">Pendiente</span>
+                    {% elif reserva.estado == 'CANCELADA' %}
+                        <span class="status-badge status-cancelada">Cancelada</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:center;">
+                    <a href="{% url 'reservas:observacion' reserva.id %}" class="obs-btn" title="Ver detalle de observaciones">
+                        <i class="fa-regular fa-comment-dots"></i> Ver
+                    </a>
+                </td>
+                <td>
+                    <div class="actions">
+                        <a href="{% url 'reservas:editar' reserva.id %}" class="action-btn edit-btn" title="Editar">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </a>
+                        <a href="{% url 'reservas:eliminar' reserva.id %}" class="action-btn delete-btn" title="Eliminar">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9">
+                    <div class="empty-state">
+                        <i class="fa-regular fa-calendar-xmark" style="font-size: 24px; margin-bottom: 10px; opacity: 0.5; display: block;"></i>
+                        No existen reservas registradas con los filtros actuales.
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

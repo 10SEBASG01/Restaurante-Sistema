@@ -1,0 +1,307 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+<style>
+    .no-print-status {
+        background-color: #def7ec; 
+        color: #03543f; 
+        padding: 16px; 
+        border-radius: 12px; 
+        border: 1px solid #84e1bc; 
+        margin-bottom: 24px; 
+        font-size: 14px; 
+        font-weight: 500; 
+        display: flex; 
+        align-items: center; 
+        gap: 8px;
+    }
+
+    #ticket-impresion {
+        display: none;
+    }
+
+    @media print {
+        #sidebar, .sidebar, .navbar, .main-header, 
+        .no-print-status, .control-card {
+            display: none !important;
+        }
+
+        .main-wrapper {
+            background-color: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            min-height: auto !important;
+        }
+
+        body.modo-impresion-factura #ticket-impresion {
+            display: none !important;
+        }
+        
+        body.modo-impresion-factura .grid-principal {
+            display: block !important;
+            width: 100% !important;
+        }
+
+        body.modo-impresion-factura .factura-documento {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            display: block !important;
+        }
+
+        body.modo-impresion-factura @page {
+            size: A4 portrait;
+            margin: 10mm 15mm 10mm 15mm;
+        }
+
+        body.modo-impresion-ticket .grid-principal,
+        body.modo-impresion-ticket .factura-documento {
+            display: none !important;
+        }
+
+        body.modo-impresion-ticket #ticket-impresion {
+            display: block !important;
+            width: 72mm; 
+            max-width: 72mm;
+            padding: 0;
+            margin: 0 auto !important;
+            background: #ffffff;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #000000;
+        }
+
+        body.modo-impresion-ticket @page {
+            size: 80mm auto;
+            margin: 5mm auto;
+        }
+
+        .ticket-header { text-align: center; margin-bottom: 10px; }
+        .ticket-header h2 { font-size: 15px; font-weight: bold; margin: 0 0 4px 0; }
+        .ticket-header p { margin: 2px 0; font-size: 11px; }
+        .ticket-separador { border-top: 1px dashed #000; margin: 6px 0; }
+        .ticket-info-table, .ticket-items-table { width: 100%; font-size: 11px; border-collapse: collapse; }
+        .ticket-info-table td { padding: 2px 0; }
+        
+        .ticket-items-table th { border-bottom: 1px dashed #000; padding: 4px 0; font-weight: bold; }
+        .ticket-items-table td { padding: 5px 0; vertical-align: top; }
+        
+        .ticket-totales { float: right; width: 75%; font-size: 11px; margin-top: 6px; }
+        .ticket-totales table { width: 100%; }
+        .ticket-totales td { padding: 2px 0; }
+        .ticket-footer { text-align: center; margin-top: 15px; font-size: 11px; font-style: italic; padding-bottom: 5mm; }
+    }
+</style>
+
+<main class="main-wrapper" style="background-color: #f4f5f8; min-height: 100vh; padding: 32px;">
+    
+    {% if "historial" not in request.META.HTTP_REFERER %}
+    <div class="no-print-status">
+        <span>🎉 ¡Factura emitida y registrada con éxito! La mesa asociada ha sido liberada.</span>
+    </div>
+    {% endif %}
+
+    <div class="grid-principal" style="display: grid; grid-template-columns: 1.8fr 1fr; gap: 24px; align-items: start;">
+        
+        <div class="card factura-documento" style="background-color: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #e5e7eb; padding-bottom: 24px; margin-bottom: 24px;">
+                <div>
+                    <h2 style="color: #cd9f2a; font-weight: 700; font-size: 24px; margin-bottom: 6px;">{{ factura.emisor_nombre_comercial|default:"Sabor y Arte" }}</h2>
+                    <p style="color: #6b7280; font-size: 12px; line-height: 1.6; margin: 0;">
+                        {% if factura.emisor_razon_social %}
+                            {{ factura.emisor_razon_social }}<br>
+                        {% endif %}
+                        <strong>RUC:</strong> {{ factura.emisor_ruc|default:"20456789012" }}<br>
+                        <strong>Dirección:</strong> {{ factura.emisor_direccion|default:"Av. Gastronomía 455, Miraflores" }}<br>
+                        <strong>Ciudad:</strong> {{ factura.emisor_provincia|default:"Manta, Manabí" }}
+                    </p>
+                </div>
+                <div style="text-align: right;">
+                    <span style="background-color: #fdf9ee; color: #b5881a; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700;">FACTURA ELECTRÓNICA</span>
+                    <h4 style="font-size: 18px; font-weight: 700; color: #1f2937; margin-top: 8px;">{{ factura.secuencial }}</h4>
+                    <p style="font-size: 11px; color: #9ca3af; margin-top: 4px;">Fecha Autorización: {{ factura.fecha_emision|date:"d/m/Y H:i" }}</p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <h4 style="font-size: 14px; font-weight: 600; color: #1f2937; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Información del Adquirente</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px; color: #4b5563;">
+                    <p><strong>Cliente:</strong> {{ factura.cliente_nombre }}</p>
+                    <p><strong>Identificación:</strong> {{ factura.cliente_identificacion }}</p>
+                    <p><strong>Email:</strong> {{ factura.cliente_correo|default:"N/A" }}</p>
+                    <p><strong>Dirección:</strong> {{ factura.cliente_direccion|default:"S/N" }}</p>
+                    <p><strong>Cajero:</strong> {{ factura.id_cajero.get_full_name|default:factura.id_cajero.username }}</p>
+                </div>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 24px; font-size: 13px;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #e5e7eb; color: #6b7280;">
+                        <th style="padding: 10px 0;">Platillo / Consumo</th>
+                        <th style="text-align: center; padding: 10px 0;">Cant.</th>
+                        <th style="text-align: right; padding: 10px 0;">P. Unitario</th>
+                        <th style="text-align: right; padding: 10px 0;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detalle in detalles %}
+                    <tr style="border-bottom: 1px solid #f3f4f6; color: #1f2937;">
+                        <td style="padding: 12px 0; font-weight: 500;">{{ detalle.nombre_historico }}</td>
+                        <td style="text-align: center; padding: 12px 0;">{{ detalle.cantidad }}</td>
+                        <td style="text-align: right; padding: 12px 0;">${{ detalle.precio_unitario_historico }}</td>
+                        <td style="text-align: right; padding: 12px 0; font-weight: 600;">${{ detalle.subtotal_linea }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div style="display: flex; justify-content: flex-end;">
+                <div style="width: 260px; font-size: 13px; color: #4b5563; display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Subtotal {{ factura.iva_porcentaje_aplicado }}%:</span>
+                        <span style="font-weight: 500; color: #1f2937;">${{ factura.subtotal_12|floatformat:2 }}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Subtotal 0%:</span>
+                        <span style="font-weight: 500; color: #1f2937;">$0.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>IVA ({{ factura.iva_porcentaje_aplicado }}%):</span>
+                        <span style="font-weight: 500; color: #1f2937;">${{ factura.iva_valor|floatformat:2 }}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; color: #1f2937;">
+                        <span>Descuento:</span>
+                        <span style="font-weight: 500;">${{ factura.descuento|default:"0.00"|floatformat:2 }}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-top: 1px solid #e5e7eb; padding-top: 12px; font-size: 16px; font-weight: 700; color: #1f2937;">
+                        <span>TOTAL COBRADO:</span>
+                        <span style="color: #cd9f2a;">${{ factura.total|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card control-card" style="background-color: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+            <h3 style="font-size: 15px; font-weight: 600; color: #1f2937; margin-bottom: 8px;">Control de Operación</h3>
+            
+            <button onclick="imprimirComoFactura()" class="btn" style="background-color: #cd9f2a; color: #1f2937; font-weight: 600; width: 100%; padding: 12px; border-radius: 8px; font-size: 13px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                📄 Imprimir Factura (A4)
+            </button>
+
+            <button onclick="imprimirComoTicket()" class="btn" style="background-color: #16a34a; color: white; font-weight: 600; width: 100%; padding: 12px; border-radius: 8px; font-size: 13px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                🖨️ Imprimir Ticket (80mm)
+            </button>
+            
+            {% if "historial" in request.META.HTTP_REFERER %}
+                <a href="{% url 'historial_facturas' %}" class="btn" style="border: 1px solid #e5e7eb; background-color: white; color: #1f2937; font-weight: 500; text-align: center; text-decoration: none; padding: 12px; border-radius: 8px; font-size: 13px; display: block;">
+                     Volver al Historial
+                </a>
+            {% else %}
+                <a href="{% url 'listar_pedidos_por_facturar' %}" class="btn btn-secondary" style="border: 1px solid #e5e7eb; background-color: white; color: #1f2937; font-weight: 500; text-align: center; text-decoration: none; padding: 12px; border-radius: 8px; font-size: 13px; display: block;">
+                    Volver a Caja
+                </a>
+            {% endif %}
+        </div>
+
+    </div>
+</main>
+
+<div id="ticket-impresion">
+    <div class="ticket-header">
+        <h2>{{ factura.emisor_nombre_comercial|upper|default:"SABOR Y ARTE" }}</h2>
+        <p style="margin: 2px 0; font-size: 11px; line-height: 1.4;">
+            {% if factura.emisor_razon_social %}
+                {{ factura.emisor_razon_social }}<br>
+            {% endif %}
+            RUC: {{ factura.emisor_ruc|default:"20456789012" }}<br>
+            {{ factura.emisor_direccion|default:"Av. Gastronomía 455, Miraflores" }}<br>
+            {{ factura.emisor_provincia|default:"Manta, Manabí" }}
+        </p>
+    </div>
+
+    <div class="ticket-separador"></div>
+
+    <table class="ticket-info-table">
+        <tr><td><strong>COMPROBANTE DE COMPRA</strong></td></tr>
+        <tr><td><strong>Num:</strong> {{ factura.secuencial }}</td></tr>
+        <tr><td><strong>Fecha:</strong> {{ factura.fecha_emision|date:"d/m/Y H:i" }}</td></tr>
+        <tr><td><strong>Cajero:</strong> {{ factura.id_cajero.username }}</td></tr>
+        <tr><td><strong>CLIENTE:</strong> {{ factura.cliente_nombre }}</td></tr>
+        <tr><td><strong>RUC/CI:</strong> {{ factura.cliente_identificacion }}</td></tr>
+        <tr><td><strong>EMAIL:</strong> {{ factura.cliente_correo|default:"-" }}</td></tr>
+        <tr><td><strong>DIR:</strong> {{ factura.cliente_direccion|default:"S/N" }}</td></tr>
+    </table>
+
+    <div class="ticket-separador"></div>
+
+    <table class="ticket-items-table">
+        <thead>
+            <tr style="color: #000;">
+                <th style="text-align: left; width: 50%;">Descripción</th>
+                <th style="text-align: center; width: 15%;">Cant</th>
+                <th style="text-align: right; width: 15%;">P.U.</th>
+                <th style="text-align: right; width: 20%;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detalle in detalles %}
+                <tr>
+                    <td style="text-align: left;">{{ detalle.nombre_historico }}</td>
+                    <td style="text-align: center;">{{ detalle.cantidad }}</td>
+                    <td style="text-align: right;">${{ detalle.precio_unitario_historico }}</td>
+                    <td style="text-align: right;">${{ detalle.subtotal_linea|floatformat:2 }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="ticket-separador"></div>
+
+    <div class="ticket-totales">
+        <table>
+            <tr>
+                <td>Subtotal {{ factura.iva_porcentaje_aplicado }}%:</td>
+                <td style="text-align: right;">${{ factura.subtotal_12|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>IVA ({{ factura.iva_porcentaje_aplicado }}%):</td>
+                <td style="text-align: right;">${{ factura.iva_valor|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>Descuento:</td>
+                <td style="text-align: right;">${{ factura.descuento|default:"0.00"|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td><strong>TOTAL:</strong></td>
+                <td style="text-align: right;"><strong>${{ factura.total|floatformat:2 }}</strong></td>
+            </tr>
+        </table>
+    </div>
+    
+    <div style="clear: both;"></div>
+
+    <div class="ticket-separador"></div>
+    <div class="ticket-footer">
+        <p>¡Gracias por su visita!</p>
+        <p>{{ factura.emisor_nombre_comercial|default:"Sabor y Arte" }} les desea un excelente día.</p>
+    </div>
+</div>
+
+<script>
+    function imprimirComoFactura() {
+        document.body.classList.remove('modo-impresion-ticket');
+        document.body.classList.add('modo-impresion-factura');
+        window.print();
+    }
+
+    function imprimirComoTicket() {
+        document.body.classList.remove('modo-impresion-factura');
+        document.body.classList.add('modo-impresion-ticket');
+        window.print();
+    }
+</script>
+{% endblock %}

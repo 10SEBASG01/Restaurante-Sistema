@@ -1,0 +1,800 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+<style>
+    /* --- AJUSTES DEL CONTENEDOR PRINCIPAL --- */
+    .main-content {
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .pedidos-layout {
+        display: flex;
+        width: 100%;
+        height: calc(100vh - 64px);
+        background-color: #f9fafb;
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* --- PANEL IZQUIERDO: CATEGORÍAS --- */
+    .panel-categorias {
+        width: 164px;
+        background-color: #ffffff;
+        border-right: 1px solid #e5e7eb;
+        padding: 16px 12px;
+        display: flex;
+        flex-direction: column;
+        /* 👉 CORRECCIÓN: Separación aumentada de 2px a 8px */
+        gap: 8px; 
+        flex-shrink: 0;
+    }
+
+    .panel-categorias .titulo-seccion {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 4px 8px 10px;
+        margin: 0;
+    }
+
+    .btn-cat-item {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        border: none;
+        border-radius: 8px;
+        background: transparent;
+        font-size: 13px;
+        color: #6b7280;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s;
+    }
+
+    .btn-cat-item:hover {
+        background-color: #f3f4f6;
+        color: #1f2937;
+    }
+
+    .btn-cat-item.active {
+        background-color: #fdf6e3;
+        color: #c59b27;
+        font-weight: 500;
+    }
+
+    .badge-cat {
+        font-size: 10.5px;
+        padding: 1px 6px;
+        border-radius: 10px;
+        background-color: #e5e5ea;
+        color: #6b7280;
+        font-weight: bold;
+    }
+
+    .btn-cat-item.active .badge-cat {
+        background-color: #c59b27;
+        color: #ffffff;
+    }
+
+    /* --- SECCIÓN CENTRAL: PLATILLOS --- */
+    .area-central {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .barra-superior-pedidos {
+        padding: 16px 20px;
+        background-color: #ffffff;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+    }
+
+    .barra-superior-pedidos h1 {
+        font-size: 17px;
+        font-weight: 600;
+        color: #1c1c1e;
+        margin: 0;
+    }
+
+    .barra-superior-pedidos p {
+        font-size: 12px;
+        color: #6b7280;
+        margin: 1px 0 0 0;
+    }
+
+    .custom-dropdown-container {
+        position: relative;
+        display: inline-block;
+    }
+
+    .badge-mesa-selector-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 36px 8px 14px;
+        border-radius: 20px;
+        background-color: #fdf6e3;
+        border: 1.5px solid #c59b27;
+        color: #c59b27;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer;
+        user-select: none;
+        min-width: 150px;
+        text-align: left;
+        position: relative;
+    }
+
+    .indicador-punto {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #c59b27;
+        flex-shrink: 0;
+    }
+
+    .custom-dropdown-arrow {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        transition: transform 0.2s ease;
+        display: flex;
+        align-items: center;
+    }
+
+    .dropdown-mesas-lista {
+        position: absolute;
+        top: 115%;
+        left: 0;
+        width: 100%;
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        list-style: none;
+        padding: 6px 0;
+        margin: 0;
+        z-index: 1000;
+        display: none;
+        box-sizing: border-box;
+    }
+
+    .dropdown-mesas-lista.show {
+        display: block;
+    }
+
+    .dropdown-mesas-lista li {
+        padding: 10px 14px;
+        font-size: 13px;
+        color: #1c1c1e;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .dropdown-mesas-lista li:hover {
+        background-color: #fdf6e3;
+        color: #c59b27;
+    }
+
+    .dropdown-mesas-lista li.disabled-option {
+        color: #9ca3af;
+        cursor: not-allowed;
+        background-color: transparent !important;
+    }
+
+    /* CONTENEDOR GRID DE PLATOS */
+    .grid-productos-scroll {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 20px;
+    }
+
+    .grid-productos {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    /* TARJETAS DE PLATOS */
+    .card-pedido-producto {
+        background-color: #ffffff;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        cursor: pointer;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        transition: all 0.2s;
+        padding: 0;
+    }
+
+    .card-pedido-producto:hover {
+        border-color: #c59b27;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .card-pedido-img-box {
+        width: 100%;
+        height: 120px;
+        background-color: #e5e5ea;
+        overflow: hidden;
+    }
+
+    .card-pedido-img-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .card-pedido-body {
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        flex-grow: 1;
+    }
+
+    .card-pedido-body .prod-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: #1c1c1e;
+        margin: 0;
+    }
+
+    .card-pedido-body .prod-desc {
+        font-size: 11.5px;
+        color: #6b7280;
+        line-height: 1.4;
+        margin: 2px 0 6px 0;
+        height: 32px;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .card-pedido-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .card-pedido-body .prod-price {
+        font-size: 14px;
+        font-weight: 700;
+        color: #c59b27;
+        margin: 0;
+    }
+
+    .btn-add-circle {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background-color: #fdf6e3;
+        color: #c59b27;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    /* --- PANEL DERECHO: DETALLE DEL PEDIDO --- */
+    .panel-carrito {
+        width: 295px;
+        background-color: #ffffff;
+        border-left: 1px solid #e5e7eb;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+    }
+
+    .carrito-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .carrito-header h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1c1c1e;
+        margin: 0;
+    }
+
+    .carrito-header p {
+        font-size: 12px;
+        color: #6b7280;
+        margin: 1px 0 0 0;
+    }
+
+    .carrito-items-lista {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 12px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .carrito-item-linea {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        background-color: #f9fafb;
+    }
+
+    .carrito-item-thumb {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: #e5e5ea;
+        flex-shrink: 0;
+    }
+
+    .carrito-item-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .carrito-item-info {
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    .carrito-item-info h4 {
+        font-size: 12.5px;
+        font-weight: 500;
+        color: #1c1c1e;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .carrito-item-info p {
+        font-size: 12px;
+        color: #c59b27;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .carrito-controles {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+
+    .btn-qty {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+        background-color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    .btn-qty:hover {
+        background-color: #f3f4f6;
+    }
+
+    .btn-trash {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        color: #ef4444;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .btn-trash:hover {
+        background-color: #fee2e2;
+    }
+
+    /* ACCIONES INFERIORES */
+    .carrito-observaciones-box {
+        padding: 8px 16px;
+    }
+
+    .textarea-obs {
+        width: 100%;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 12px;
+        color: #1c1c1e;
+        outline: none;
+        resize: none;
+        box-sizing: border-box;
+    }
+
+    .carrito-checkout-box {
+        padding: 4px 16px 20px;
+    }
+
+    .fila-total {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-top: 1px solid #e5e7eb;
+        margin-bottom: 12px;
+    }
+
+    .fila-total .lbl {
+        font-size: 14px;
+        font-weight: 500;
+        color: #1c1c1e;
+    }
+
+    .fila-total .val {
+        font-size: 22px;
+        font-weight: 700;
+        color: #c59b27;
+    }
+
+    .btn-submit-comanda {
+        width: 100%;
+        padding: 12px;
+        border-radius: 12px;
+        border: none;
+        background-color: #c59b27;
+        color: #1c1c1e;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: background 0.2s;
+    }
+
+    .btn-submit-comanda:hover {
+        background-color: #b08921;
+    }
+
+    .estado-vacio {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 120px;
+        color: #9ca3af;
+        text-align: center;
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="pedidos-layout">
+    
+    <div class="panel-categorias">
+        <p class="titulo-seccion">Categorías</p>
+        <button class="btn-cat-item active" data-categoria="todos">
+            <span>Todos</span>
+            <span class="badge-cat">{{ platillos.count }}</span>
+        </button>
+        {% for cat in categorias %}
+        <button class="btn-cat-item" data-categoria="{{ cat.nombre_categoria|slugify }}">
+            <span>{{ cat.nombre_categoria }}</span>
+            <span class="badge-cat">{{ cat.total_productos|default:"0" }}</span>
+        </button>
+        {% endfor %}
+    </div>
+
+    <div class="area-central">
+        <div class="barra-superior-pedidos">
+            <div>
+                <h1>Gestión de Pedidos</h1>
+                <p id="subtitulo-productos">Todos · {{ platillos.count }} productos</p>
+            </div>
+            
+            <div class="custom-dropdown-container">
+                <div class="badge-mesa-selector-btn" id="customDropdownBtn">
+                    <div class="indicador-punto"></div>
+                    <span id="customDropdownLabel">Seleccionar Mesa</span>
+                    <div class="custom-dropdown-arrow" id="customDropdownArrow">
+                        <svg style="width: 12px; height: 12px; fill: currentColor;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                        </svg>
+                    </div>
+                </div>
+                
+                <ul class="dropdown-mesas-lista" id="customDropdownUl">
+                    <li data-value="" class="disabled-option">Seleccionar Mesa</li>
+                    {% for mesa in mesas %}
+                        <li data-value="{{ mesa.id }}">Mesa #{{ mesa.numero }}</li>
+                    {% empty %}
+                        <li data-value="" class="disabled-option">No hay mesas registradas</li>
+                    {% endfor %}
+                </ul>
+
+                <input type="hidden" id="select-mesa-id" value="">
+            </div>
+        </div>
+
+        <div class="grid-productos-scroll">
+            <div class="grid-productos">
+                {% for p in platillos %}
+                    <div class="card-pedido-producto card-filtro-item" data-categoria="{{ p.id_categoria.nombre_categoria|slugify }}" onclick="agregarAlCarrito('{{ p.id_platillo }}', '{{ p.nombre_platillo }}', '{{ p.precio }}', '{% if p.imagen %}{{ p.imagen.url }}{% endif %}')">
+                        <div class="card-pedido-img-box">
+                            {% if p.imagen %}
+                                <img src="{{ p.imagen.url }}" alt="{{ p.nombre_platillo }}">
+                            {% endif %}
+                        </div>
+                        <div class="card-pedido-body">
+                            <div>
+                                <p class="prod-name">{{ p.nombre_platillo }}</p>
+                                <p class="prod-desc">{{ p.descripcion }}</p>
+                            </div>
+                            <div class="card-pedido-footer">
+                                <p class="prod-price">${{ p.precio }}</p>
+                                <button class="btn-add-circle">+</button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="panel-carrito">
+        <div class="carrito-header">
+            <h3>Pedido Actual</h3>
+            <p id="carrito-resumen-cant">0 items</p>
+        </div>
+
+        <div id="carrito-lista" class="carrito-items-lista">
+            <div id="carrito-msg-vacio" class="estado-vacio">
+                <i class="fas fa-paper-plane" style="font-size: 18px; margin-bottom: 6px;"></i>
+                <p style="font-size: 12.5px; margin:0;">Toca un producto para agregarlo</p>
+            </div>
+        </div>
+
+        <div class="carrito-observaciones-box">
+            <textarea id="tx-observaciones" rows="2" placeholder="Observaciones: Sin cebolla, por favor..." class="textarea-obs"></textarea>
+        </div>
+
+        <div class="carrito-checkout-box">
+            <div class="fila-total">
+                <span class="lbl">Total</span>
+                <span id="txt-total-monto" class="val">$0.00</span>
+            </div>
+            <button id="btn-enviar-comanda-cocina" class="btn-submit-comanda">
+                <i class="fas fa-paper-plane"></i> Enviar a Cocina
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let carrito = [];
+
+    // --- LÓGICA DE INTERACTIVIDAD DEL NUEVO DROPDOWN PERSONALIZADO ---
+    document.addEventListener("DOMContentLoaded", function() {
+        const dropBtn = document.getElementById('customDropdownBtn');
+        const dropUl = document.getElementById('customDropdownUl');
+        const dropLabel = document.getElementById('customDropdownLabel');
+        const dropArrow = document.getElementById('customDropdownArrow');
+        const realInput = document.getElementById('select-mesa-id');
+
+        dropBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isOpen = dropUl.classList.toggle('show');
+            dropArrow.style.transform = isOpen ? 'translateY(-50%) rotate(180deg)' : 'translateY(-50%) rotate(0deg)';
+        });
+
+        dropUl.addEventListener('click', function(e) {
+            const targetItem = e.target.closest('li');
+            if (!targetItem || targetItem.classList.contains('disabled-option')) return;
+
+            const selectedValue = targetItem.getAttribute('data-value');
+            const selectedText = targetItem.textContent;
+
+            dropLabel.textContent = selectedText;
+            realInput.value = selectedValue;
+
+            dropUl.classList.remove('show');
+            dropArrow.style.transform = 'translateY(-50%) rotate(0deg)';
+        });
+
+        document.addEventListener('click', function() {
+            dropUl.classList.remove('show');
+            dropArrow.style.transform = 'translateY(-50%) rotate(0deg)';
+        });
+    });
+
+    // --- MANEJO DEL CARRITO DE COMPRAS ---
+    function agregarAlCarrito(id, nombre, precio, imgUrl) {
+        // 👉 CORRECCIÓN: Reemplazamos la coma que manda Django por un punto para que JS calcule bien los decimales
+        const precioNum = parseFloat(precio.replace(',', '.'));
+        const existente = carrito.find(item => item.id_platillo === id);
+
+        if (existente) {
+            existente.qty += 1;
+        } else {
+            carrito.push({ id_platillo: id, name: nombre, price: precioNum, img: imgUrl, qty: 1 });
+        }
+        renderizarCarrito();
+    }
+
+    function cambiarCantidad(id, delta) {
+        const item = carrito.find(i => i.id_platillo === id);
+        if (item) {
+            item.qty += delta;
+            if (item.qty <= 0) {
+                carrito = carrito.filter(i => i.id_platillo !== id);
+            }
+        }
+        renderizarCarrito();
+    }
+
+    function renderizarCarrito() {
+        const listaContenedor = document.getElementById('carrito-lista');
+        const resumenCant = document.getElementById('carrito-resumen-cant');
+        const totalMonto = document.getElementById('txt-total-monto');
+
+        if (carrito.length === 0) {
+            listaContenedor.innerHTML = `
+                <div id="carrito-msg-vacio" class="estado-vacio">
+                    <i class="fas fa-paper-plane" style="font-size: 18px; margin-bottom: 6px;"></i>
+                    <p style="font-size: 12.5px; margin:0;">Toca un producto para agregarlo</p>
+                </div>
+            `;
+            resumenCant.innerText = '0 items';
+            totalMonto.innerText = '$0.00';
+            return;
+        }
+
+        listaContenedor.innerHTML = '';
+        let acumTotal = 0;
+        let acumItems = 0;
+
+        carrito.forEach(item => {
+            acumTotal += item.price * item.qty;
+            acumItems += item.qty;
+
+            const div = document.createElement('div');
+            div.className = 'carrito-item-linea';
+            div.innerHTML = `
+                <div class="carrito-item-thumb">
+                    ${item.img ? `<img src="${item.img}">` : ''}
+                </div>
+                <div class="carrito-item-info">
+                    <h4>${item.name}</h4>
+                    <p>$${(item.price * item.qty).toFixed(2)}</p>
+                </div>
+                <div class="carrito-controles">
+                    <button class="btn-qty" onclick="event.stopPropagation(); cambiarCantidad('${item.id_platillo}', -1)">-</button>
+                    <span style="font-size: 13px; font-weight: 600; min-width: 18px; text-align: center;">${item.qty}</span>
+                    <button class="btn-qty" onclick="event.stopPropagation(); cambiarCantidad('${item.id_platillo}', 1)">+</button>
+                    <button class="btn-trash" onclick="event.stopPropagation(); cambiarCantidad('${item.id_platillo}', -${item.qty})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            listaContenedor.appendChild(div);
+        });
+
+        resumenCant.innerText = `${acumItems} ítem${acumItems !== 1 ? 's' : ''}`;
+        totalMonto.innerText = `$${acumTotal.toFixed(2)}`;
+    }
+
+    document.querySelectorAll('.btn-cat-item').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.btn-cat-item').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            const catTarget = this.getAttribute('data-categoria');
+            let visibles = 0;
+
+            document.querySelectorAll('.card-filtro-item').forEach(card => {
+                if (catTarget === 'todos' || card.getAttribute('data-categoria') === catTarget) {
+                    card.style.display = 'flex';
+                    visibles++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            document.getElementById('subtitulo-productos').innerText = `${this.querySelector('span').innerText} · ${visibles} productos`;
+        });
+    });
+
+    // Envío a Cocina vía API
+    document.getElementById('btn-enviar-comanda-cocina').addEventListener('click', function() {
+        const idMesa = document.getElementById('select-mesa-id').value;
+        const obs = document.getElementById('tx-observaciones').value;
+
+        if (!idMesa) {
+            Swal.fire({
+                title: 'Asignación Requerida',
+                text: 'Por favor, selecciona una mesa antes de enviar el pedido a la cocina.',
+                icon: 'warning',
+                confirmButtonColor: '#c59b27',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+        
+        if (carrito.length === 0) {
+            Swal.fire({
+                title: 'Comanda Vacía',
+                text: 'Agrega al menos un platillo al resumen antes de enviarlo.',
+                icon: 'info',
+                confirmButtonColor: '#c59b27',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+
+        fetch("{% url 'pedidos:guardar_pedido_api' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({ id_mesa: idMesa, observaciones: obs, items: carrito })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: '¡Despachado con Éxito!',
+                    text: 'El pedido fue asignado y enviado correctamente a la cocina.',
+                    icon: 'success',
+                    confirmButtonColor: '#c59b27',
+                    confirmButtonText: 'Listo'
+                }).then(() => {
+                    carrito = [];
+                    document.getElementById('tx-observaciones').value = '';
+                    
+                    document.getElementById('select-mesa-id').value = '';
+                    document.getElementById('customDropdownLabel').textContent = 'Seleccionar Mesa';
+                    
+                    renderizarCarrito();
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error de Servidor',
+                    text: data.error,
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

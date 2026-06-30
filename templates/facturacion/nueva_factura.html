@@ -1,0 +1,408 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+<style>
+    .pasarela-container {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr 340px;
+        gap: 25px;
+        padding: 30px 0;
+        align-items: start;
+    }
+    .header-top {
+        padding: 30px 0 10px 0;
+    }
+    .header-top h2 {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #18181b;
+    }
+    .header-top p {
+        color: #8a8a8e;
+        font-size: 13px;
+    }
+    .factura-card {
+        background: #ffffff;
+        border: 1px solid #f0f0f0;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.01);
+    }
+    .card-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #18181b;
+        margin-bottom: 20px;
+    }
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid #f8f8f8;
+        font-size: 13px;
+        color: #444;
+    }
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    .info-label {
+        color: #8a8a8e;
+    }
+    .info-value {
+        font-weight: 500;
+        color: #18181b;
+    }
+    .info-value.bold {
+        font-weight: 600;
+    }
+    
+    /* Recuadro de Empresa Dinámico y Limpio */
+    .empresa-box {
+        background-color: #fdf5e6;
+        border: 1px solid #fbe2b5;
+        border-radius: 8px;
+        padding: 14px 16px;
+        margin-top: 15px;
+        font-size: 12px;
+        color: #c2780e;
+        line-height: 1.5;
+    }
+    .empresa-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #9a5f04;
+        display: block;
+        margin-bottom: 4px;
+    }
+    .empresa-razon {
+        font-style: normal;
+        color: #b4700d;
+        display: block;
+        margin-bottom: 2px;
+    }
+
+    .table-detalles {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .table-detalles th {
+        text-align: left;
+        padding: 12px 8px;
+        font-size: 12px;
+        color: #8a8a8e;
+        font-weight: 500;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .table-detalles td {
+        padding: 14px 8px;
+        font-size: 13px;
+        color: #444;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .form-group {
+        margin-bottom: 16px;
+    }
+    .form-group label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #444;
+        display: block;
+        margin-bottom: 6px;
+    }
+    
+    .factura-card input, 
+    .factura-card select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 13px;
+        outline: none;
+        box-sizing: border-box;
+        transition: 0.2s;
+        background-color: #ffffff;
+        color: #18181b;
+    }
+    .factura-card input:focus, 
+    .factura-card select:focus {
+        border-color: #dfa811;
+        box-shadow: 0 0 0 2px rgba(223, 168, 17, 0.1);
+    }
+    
+    .total-label-final {
+        font-size: 14px;
+        font-weight: 700;
+        color: #18181b;
+    }
+    .total-price-final {
+        font-size: 20px;
+        font-weight: 700;
+        color: #dfa811;
+    }
+    .btn-submit-invoice {
+        background-color: #dfa811;
+        color: white;
+        font-weight: 600;
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        transition: 0.2s;
+    }
+    .btn-submit-invoice:hover {
+        background-color: #c9930f;
+    }
+    .btn-cancel-invoice {
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        color: #666;
+        font-weight: 500;
+        width: 100%;
+        padding: 11px;
+        border-radius: 8px;
+        font-size: 13px;
+        text-decoration: none;
+        text-align: center;
+        display: block;
+        box-sizing: border-box;
+        transition: 0.2s;
+    }
+    .btn-cancel-invoice:hover {
+        background-color: #f9fafb;
+    }
+
+    #id_descuento {
+        font-weight: 600;
+        color: #26dc44;
+        border-color: #26dc44;
+        background-color: #fff5f5;
+        text-align: right;
+    }
+</style>
+
+<div class="header-top">
+    <h2>Nueva Factura</h2>
+    <p>
+    {% if pedido %}
+        Pedido #{{ pedido.id_pedido }} · Mesa {{ pedido.id_mesa.numero }} · Checkout
+    {% else %}
+        Checkout de Facturación Modular
+    {% endif %}
+    </p>
+</div>
+
+{% if pedido %}
+    <form method="POST" action="{% url 'crear_factura' pedido.id_pedido %}" class="pasarela-container">
+{% else %}
+    <form method="POST" action="{% url 'crear_factura_vacia' %}" class="pasarela-container">
+{% endif %}
+    {% csrf_token %}
+
+    <div class="factura-card">
+        <div class="card-title">Información del Pedido</div>
+        
+        {% if not pedido %}
+            <div style="text-align: center; padding: 15px 0;">
+                <label style="font-size: 13px; font-weight: 600; color: #444; display: block; margin-bottom: 10px;">
+                    Seleccione una Mesa con Pedidos Pendientes:
+                </label>
+                <select name="mesa_id" onchange="if(this.value) window.location.href='{% url 'crear_factura_vacia' %}?mesa_id=' + this.value" style="font-weight: 600; text-align: center;">
+                    <option value="">-- Seleccionar Mesa --</option>
+                    {% for mesa in mesas_disponibles %}
+                        <option value="{{ mesa.id_mesa }}">Mesa {{ mesa.numero }} - {{ mesa.cliente_nombre|default:"Sin Nombre" }}</option>
+                    {% empty %}
+                        <option value="" disabled>No hay mesas listas para facturar</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% else %}
+            <div class="info-row"><span class="info-label">N° de Pedido</span><span class="info-value bold">#{{ pedido.id_pedido }}</span></div>
+            <div class="info-row"><span class="info-label">Mesa</span><span class="info-value">Mesa {{ pedido.id_mesa.numero }}</span></div>
+            <div class="info-row"><span class="info-label">Fecha</span><span class="info-value">{{ fecha_actual|date:"d/m/Y" }}</span></div>
+            <div class="info-row"><span class="info-label">Hora</span><span class="info-value">{{ hora_actual }}</span></div>
+            <div class="info-row"><span class="info-label">Cajero</span><span class="info-value">{{ request.user.get_full_name|default:request.user.username }}</span></div>
+            
+            <div class="info-row">
+                <span class="info-label">Mesero</span>
+                <span class="info-value">
+                    {% if pedido.id_mesa.mesero_assigned %}
+                        {{ pedido.id_mesa.mesero_assigned.get_full_name|default:pedido.id_mesa.mesero_assigned.username }}
+                    {% else %}
+                        No asignado
+                    {% endif %}
+                </span>
+            </div>
+        {% endif %}
+        
+        <div class="empresa-box">
+            {% if config_emisor %}
+                <span class="empresa-title">{{ config_emisor.nombre_comercial }}</span>
+                {% if config_emisor.razon_social %}
+                    <span class="empresa-razon">{{ config_emisor.razon_social }}</span>
+                {% endif %}
+                <strong>RUC:</strong> {{ config_emisor.ruc }}<br>
+                <strong>Dirección:</strong> {{ config_emisor.direccion }}, {{ config_emisor.provincia }}
+            {% else %}
+                <span class="empresa-title">Sabor y Arte</span>
+                <strong>RUC:</strong> 20456789012<br>
+                Av. Gastronomía 455, Miraflores
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="factura-card">
+        <div class="card-title">Detalle del Pedido</div>
+        <table class="table-detalles">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th style="text-align: center;">Cant.</th>
+                    <th style="text-align: right;">Precio Unit.</th>
+                    <th style="text-align: right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detalles_pedido %}
+                    <tr>
+                        <td>{{ item.id_platillo.nombre_platillo }}</td>
+                        <td style="text-align: center;">{{ item.cantidad }}</td>
+                        <td style="text-align: right;">${{ item.precio_unitario }}</td>
+                        <td style="text-align: right; font-weight: 600;">
+                            ${{ item.subtotal_linea|default:item.subtotal|floatformat:2 }}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #999; padding: 40px 0;">
+                            Ningún pedido seleccionado en este momento.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        
+        <div class="factura-card" style="padding: 20px;">
+            <div class="card-title" style="margin-bottom: 12px;">Resumen</div>
+            <div class="info-row" style="padding: 8px 0;"><span class="info-label">Subtotal</span><span class="info-value">$<span id="lbl_subtotal">{{ subtotal_12|floatformat:2 }}</span></span></div>
+            
+            <div class="info-row" style="padding: 8px 0;">
+                <span class="info-label">IVA (<span id="lbl_tasa_iva_text">{{ iva_porcentaje }}</span>%)</span>
+                <span class="info-value">$<span id="lbl_iva_valor">{{ iva_valor|floatformat:2 }}</span></span>
+            </div>
+            
+            <div class="info-row" style="padding: 8px 0; display: flex; justify-content: space-between; align-items: center;">
+                <span class="info-label" style="color: #26dc44; font-weight: 500;">Descuento (%)</span>
+                <div style="width: 120px; display: flex; justify-content: flex-end;">
+                    {{ form.descuento }}
+                </div>
+            </div>
+            
+            <div class="info-row final" style="border-top: 1px solid #f0f0f0; padding-top: 15px; margin-top: 5px;">
+                <span class="total-label-final">Total a pagar</span>
+                <span class="total-price-final">$<span id="lbl_total_general">{{ total_general|floatformat:2 }}</span></span>
+            </div>
+        </div>
+
+        <div class="factura-card" style="padding: 20px;">
+            <div class="card-title" style="margin-bottom: 12px;">Datos del Cliente</div>
+            <div class="form-group">
+                <label>Nombre / Razón Social</label>
+                {{ form.cliente_nombre }}
+            </div>
+            <div class="form-group">
+                <label>Identificación (Cédula/RUC)</label>
+                {{ form.cliente_identificacion }}
+            </div>
+            <div class="form-group">
+                <label>Correo Electrónico (Opcional)</label>
+                {{ form.cliente_correo }}
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Dirección (Opcional)</label>
+                {{ form.cliente_direccion }}
+            </div>
+        </div>
+
+        <div class="factura-card" style="padding: 20px;">
+            <div class="card-title" style="margin-bottom: 12px;">Método de Pago</div>
+            <div class="form-group">
+                {{ form.forma_pago }}
+            </div>
+            
+            {% if pedido %}
+                <button type="submit" class="btn-submit-invoice" style="margin-top: 15px;">
+                    <i class="fa-solid fa-print"></i> Generar Factura
+                </button>
+            {% else %}
+                <button type="button" disabled class="btn-submit-invoice" style="margin-top: 15px; background-color: #e5e7eb; color: #9ca3af; cursor: not-allowed;">
+                    <i class="fa-solid fa-print"></i> Generar Factura
+                </button>
+            {% endif %}
+            
+            <a href="{% url 'listar_pedidos_por_facturar' %}" class="btn-cancel-invoice">
+                Cancelar
+            </a>
+        </div>
+    </div>
+
+</form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputDescuento = document.getElementById('id_descuento');
+        const lblSubtotal = document.getElementById('lbl_subtotal');
+        const lblIvaValor = document.getElementById('lbl_iva_valor');
+        const lblTotalGeneral = document.getElementById('lbl_total_general');
+        const lblTasaIvaText = document.getElementById('lbl_tasa_iva_text');
+
+        const subtotalOriginal = parseFloat(lblSubtotal.textContent.replace(',', '.'));
+        const tasaIva = parseFloat(lblTasaIvaText.textContent.trim()) || 12.00; 
+
+        function calcularDescuentoPorcentaje() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+
+            let valorTexto = this.value.trim();
+            let porcentajeDescuento = parseInt(valorTexto, 10);
+            
+            if (valorTexto === "" || isNaN(porcentajeDescuento) || porcentajeDescuento < 0) {
+                porcentajeDescuento = 0;
+            }
+
+            if (porcentajeDescuento > 100) {
+                porcentajeDescuento = 100;
+                this.value = 100;
+            }
+
+            let dineroDescuento = subtotalOriginal * (porcentajeDescuento / 100);
+            let nuevoSubtotal = subtotalOriginal - dineroDescuento;
+
+            let nuevoIva = nuevoSubtotal * (tasaIva / 100);
+            let totalConDescuento = nuevoSubtotal + nuevoIva;
+
+            if (totalConDescuento < 0) {
+                totalConDescuento = 0.00;
+            }
+
+            lblIvaValor.textContent = nuevoIva.toFixed(2);
+            lblTotalGeneral.textContent = totalConDescuento.toFixed(2);
+        }
+
+        if (inputDescuento) {
+            inputDescuento.addEventListener('input', calcularDescuentoPorcentaje);
+            inputDescuento.addEventListener('keyup', calcularDescuentoPorcentaje);
+            inputDescuento.addEventListener('change', calcularDescuentoPorcentaje);
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,88 @@
+from django.db import models
+from django.core.validators import MinValueValidator
+from decimal import Decimal
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
+from apps.auditoria.models import Auditoria
+
+class CategoriasPlato(models.Model):
+    # Definimos las 9 categorías oficiales de tu documentación en una tupla
+    CATEGORIAS_CHOICES = (
+        ('Entradas', 'Entradas'),
+        ('Sopas', 'Sopas'),
+        ('Platos fuertes', 'Platos fuertes'),
+        ('Parrilladas', 'Parrilladas'),
+        ('Mariscos', 'Mariscos'),
+        ('Postres', 'Postres'),
+        ('Bebidas', 'Bebidas'),
+        ('Cócteles', 'Cócteles'),
+        ('Comida rápida', 'Comida rápida'),
+    )
+
+    id_categoria = models.AutoField(primary_key=True)
+    # Le añadimos las choices para que Django sepa cuáles son las únicas opciones válidas
+    nombre_categoria = models.CharField(
+        max_length=100, 
+        unique=True, 
+        choices=CATEGORIAS_CHOICES
+    )
+
+    class Meta:
+        db_table = 'categorias_plato'
+        verbose_name = 'Categoría de Plato'
+        verbose_name_plural = 'Categorías de Platos'
+
+    def __str__(self):
+        return self.get_nombre_categoria_display() # Muestra el nombre legible limpio
+
+
+class GestionPlatillo(models.Model):
+    id_platillo = models.AutoField(primary_key=True)
+    nombre_platillo = models.CharField(max_length=150, unique=False)
+    descripcion = models.TextField(blank=True, null=True)
+    
+    precio = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))]
+    )
+    
+    id_categoria = models.ForeignKey(
+        CategoriasPlato, 
+        on_delete=models.PROTECT, 
+        db_column='id_categoria',
+        related_name='platillos'
+    )
+    
+    disponible = models.BooleanField(default=True)
+    activo = models.BooleanField(default=True)  # 🔥 AGREGADO: Campo para el borrado lógico
+    imagen = models.ImageField(upload_to='menu/platillos/', blank=True, null=True)
+
+    class Meta:
+        db_table = 'gestion_platillo'
+        verbose_name = 'Gestión de Platillo'
+        verbose_name_plural = 'Gestión de Platillos'
+
+    def __str__(self):
+        return self.nombre_platillo
+    
+# --- TRIGGER: AUDITAR CAMBIO DE PRECIO ---
+@receiver(pre_save, sender=GestionPlatillo)
+def auditar_cambio_precio(sender, instance, **kwargs):
+    """
+    Se dispara ANTES de guardar el platillo para comparar el precio.
+    """
+    if instance.pk: # Verificamos que el platillo ya exista (edición, no creación)
+        try:
+            platillo_viejo = GestionPlatillo.objects.get(pk=instance.pk)
+            
+            # Si el precio viejo es diferente al precio que intentan guardar
+            if platillo_viejo.precio != instance.precio:
+                Auditoria.objects.create(
+                    id_usuario=None, # Lo dejamos como Sistema
+                    modulo='menu',   # 'menu' activa el punto AMARILLO
+                    accion='Modificó precio',
+                    detalle=f"{instance.nombre_platillo} ${platillo_viejo.precio} -> ${instance.precio}"
+                )
+        except GestionPlatillo.DoesNotExist:
+            pass

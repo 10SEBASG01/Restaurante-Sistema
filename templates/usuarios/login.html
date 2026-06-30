@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sabor & Arte</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f6f9; /* Fondo gris claro liso y limpio */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .login-card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* Sombra más sutil */
+            padding: 40px;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        /* Logo y Tipografía */
+        .logo-icon { color: #c49a45; font-size: 28px; margin-bottom: 5px; }
+        .brand-title { 
+            font-family: 'Playfair Display', serif; 
+            color: #c49a45; 
+            font-size: 36px; 
+            margin: 0; 
+            font-weight: 600;
+            font-style: italic;
+        }
+        .brand-subtitle { 
+            color: #111; 
+            font-size: 11px; 
+            letter-spacing: 2px; 
+            margin-top: 2px; 
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        h2 { margin: 0; color: #111; font-size: 22px; font-weight: 600; line-height: 1.3; }
+        p.subtitle { color: #666; font-size: 14px; margin-top: 8px; margin-bottom: 25px; }
+
+        /* Mensaje de Error de Validación */
+        .error-alert {
+            background-color: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Inputs con Iconos */
+        .input-group {
+            position: relative;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .input-group i.left-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #c49a45;
+            font-size: 15px;
+        }
+        .input-group i.right-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 15px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .input-group i.right-icon:hover { color: #4b5563; }
+        
+        .input-group input {
+            width: 100%;
+            padding: 14px 15px 14px 45px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #374151;
+            outline: none;
+            box-sizing: border-box;
+            transition: border 0.3s, box-shadow 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+        .input-group input:focus { 
+            border-color: #c49a45; 
+            box-shadow: 0 0 0 3px rgba(196, 154, 69, 0.1);
+        }
+        .input-group input::placeholder { color: #9ca3af; }
+
+        /* Opciones: Checkbox y Enlace */
+        .options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            margin-bottom: 25px;
+            margin-top: 5px;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #4b5563;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .checkbox-container input {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #c49a45;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+            position: relative;
+            margin: 0;
+        }
+        .checkbox-container input:checked { background-color: #c49a45; }
+        .checkbox-container input:checked::after {
+            content: '\f00c';
+            font-family: 'FontAwesome';
+            font-size: 12px;
+            color: white;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .options a { color: #c49a45; text-decoration: none; font-weight: 500; transition: 0.3s; }
+        .options a:hover { color: #a37f37; }
+
+        /* Botón dorado */
+        .btn-gold {
+            width: 100%;
+            padding: 14px;
+            background-color: #c49a45;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-gold:hover { background-color: #b0883b; }
+
+        /* Footer */
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+            width: 100%;
+        }
+        .footer a { color: #6b7280; text-decoration: none; }
+        .footer a:hover { color: #374151; }
+
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+    display: none;
+}   
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="logo-icon"><i class="fa-solid fa-utensils"></i></div>
+        <h1 class="brand-title">Sabor & Arte</h1>
+        <div class="brand-subtitle">RESTAURANTE</div>
+        
+        <h2>Bienvenido al Sistema de<br>Gestión Centralizado</h2>
+        <p class="subtitle">Inicia sesión en tu cuenta</p>
+        
+        <form method="POST">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <div class="error-alert">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span>Nombre de usuario o contraseña incorrectos. Por favor, verifica tus datos.</span>
+                </div>
+            {% endif %}
+            
+            <div class="input-group">
+                <i class="fa-regular fa-user left-icon"></i>
+                <input type="text" name="username" placeholder="Nombre de usuario" required autofocus>
+            </div>
+            
+            <div class="input-group">
+                <i class="fa-solid fa-lock left-icon"></i>
+                <input type="password" name="password" id="pwdInput" placeholder="Contraseña" required>
+                <i class="fa-regular fa-eye-slash right-icon" id="togglePassword" title="Mostrar/Ocultar contraseña"></i>
+            </div>
+            
+
+            <button type="submit" class="btn-gold">
+                <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+            </button>
+        </form>
+    </div>
+
+    <div class="footer">
+        &copy; 2026 Sabor & Arte RESTAURANTE. Todos los derechos reservados. | <a href="#">Soporte Técnico</a>
+    </div>
+
+    <script>
+        const togglePassword = document.querySelector('#togglePassword');
+        const password = document.querySelector('#pwdInput');
+
+        togglePassword.addEventListener('click', function () {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+    </script>
+</body>
+</html>

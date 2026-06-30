@@ -1,0 +1,251 @@
+{% extends 'base_publico.html' %}
+
+{% block content %}
+<style>
+    .menu-container { 
+        display: flex; 
+        flex-direction: column; 
+        height: 100%; 
+    }
+    
+    .menu-header { 
+        background-color: #ffffff; 
+        border: 1px solid #e5e7eb; 
+        border-radius: 12px; 
+        padding: 20px 32px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; 
+        margin-bottom: 24px; 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+    }
+    
+    .menu-header h2 { 
+        font-size: 24px; 
+        font-weight: 700; 
+        color: #1f2937; 
+        margin: 0; 
+    }
+    
+    .menu-header p { 
+        font-size: 14px; 
+        color: #6b7280; 
+        margin-top: 4px; 
+        margin-bottom: 0; 
+    }
+    
+    .filter-form { 
+        display: flex; 
+        align-items: center; 
+        gap: 16px; 
+        margin: 0; 
+    }
+    
+    .search-box { 
+        position: relative; 
+        display: flex; 
+        align-items: center; 
+    }
+    
+    .search-box i { 
+        position: absolute; 
+        left: 12px; 
+        color: #9ca3af; 
+    }
+    
+    .search-input { 
+        padding-left: 36px; 
+        padding-right: 16px; 
+        border: 1px solid #d1d5db; 
+        border-radius: 8px; 
+        width: 240px; 
+        height: 40px; 
+        outline: none; 
+        font-size: 14px; 
+    }
+    
+    .tabs-categories { 
+        display: flex; 
+        border-bottom: 1px solid #e5e7eb; 
+        margin-bottom: 24px; 
+        gap: 24px; 
+    }
+    
+    .tab-link { 
+        padding-bottom: 12px; 
+        font-size: 14px; 
+        font-weight: 600; 
+        text-decoration: none; 
+        transition: all 0.2s; 
+        color: #6b7280; 
+    }
+    
+    .tab-active { 
+        border-bottom: 2px solid #c49a45; 
+        color: #c49a45; 
+    }
+    
+    .menu-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
+        gap: 24px; 
+    }
+    
+    .card-item { 
+        background-color: #ffffff; 
+        border-radius: 16px; 
+        border: 1px solid #f3f4f6; 
+        overflow: hidden; 
+        position: relative; 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+    }
+    
+    .card-img-box { 
+        height: 160px; 
+        background-color: #f3f4f6; 
+        position: relative; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+    }
+    
+    .card-img { 
+        width: 100%; 
+        height: 100%; 
+        object-fit: cover; 
+    }
+    
+    .card-body { 
+        padding: 20px; 
+    }
+    
+    .card-body h3 { 
+        font-size: 16px; 
+        font-weight: 700; 
+        color: #1f2937; 
+        margin: 0 0 6px 0; 
+    }
+    
+    .card-body p { 
+        color: #6b7280; 
+        font-size: 13px; 
+        margin: 0 0 16px 0; 
+        display: -webkit-box; 
+        -webkit-line-clamp: 2; 
+        line-clamp: 2; 
+        -webkit-box-orient: vertical; 
+        overflow: hidden; 
+        height: 38px; 
+        line-height: 1.4; 
+    }
+    
+    .card-footer { 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; 
+    }
+    
+    .card-precio { 
+        font-size: 18px; 
+        font-weight: 700; 
+        color: #c49a45; 
+    }
+</style>
+
+<div class="menu-container">
+    <header class="menu-header">
+        <div>
+            <h2>Nuestro Menú</h2>
+            <p>Disfruta de las mejores especialidades preparadas al momento.</p>
+        </div>
+
+        <form method="GET" class="filter-form" id="searchForm">
+            <input type="hidden" name="categoria" value="{{ categoria_activa }}">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" 
+                       id="menuSearchInput"
+                       name="search" 
+                       value="{{ search }}" 
+                       placeholder="Buscar platillo..." 
+                       class="search-input"
+                       oninput="buscarEnTiempoReal()">
+            </div>
+        </form>
+    </header>
+
+    <div style="flex-grow: 1;">
+        <div class="tabs-categories">
+            <a href="?categoria=Todos{% if search %}&search={{ search }}{% endif %}" 
+               class="tab-link {% if categoria_activa == 'Todos' %}tab-active{% endif %}">
+                Todos
+            </a>
+            {% for cat in categorias %}
+                <a href="?categoria={{ cat.nombre_categoria }}{% if search %}&search={{ search }}{% endif %}" 
+                   class="tab-link {% if categoria_activa == cat.nombre_categoria %}tab-active{% endif %}">
+                    {{ cat.nombre_categoria }}
+                </a>
+            {% endfor %}
+        </div>
+
+        <div class="menu-grid">
+            {% for item in platillos %}
+                <div class="card-item">
+                    <div class="card-img-box">
+                        {% if item.imagen %}
+                            <img src="{{ item.imagen.url }}" alt="{{ item.nombre_platillo }}" class="card-img">
+                        {% else %}
+                            <i class="fas fa-image" style="color: #9ca3af; font-size: 28px;"></i>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <h3>{{ item.nombre_platillo }}</h3>
+                        <p>{{ item.descripcion }}</p>
+                        <div class="card-footer">
+                            <span class="card-precio">${{ item.precio }}</span>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div style="grid-column: 1 / -1; text-align: center; color: #9ca3af; padding: 48px 0;">
+                    <i class="fas fa-utensils" style="font-size: 36px; margin-bottom: 12px;"></i>
+                    <p style="margin: 0;">No se encontraron platillos disponibles en esta categoría.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    let timer; 
+    function buscarEnTiempoReal() {
+        clearTimeout(timer);
+        const input = document.getElementById('menuSearchInput');
+        const form = document.getElementById('searchForm');
+
+        if (input.value.trim() === '') {
+            document.querySelectorAll('.tab-link').forEach(link => {
+                let url = new URL(link.href, window.location.origin);
+                url.searchParams.delete('search');
+                link.href = url.pathname + url.search;
+            });
+            form.submit();
+            return;
+        }
+
+        timer = setTimeout(() => {
+            form.submit();
+        }, 500);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const input = document.getElementById('menuSearchInput');
+        if (input && input.value !== '') {
+            input.focus();
+            const val = input.value;
+            input.value = '';
+            input.value = val;
+        }
+    });
+</script>
+{% endblock %}

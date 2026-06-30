@@ -1,0 +1,395 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+<style>
+    /* --- CONTENEDOR PRINCIPAL --- */
+    .mesas-wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* --- CABECERA Y ESTADÍSTICAS --- */
+    .mesas-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 25px;
+    }
+    
+    .header-title h1 {
+        font-size: 28px;
+        color: #111;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+        letter-spacing: -0.5px;
+    }
+
+    .stats-row {
+        display: flex;
+        gap: 15px;
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    /* Colores de Estado */
+    .bg-libre { background-color: #22c55e; }
+    .bg-ocupada { background-color: #ef4444; }
+    .bg-reservada { background-color: #c49a45; }
+
+    .text-libre { color: #22c55e; }
+    .text-ocupada { color: #ef4444; }
+    .text-reservada { color: #c49a45; }
+
+    /* --- BARRA DE ACCIONES (Filtros y Botón) --- */
+    .actions-row {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .filters-group {
+        display: flex;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .filter-btn {
+        padding: 10px 20px;
+        background: none;
+        border: none;
+        border-right: 1px solid #e2e8f0;
+        font-size: 14px;
+        color: #64748b;
+        cursor: pointer;
+        font-weight: 500;
+        transition: 0.3s;
+    }
+    .filter-btn:last-child { border-right: none; }
+    .filter-btn:hover { background-color: #f8fafc; color: #1e293b; }
+    
+    /* Filtro Activo */
+    .filter-btn.active {
+        background-color: #c49a45;
+        color: white;
+    }
+
+    .btn-nueva {
+        background-color: #c49a45;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.3s;
+        box-shadow: 0 4px 10px rgba(196, 154, 69, 0.2);
+    }
+    .btn-nueva:hover { background-color: #b0883b; }
+
+    /* --- ÁREA DE CONTENIDO (Grid + Sidebar) --- */
+    .content-layout {
+        display: flex;
+        gap: 25px;
+        align-items: flex-start;
+    }
+
+    /* Zona Izquierda: Grid de Mesas */
+    .mesas-grid-container {
+        flex: 1;
+        background: white;
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        border: 1px solid #f1f5f9;
+    }
+    
+    .grid-subtitle {
+        font-size: 11px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    .mesas-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 15px;
+    }
+
+    /* Tarjetas de Mesa */
+    .mesa-card {
+        border-radius: 14px;
+        padding: 20px 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: 2px solid transparent;
+    }
+    
+    .mesa-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.05); }
+
+    .mesa-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 16px;
+    }
+
+    .mesa-name { font-weight: 700; color: #1e293b; font-size: 15px; margin-bottom: 5px; }
+    
+    .mesa-status { 
+        display: flex; 
+        align-items: center; 
+        gap: 5px; 
+        font-size: 12px; 
+        font-weight: 600; 
+        margin-bottom: 4px;
+    }
+    
+    .mesa-capacity { font-size: 12px; color: #64748b; }
+
+    /* Variaciones por Estado */
+    .card-libre { background-color: #f0fdf4; }
+    .card-libre .mesa-icon { background-color: #dcfce7; color: #22c55e; }
+    
+    .card-ocupada { background-color: #fef2f2; }
+    .card-ocupada .mesa-icon { background-color: #fee2e2; color: #ef4444; }
+    
+    .card-reservada { background-color: #fefce8; }
+    .card-reservada .mesa-icon { background-color: #fef9c3; color: #c49a45; }
+
+    /* Estado Seleccionado (Borde rojo en tu diseño) */
+    .mesa-card.selected {
+        background-color: white;
+        border-color: #ef4444;
+        box-shadow: 0 10px 25px rgba(239, 68, 68, 0.15);
+    }
+
+    /* Zona Derecha: Panel de Detalles */
+    .mesa-sidebar {
+        width: 300px;
+        background: white;
+        border-radius: 16px;
+        padding: 30px 25px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        border: 1px solid #f1f5f9;
+        flex-shrink: 0;
+        position: sticky;
+        top: 25px;
+    }
+
+    .detail-group { margin-bottom: 25px; }
+    
+    .detail-label {
+        font-size: 11px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+        font-weight: 600;
+        display: block;
+    }
+
+    .detail-value {
+        font-size: 15px;
+        color: #1e293b;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .detail-value i { color: #64748b; font-size: 16px; width: 18px; text-align: center; }
+
+    .sidebar-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 40px;
+    }
+
+    .btn-action-primary {
+        background-color: #c49a45;
+        color: white;
+        padding: 14px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    .btn-action-primary:hover { background-color: #b0883b; }
+
+    .btn-action-secondary {
+        background-color: white;
+        color: #334155;
+        padding: 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    .btn-action-secondary:hover { background-color: #f8fafc; border-color: #94a3b8; }
+</style>
+
+<div class="mesas-wrapper">
+    
+    <div class="mesas-header">
+        <div class="header-title">
+            <h1>Estado de Mesas</h1>
+            <div class="stats-row">
+                <div class="stat-item"><span class="dot bg-libre"></span> 9 Libres</div>
+                <div class="stat-item"><span class="dot bg-ocupada"></span> 7 Ocupadas</div>
+                <div class="stat-item"><span class="dot bg-reservada"></span> 4 Reservadas</div>
+            </div>
+        </div>
+
+        <div class="actions-row">
+            <div class="filters-group">
+                <button class="filter-btn active">Todas</button>
+                <button class="filter-btn">Libres</button>
+                <button class="filter-btn">Ocupadas</button>
+                <button class="filter-btn">Reservadas</button>
+            </div>
+            <button class="btn-nueva"><i class="fa-solid fa-plus"></i> Nueva Mesa</button>
+        </div>
+    </div>
+
+    <div class="content-layout">
+        
+        <div class="mesas-grid-container">
+            <div class="grid-subtitle">PLANTA DEL RESTAURANTE</div>
+            
+            <div class="mesas-grid">
+                <div class="mesa-card card-libre">
+                    <div class="mesa-icon"><i class="fa-solid fa-user-group"></i></div>
+                    <div class="mesa-name">Mesa 1</div>
+                    <div class="mesa-status text-libre"><span class="dot bg-libre"></span> Libre</div>
+                    <div class="mesa-capacity">2 personas</div>
+                </div>
+
+                <div class="mesa-card card-ocupada selected">
+                    <div class="mesa-icon"><i class="fa-solid fa-user-group"></i></div>
+                    <div class="mesa-name">Mesa 2</div>
+                    <div class="mesa-status text-ocupada"><span class="dot bg-ocupada"></span> Ocupada</div>
+                    <div class="mesa-capacity">4 personas</div>
+                </div>
+
+                <div class="mesa-card card-reservada">
+                    <div class="mesa-icon"><i class="fa-solid fa-user-group"></i></div>
+                    <div class="mesa-name">Mesa 3</div>
+                    <div class="mesa-status text-reservada"><span class="dot bg-reservada"></span> Reservada</div>
+                    <div class="mesa-capacity">6 personas</div>
+                </div>
+
+                <div class="mesa-card card-libre">
+                    <div class="mesa-icon"><i class="fa-solid fa-user-group"></i></div>
+                    <div class="mesa-name">Mesa 4</div>
+                    <div class="mesa-status text-libre"><span class="dot bg-libre"></span> Libre</div>
+                    <div class="mesa-capacity">4 personas</div>
+                </div>
+
+                <div class="mesa-card card-ocupada">
+                    <div class="mesa-icon"><i class="fa-solid fa-user-group"></i></div>
+                    <div class="mesa-name">Mesa 5</div>
+                    <div class="mesa-status text-ocupada"><span class="dot bg-ocupada"></span> Ocupada</div>
+                    <div class="mesa-capacity">2 personas</div>
+                </div>
+                
+                <div class="mesa-card card-libre">
+                    <div class="mesa-icon"><i class="fa-solid fa-user-group"></i></div>
+                    <div class="mesa-name">Mesa 6</div>
+                    <div class="mesa-status text-libre"><span class="dot bg-libre"></span> Libre</div>
+                    <div class="mesa-capacity">4 personas</div>
+                </div>
+                <div class="mesa-card card-ocupada">
+                    <div class="mesa-icon"><i class="fa-solid fa-user-group"></i></div>
+                    <div class="mesa-name">Mesa 7</div>
+                    <div class="mesa-status text-ocupada"><span class="dot bg-ocupada"></span> Ocupada</div>
+                    <div class="mesa-capacity">8 personas</div>
+                </div>
+                <div class="mesa-card card-reservada">
+                    <div class="mesa-icon"><i class="fa-solid fa-user-group"></i></div>
+                    <div class="mesa-name">Mesa 8</div>
+                    <div class="mesa-status text-reservada"><span class="dot bg-reservada"></span> Reservada</div>
+                    <div class="mesa-capacity">4 personas</div>
+                </div>
+                <div class="mesa-card card-libre">
+                    <div class="mesa-icon"><i class="fa-solid fa-user-group"></i></div>
+                    <div class="mesa-name">Mesa 9</div>
+                    <div class="mesa-status text-libre"><span class="dot bg-libre"></span> Libre</div>
+                    <div class="mesa-capacity">2 personas</div>
+                </div>
+                <div class="mesa-card card-ocupada">
+                    <div class="mesa-icon"><i class="fa-solid fa-user-group"></i></div>
+                    <div class="mesa-name">Mesa 10</div>
+                    <div class="mesa-status text-ocupada"><span class="dot bg-ocupada"></span> Ocupada</div>
+                    <div class="mesa-capacity">4 personas</div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="mesa-sidebar">
+            <div class="detail-group">
+                <span class="detail-label">Capacidad</span>
+                <div class="detail-value"><i class="fa-solid fa-user-group"></i> 4 personas</div>
+            </div>
+
+            <div class="detail-group">
+                <span class="detail-label">Ubicación</span>
+                <div class="detail-value"><i class="fa-solid fa-location-dot"></i> Salón principal</div>
+            </div>
+
+            <div class="detail-group">
+                <span class="detail-label">Cliente / Grupo</span>
+                <div class="detail-value"><i class="fa-regular fa-user"></i> Roberto Vega</div>
+            </div>
+
+            <div class="detail-group">
+                <span class="detail-label">Mesero Asignado</span>
+                <div class="detail-value"><i class="fa-solid fa-chevron-right" style="font-size: 12px; width: 12px;"></i> María Fuentes</div>
+            </div>
+
+            <div class="sidebar-actions">
+                <button class="btn-action-primary">Cambiar Estado</button>
+                <button class="btn-action-secondary">Asignar Mesero</button>
+            </div>
+        </aside>
+
+    </div>
+</div>
+
+{% endblock %}

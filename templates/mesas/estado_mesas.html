@@ -1,0 +1,512 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+<style>
+    /* --- CONTENEDOR PRINCIPAL --- */
+    .mesas-wrapper { 
+        display: flex; 
+        flex-direction: column; 
+        height: 100%; 
+        font-family: 'Inter', sans-serif; 
+    }
+
+    /* --- CABECERA Y ESTADÍSTICAS --- */
+    .mesas-header { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        margin-bottom: 25px; 
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+    
+    .header-title h1 { 
+        font-size: 28px; 
+        color: #1e293b; 
+        font-weight: 700; 
+        margin: 0 0 8px 0; 
+        letter-spacing: -0.5px; 
+    }
+    
+    .stats-row { 
+        display: flex; 
+        gap: 15px; 
+        font-size: 14px; 
+        color: #64748b; 
+        font-weight: 500; 
+    }
+    
+    .stat-item { 
+        display: flex; 
+        align-items: center; 
+        gap: 6px; 
+        white-space: nowrap; 
+    }
+    
+    .dot { 
+        width: 8px; 
+        height: 8px; 
+        border-radius: 50%; 
+        display: inline-block; 
+    }
+    
+    .bg-libre { background-color: #22c55e; }
+    .bg-ocupada { background-color: #ef4444; }
+    .bg-reservada { background-color: #c49a45; }
+    
+    .text-libre { color: #22c55e; }
+    .text-ocupada { color: #ef4444; }
+    .text-reservada { color: #c49a45; }
+
+    /* --- BARRA DE ACCIONES (Filtros y Botón) --- */
+    .actions-row { 
+        display: flex; 
+        gap: 15px; 
+        align-items: center; 
+        flex-wrap: wrap;
+    }
+    
+    .filters-group { 
+        display: flex; 
+        background-color: #ffffff; 
+        border: 1px solid #e2e8f0; 
+        border-radius: 8px; 
+        overflow: hidden; 
+    }
+
+    .filter-label {
+        padding: 10px 15px;
+        font-size: 13px;
+        color: #94a3b8;
+        font-weight: 600;
+        background-color: #f8fafc;
+        border-right: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .filter-link { 
+        padding: 10px 20px; 
+        text-decoration: none; 
+        font-size: 14px; 
+        color: #64748b; 
+        font-weight: 500; 
+        transition: 0.3s; 
+        border-right: 1px solid #e2e8f0; 
+    }
+    
+    .filter-link:last-child { border-right: none; }
+    .filter-link:hover { background-color: #f8fafc; color: #1e293b; }
+    .filter-link.active { background-color: #c49a45; color: white; }
+
+    /* 🔥 Botón para ir a gestionar zonas */
+    .btn-manage-zonas {
+        background: none;
+        border: none;
+        color: #c49a45;
+        cursor: pointer;
+        font-size: 15px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+    }
+    .btn-manage-zonas:hover {
+        background-color: #f1f5f9;
+        color: #b0883b;
+    }
+    
+    /* Selector desplegable de zonas */
+    .select-zona {
+        border: none;
+        background: transparent;
+        font-size: 14px;
+        color: #1e293b;
+        font-weight: 500;
+        outline: none;
+        cursor: pointer;
+        padding: 0 5px;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .btn-nueva { 
+        background-color: #c49a45; 
+        color: white; 
+        padding: 10px 20px; 
+        border: none; 
+        border-radius: 8px; 
+        font-size: 14px; 
+        font-weight: 600; 
+        cursor: pointer; 
+        display: flex; 
+        align-items: center; 
+        gap: 8px; 
+        transition: 0.3s; 
+        box-shadow: 0 4px 10px rgba(196, 154, 69, 0.2); 
+        text-decoration: none; 
+    }
+    .btn-nueva:hover { background-color: #b0883b; }
+
+    /* --- GRID DE MESAS Y CONTENIDO --- */
+    .content-layout { 
+        display: flex; 
+        gap: 25px; 
+        align-items: flex-start; 
+    }
+    
+    .mesas-grid-container { 
+        flex: 1; 
+        background: white; 
+        border-radius: 16px; 
+        padding: 25px; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02); 
+        border: 1px solid #f1f5f9; 
+    }
+    
+    .grid-subtitle { 
+        font-size: 11px; 
+        color: #94a3b8; 
+        text-transform: uppercase; 
+        letter-spacing: 1.5px; 
+        margin-bottom: 20px; 
+        font-weight: 600; 
+    }
+    
+    .mesas-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
+        gap: 15px; 
+    }
+    
+    .mesa-card { 
+        border-radius: 14px; 
+        padding: 20px 15px; 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        text-align: center; 
+        cursor: pointer; 
+        transition: all 0.2s ease; 
+        border: 2px solid transparent; 
+    }
+    
+    .mesa-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.05); }
+    
+    .mesa-icon { 
+        width: 40px; 
+        height: 40px; 
+        border-radius: 50%; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        margin-bottom: 12px; 
+        font-size: 16px; 
+    }
+    
+    .mesa-name { font-weight: 700; color: #1e293b; font-size: 15px; margin-bottom: 5px; }
+    .mesa-status { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+    .mesa-capacity { font-size: 12px; color: #64748b; }
+
+    .card-libre { background-color: #f0fdf4; }
+    .card-libre .mesa-icon { background-color: #dcfce7; color: #22c55e; }
+    
+    .card-ocupada { background-color: #fef2f2; }
+    .card-ocupada .mesa-icon { background-color: #fee2e2; color: #ef4444; }
+    
+    .card-reservada { background-color: #fefce8; }
+    .card-reservada .mesa-icon { background-color: #fef9c3; color: #c49a45; }
+
+    .mesa-card.selected { 
+        background-color: #ffffff; 
+        border-color: #c49a45; 
+        box-shadow: 0 10px 25px rgba(196, 154, 69, 0.15); 
+    }
+
+    /* --- PANEL DE DETALLES LATERAL --- */
+    .mesa-sidebar { 
+        width: 300px; 
+        background: white; 
+        border-radius: 16px; 
+        padding: 30px 25px; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02); 
+        border: 1px solid #f1f5f9; 
+        flex-shrink: 0; 
+        position: sticky; 
+        top: 25px; 
+    }
+    
+    .sidebar-title { 
+        font-size: 18px; 
+        font-weight: 700; 
+        color: #1e293b; 
+        margin: 0 0 20px 0; 
+        border-bottom: 1px solid #f1f5f9; 
+        padding-bottom: 10px; 
+    }
+    
+    .detail-group { margin-bottom: 22px; }
+    
+    .detail-label { 
+        font-size: 11px; 
+        color: #94a3b8; 
+        text-transform: uppercase; 
+        letter-spacing: 1px; 
+        margin-bottom: 6px; 
+        font-weight: 600; 
+        display: block; 
+    }
+    
+    .detail-value { 
+        font-size: 14px; 
+        color: #1e293b; 
+        font-weight: 500; 
+        display: flex; 
+        align-items: center; 
+        gap: 10px; 
+    }
+    
+    .detail-value i { color: #64748b; font-size: 15px; width: 18px; text-align: center; }
+
+    .sidebar-actions { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 12px; 
+        margin-top: 30px; 
+    }
+    
+    .btn-action-primary { 
+        background-color: #c49a45; 
+        color: white; 
+        padding: 12px; 
+        border: none; 
+        border-radius: 8px; 
+        font-size: 14px; 
+        font-weight: 600; 
+        cursor: pointer; 
+        transition: 0.3s; 
+        text-decoration: none; 
+        text-align: center; 
+        display: block; 
+    }
+    .btn-action-primary:hover { background-color: #b0883b; }
+    
+    .btn-action-secondary { 
+        background-color: white; 
+        color: #334155; 
+        padding: 12px; 
+        border: 1px solid #cbd5e1; 
+        border-radius: 8px; 
+        font-size: 14px; 
+        font-weight: 600; 
+        cursor: pointer; 
+        transition: 0.3s; 
+        text-decoration: none; 
+        text-align: center; 
+        display: block; 
+    }
+    .btn-action-secondary:hover { background-color: #f8fafc; border-color: #94a3b8; }
+</style>
+
+<div class="mesas-wrapper">
+    
+    <div class="mesas-header">
+        <div class="header-title">
+            <h1>Estado de Mesas</h1>
+            <div class="stats-row">
+                <div class="stat-item"><span class="dot bg-libre"></span> <strong>{{ total_libres }}</strong> Libres</div>
+                <div class="stat-item"><span class="dot bg-ocupada"></span> <strong>{{ total_ocupadas }}</strong> Ocupadas</div>
+                <div class="stat-item"><span class="dot bg-reservada"></span> <strong>{{ total_reservadas }}</strong> Reservadas</div>
+            </div>
+        </div>
+
+        <div class="actions-row">
+            <div class="filters-group">
+                <div class="filter-label"><i class="fa-solid fa-bell-concierge"></i> Estado</div>
+                <a href="?estado=todas&ubicacion={{ filtro_ubicacion }}" class="filter-link {% if filtro_actual == 'todas' %}active{% endif %}">Todas</a>
+                <a href="?estado=libres&ubicacion={{ filtro_ubicacion }}" class="filter-link {% if filtro_actual == 'libres' %}active{% endif %}">Libres</a>
+                <a href="?estado=ocupadas&ubicacion={{ filtro_ubicacion }}" class="filter-link {% if filtro_actual == 'ocupadas' %}active{% endif %}">Ocupadas</a>
+                <a href="?estado=reservadas&ubicacion={{ filtro_ubicacion }}" class="filter-link {% if filtro_actual == 'reservadas' %}active{% endif %}">Reservadas</a>
+            </div>
+
+            <div class="filters-group" style="padding-right: 5px;">
+                <div class="filter-label" style="border-right: none; padding-right: 5px;">
+                    <i class="fa-solid fa-map-location-dot"></i> Zona:
+                </div>
+                
+                <div style="display: flex; align-items: center; padding: 0 10px;">
+                    <select id="zonaSelect" class="select-zona">
+                        <option value="todas" {% if filtro_ubicacion == 'todas' %}selected{% endif %}>Todas las Zonas</option>
+                        {% for zona in ubicaciones %}
+                            <option value="{{ zona.id_zona }}" {% if filtro_ubicacion == zona.id_zona|stringformat:'s' %}selected{% endif %}>
+                                {{ zona.nombre_zona }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div style="display: flex; align-items: center; border-left: 1px solid #e2e8f0; padding-left: 5px;">
+                    <a href="{% url 'listar_zonas' %}" class="btn-manage-zonas" title="Gestionar Zonas">
+                        <i class="fa-solid fa-gear"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <a href="{% url 'crear_mesa' %}" class="btn-nueva"><i class="fa-solid fa-plus"></i> Nueva Mesa</a>
+        </div>
+    </div>
+
+    <div class="content-layout">
+        
+        <div class="mesas-grid-container">
+            <div class="grid-subtitle">Planta del Restaurante</div>
+            
+            <div class="mesas-grid">
+                {% for mesa in mesas %}
+                    <div class="mesa-card card-{{ mesa.estado }}" 
+                         data-id="{{ mesa.id }}"
+                         data-numero="{{ mesa.numero }}"
+                         data-capacidad="{{ mesa.capacidad }} personas"
+                         data-ubicacion="{% if mesa.ubicacion %}{{ mesa.ubicacion.nombre_zona }}{% else %}Sin Zona{% endif %}"
+                         data-cliente="{% if mesa.cliente_nombre %}{{ mesa.cliente_nombre }}{% else %}Ninguno{% endif %}"
+                         data-mesero="{% if mesa.mesero_assigned %}{{ mesa.mesero_assigned.get_full_name }}{% else %}Sin asignar{% endif %}">
+                        
+                        <div class="mesa-icon"><i class="fa-solid fa-user-group"></i></div>
+                        <div class="mesa-name">Mesa {{ mesa.numero }}</div>
+                        <div class="mesa-status text-{{ mesa.estado }}">
+                            <span class="dot bg-{{ mesa.estado }}"></span> {{ mesa.get_estado_display }}
+                        </div>
+                        <div class="mesa-capacity">{{ mesa.capacidad }} personas</div>
+                    </div>
+                {% empty %}
+                    <div style="grid-column: span 5; text-align: center; color: #94a3b8; padding: 40px; width: 100%;">
+                        <i class="fa-solid fa-inbox" style="font-size: 32px; margin-bottom: 10px; color: #cbd5e1;"></i>
+                        <p style="margin: 0; font-size: 15px;">No hay mesas registradas con este criterio.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <aside class="mesa-sidebar">
+            <h2 class="sidebar-title" id="side-mesa-title">Selecciona una mesa</h2>
+            
+            <div class="detail-group">
+                <span class="detail-label">Capacidad</span>
+                <div class="detail-value"><i class="fa-solid fa-user-group"></i> <span id="side-capacidad">-</span></div>
+            </div>
+
+            <div class="detail-group">
+                <span class="detail-label">Ubicación</span>
+                <div class="detail-value"><i class="fa-solid fa-location-dot"></i> <span id="side-ubicacion">-</span></div>
+            </div>
+
+            <div class="detail-group">
+                <span class="detail-label">Cliente / Grupo</span>
+                <div class="detail-value"><i class="fa-regular fa-user"></i> <span id="side-cliente">-</span></div>
+            </div>
+
+            <div class="detail-group">
+                <span class="detail-label">Mesero Asignado</span>
+                <div class="detail-value"><i class="fa-solid fa-chevron-right" style="font-size: 11px; width: 14px;"></i> <span id="side-mesero">-</span></div>
+            </div>
+
+            <div class="sidebar-actions">
+                <a href="#" id="btn-cambiar-estado" class="btn-action-primary">Cambiar Estado</a>
+                <a href="#" id="btn-asignar-mesero" class="btn-action-secondary">Asignar Mesero</a>
+                
+                <div style="display: flex; gap: 10px; margin-top: 5px;">
+                    <a href="#" id="btn-editar-mesa" class="btn-action-secondary" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 13px; color: #475569;">
+                        <i class="fa-solid fa-pen"></i> Editar
+                    </a>
+                    <a href="#" id="btn-eliminar-mesa" class="btn-action-secondary" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 13px; color: #ef4444; border-color: #fca5a5; background-color: #fef2f2;">
+                        <i class="fa-solid fa-trash"></i> Eliminar
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // 🔥 NUEVO SCRIPT: Envía el filtro automáticamente al cambiar de Zona en el select
+        const zonaSelect = document.getElementById('zonaSelect');
+        if (zonaSelect) {
+            zonaSelect.addEventListener('change', function() {
+                const ubicacion = this.value;
+                const estadoActual = '{{ filtro_actual }}'; // Mantiene el filtro de estado actual
+                window.location.href = `?estado=${estadoActual}&ubicacion=${ubicacion}`;
+            });
+        }
+
+        // --- Lógica del panel lateral ---
+        const sideTitle = document.getElementById('side-mesa-title');
+        const sideCapacidad = document.getElementById('side-capacidad');
+        const sideUbicacion = document.getElementById('side-ubicacion');
+        const sideCliente = document.getElementById('side-cliente');
+        const sideMesero = document.getElementById('side-mesero');
+        
+        const btnCambiarEstado = document.getElementById('btn-cambiar-estado');
+        const btnAsignarMesero = document.getElementById('btn-asignar-mesero');
+        const btnEditar = document.getElementById('btn-editar-mesa');
+        const btnEliminar = document.getElementById('btn-eliminar-mesa');
+
+        function clearSelection() {
+            document.querySelectorAll('.mesa-card.selected').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            sideTitle.innerText = "Selecciona una mesa";
+            sideCapacidad.innerText = "-";
+            sideUbicacion.innerText = "-";
+            sideCliente.innerText = "-";
+            sideMesero.innerText = "-";
+            
+            btnCambiarEstado.href = "#";
+            btnAsignarMesero.href = "#";
+            btnEditar.href = "#";
+            btnEliminar.href = "#";
+        }
+
+        document.addEventListener('click', function(event) {
+            const clickedCard = event.target.closest('.mesa-card');
+
+            if (clickedCard) {
+                clearSelection();
+                clickedCard.classList.add('selected');
+
+                sideTitle.innerText = "Detalles de Mesa " + clickedCard.dataset.numero;
+                sideCapacidad.innerText = clickedCard.dataset.capacidad;
+                sideUbicacion.innerText = clickedCard.dataset.ubicacion;
+                sideCliente.innerText = clickedCard.dataset.cliente;
+                sideMesero.innerText = clickedCard.dataset.mesero;
+                
+                const mesaId = clickedCard.dataset.id;
+                btnCambiarEstado.href = `/mesas/cambiar-estado/${mesaId}/`;
+                btnAsignarMesero.href = `/mesas/asignar-mesero/${mesaId}/`;
+                btnEditar.href = `/mesas/editar/${mesaId}/`;
+                btnEliminar.href = `/mesas/eliminar/${mesaId}/`;
+
+            } else {
+                const clickedInsideSidebar = event.target.closest('.mesa-sidebar');
+                const clickedInsideHeader = event.target.closest('.mesas-header');
+
+                // Si hacen clic fuera de las tarjetas, panel lateral o cabecera, se limpia la selección
+                if (!clickedInsideSidebar && !clickedInsideHeader) {
+                    clearSelection();
+                }
+            }
+        });
+
+        // Selecciona la primera mesa por defecto si existen
+        const cards = document.querySelectorAll('.mesa-card');
+        if(cards.length > 0) {
+            cards[0].click();
+        }
+    });
+</script>
+{% endblock %}

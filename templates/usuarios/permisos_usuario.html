@@ -1,0 +1,143 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+<style>
+    /* Contenedor del Formulario */
+    .form-card { 
+        background: rgba(255, 255, 255, 0.95); 
+        border-radius: 16px; 
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0,0,0,0.02); 
+        padding: 35px; 
+        max-width: 650px; 
+        margin-top: 25px; 
+        border: 1px solid rgba(240, 240, 240, 0.8);
+    }
+    
+    .permission-title { margin: 0; font-size: 24px; color: #1e293b; font-weight: 700; letter-spacing: -0.5px; }
+    .permission-subtitle { color: #64748b; margin-top: 8px; font-size: 15px; margin-bottom: 30px; }
+    
+    .permission-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px; }
+    
+    /* Filas de Permisos */
+    .permission-item { 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between;
+        padding: 18px 20px; 
+        border-radius: 12px; 
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0; 
+        transition: all 0.3s ease;
+    }
+    .permission-item:hover { 
+        background-color: #ffffff; 
+        border-color: #c49a45;
+        box-shadow: 0 4px 12px rgba(196, 154, 69, 0.08);
+        transform: translateY(-1px);
+    }
+    
+    /* Información del Permiso */
+    .permission-info { display: flex; flex-direction: column; gap: 4px; justify-content: center; }
+    .permission-name { font-weight: 600; color: #334155; font-size: 15px; display: flex; align-items: center; gap: 10px;}
+    
+    /* INTERRUPTOR (TOGGLE SWITCH) */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 48px;
+        height: 26px;
+        flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #cbd5e1;
+        transition: .3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        border-radius: 26px;
+    }
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        border-radius: 50%;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .toggle-switch input:checked + .slider { background-color: #c49a45; }
+    .toggle-switch input:focus + .slider { box-shadow: 0 0 1px #c49a45; }
+    .toggle-switch input:checked + .slider:before { transform: translateX(22px); }
+    
+    /* Botones */
+    .btn-container { display: flex; gap: 15px; border-top: 1px solid #f1f5f9; padding-top: 25px; }
+    .btn-gold { background-color: #c49a45; color: white; padding: 12px 28px; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 600; border: none; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 10px rgba(196, 154, 69, 0.2); }
+    .btn-gold:hover { background-color: #b0883b; box-shadow: 0 6px 15px rgba(196, 154, 69, 0.3); transform: translateY(-1px); }
+    
+    .btn-cancel { background-color: #f1f5f9; color: #475569; padding: 12px 28px; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 600; transition: 0.3s; display: inline-block; }
+    .btn-cancel:hover { background-color: #e2e8f0; color: #1e293b; }
+    
+    /* Iconos FontAwesome */
+    .icon-module { width: 20px; text-align: center; color: #64748b; font-size: 16px; }
+</style>
+
+<div class="header-panel">
+    <h1 class="permission-title">Asignación de Accesos a Módulos</h1>
+    <p class="permission-subtitle">Configurando los accesos del sistema para: <strong style="color: #c49a45;">{{ usuario.username }}</strong> — <span style="text-transform: capitalize;">{{ usuario.get_rol_display }}</span></p>
+</div>
+
+<div class="form-card">
+    <form method="POST">
+        {% csrf_token %}
+        
+        <div class="permission-list">
+            {% for permiso in permisos %}
+                <div class="permission-item">
+                    <div class="permission-info">
+                        <span class="permission-name">
+                            {% if permiso.codename == 'modulo_dashboard' %}
+                                <i class="fa-solid fa-border-all icon-module"></i> Acceso al Dashboard
+                            {% elif permiso.codename == 'modulo_menu' %}
+                                <i class="fa-solid fa-utensils icon-module"></i> Gestión de Menú
+                            {% elif permiso.codename == 'modulo_mesas' %}
+                                <i class="fa-solid fa-table-cells icon-module"></i> Control de Mesas
+                            {% elif permiso.codename == 'modulo_reservas' %}
+                                <i class="fa-regular fa-calendar-check icon-module"></i> Gestión de Reservas
+                            {% elif permiso.codename == 'modulo_pedidos' %}
+                                <i class="fa-solid fa-bag-shopping icon-module"></i> Toma de Pedidos
+                            {% elif permiso.codename == 'modulo_cocina' %}
+                                <i class="fa-solid fa-fire-burner icon-module"></i> Pantalla de Cocina
+                            {% elif permiso.codename == 'modulo_facturacion' %}
+                                <i class="fa-solid fa-file-invoice-dollar icon-module"></i> Facturación y Caja
+                            {% elif permiso.codename == 'modulo_reportes' %}
+                                <i class="fa-solid fa-chart-column icon-module"></i> Reportes Financieros
+                            {% else %}
+                                <i class="fa-solid fa-puzzle-piece icon-module"></i> {{ permiso.name }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <label class="toggle-switch" title="Activar/Desactivar Acceso">
+                        <input type="checkbox" name="permisos" value="{{ permiso.id }}"
+                            {% if permiso.id in usuario_permisos_ids %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            {% empty %}
+                <p style="color: #94a3b8; font-size: 15px; text-align: center; padding: 30px;">No se encontraron módulos registrados.</p>
+            {% endfor %}
+        </div>
+
+        <div class="btn-container">
+            <button type="submit" class="btn-gold">Guardar Configuración</button>
+            <a href="{% url 'lista_usuarios' %}" class="btn-cancel">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

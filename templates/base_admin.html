@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sabor y Arte - Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR OSCURO --- */
+        .sidebar {
+            width: 260px;
+            background-color: #18181b;
+            color: #a1a1aa;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #27272a;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 30px 24px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 1px solid #27272a;
+            margin-bottom: 20px;
+        }
+        
+        .logo-box {
+            background-color: #c49a45;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #18181b;
+            font-size: 18px;
+        }
+
+        .brand-info { display: flex; flex-direction: column; }
+        .brand-name { color: #c49a45; font-weight: 600; font-size: 18px; letter-spacing: 0.5px; }
+        .brand-type { color: #71717a; font-size: 11px; letter-spacing: 1px; font-weight: 500; }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            padding: 0 15px;
+            gap: 6px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 18px;
+            text-decoration: none;
+            color: #a1a1aa;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .nav-item i { font-size: 18px; width: 20px; text-align: center; }
+
+        .nav-item:hover {
+            background-color: #27272a;
+            color: #e4e4e7;
+        }
+
+        .nav-item.active {
+            background-color: #2d2a23;
+            color: #c49a45;
+        }
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 18px;
+            background-color: #c49a45;
+            border-radius: 4px;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-box">
+                <i class="fa-solid fa-utensils"></i>
+            </div>
+            <div class="brand-info">
+                <span class="brand-name">Sabor y Arte</span>
+                <span class="brand-type">ADMIN PANEL</span>
+            </div>
+        </div>
+
+        <div class="nav-menu">
+            <a href="{% url 'dashboard' %}" class="nav-item {% if request.path == '/' or request.path == '/dashboard/' %}active{% endif %}">
+                <i class="fa-solid fa-border-all"></i> Dashboard
+            </a>
+            
+            <a href="{% url 'lista_usuarios' %}"
+                class="nav-item {% if '/usuarios/' in request.path %}active{% endif %}">
+                <i class="fa-regular fa-user"></i>
+                Usuarios
+            </a>
+            
+            <a href="{% url 'menu:menu_gestion' %}"
+                class="nav-item {% if '/menu/' in request.path %}active{% endif %}">
+                <i class="fa-solid fa-utensils"></i>
+                Menú
+            </a>
+
+            <a href="{% url 'estado_mesas' %}" 
+                class="nav-item {% if '/mesas/' in request.path %}active{% endif %}">
+                <i class="fa-solid fa-table-cells"></i> 
+                Mesas
+            </a>
+
+            <a href="{% url 'reservas:lista' %}"
+                class="nav-item {% if '/reservas/' in request.path %}active{% endif %}">
+                <i class="fa-regular fa-calendar-check"></i>
+                Reservas
+            </a>
+
+            <a href="{% url 'pedidos:pedido_pantalla' %}" 
+                class="nav-item {% if '/pedidos/' in request.path %}active{% endif %}">
+                <i class="fa-solid fa-bag-shopping"></i> Pedidos
+            </a>
+            <a href="{% url 'cocina:tablero_cocina' %}" 
+                class="nav-item {% if '/cocina/' in request.path %}active{% endif %}">
+                <i class="fa-solid fa-fire-burner"></i> Cocina
+            </a>
+            <a href="{% url 'listar_pedidos_por_facturar' %}" class="nav-item {% if '/facturacion/' in request.path %}active{% endif %}">
+                <i class="fa-solid fa-file-invoice-dollar"></i> Facturación
+            </a>
+            
+            <a href="{% url 'reportes:dashboard' %}" 
+                class="nav-item {% if '/reportes/' in request.path %}active{% endif %}">
+                <i class="fa-solid fa-chart-column"></i> Reportes
+            </a>
+            
+            <div style="margin-top: auto; padding-bottom: 20px;">
+                <a href="{% url 'logout' %}" class="nav-item" style="color: #ef4444;">
+                    <i class="fa-solid fa-power-off"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+</body>
+</html>

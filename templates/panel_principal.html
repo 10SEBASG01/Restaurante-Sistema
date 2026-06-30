@@ -1,0 +1,445 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+<style>
+    /* =========================================
+       ESTILOS DEL DASHBOARD INTERACTIVO
+       ========================================= */
+    .dashboard-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        color: #1f2937;
+        padding-bottom: 30px;
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* --- ENCABEZADO --- */
+    .dash-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 8px;
+    }
+    .dash-title h1 {
+        font-size: 22px;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        color: #111827;
+    }
+    .dash-title p {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+    }
+    .dash-actions {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+    }
+    
+    /* --- CÁPSULA TIPO BADGE INFO --- */
+    .badge-info {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 8px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: #4b5563;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .badge-info.user-badge {
+        padding: 6px 16px 6px 6px;
+    }
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        background: #fdf6e3;
+        color: #c49a45;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+    }
+
+    /* --- MICROINTERACCIONES TÁCTILES --- */
+    .btn-interactive {
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        user-select: none;
+    }
+    .btn-interactive:hover {
+        background-color: #f9fafb;
+        border-color: #d1d5db;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+    }
+
+    /* --- TARJETAS KPI --- */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+    .kpi-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+    }
+    .kpi-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 12px 20px rgba(0,0,0,0.06);
+    }
+    .kpi-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        color: #6b7280;
+        margin-bottom: 12px;
+    }
+    .kpi-line {
+        width: 24px;
+        height: 4px;
+        border-radius: 2px;
+    }
+    .kpi-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 8px;
+    }
+    .kpi-trend {
+        font-size: 12px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .trend-up { color: #10b981; }
+
+    /* --- CONTENEDORES / PANELES --- */
+    .content-grid {
+        display: grid;
+        grid-template-columns: 2.3fr 1fr;
+        gap: 20px;
+    }
+    .card-panel {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-panel:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px rgba(0,0,0,0.04);
+    }
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 24px;
+    }
+    .panel-title {
+        font-size: 15px;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+    }
+    .panel-subtitle {
+        font-size: 12px;
+        color: #6b7280;
+        margin: 0;
+    }
+    .btn-outline {
+        background: #fff;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 12px;
+        color: #4b5563;
+        cursor: pointer;
+    }
+
+    /* --- LISTA TOP PRODUCTOS --- */
+    .top-list { display: flex; flex-direction: column; gap: 16px; }
+    .top-item { display: flex; align-items: center; gap: 12px; }
+    .top-rank { width: 20px; height: 20px; background: #fdf6e3; color: #c49a45; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .top-img { width: 40px; height: 40px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; overflow: hidden; }
+    .top-img img { width: 100%; height: 100%; object-fit: cover; }
+    .top-info { flex-grow: 1; }
+    .top-name { font-size: 13px; font-weight: 600; margin: 0; color: #111827; }
+    .top-sales { font-size: 11px; color: #6b7280; margin: 2px 0 0 0; }
+    .top-price { font-size: 13px; font-weight: 700; color: #111827; }
+
+    /* --- LISTA ACTIVIDAD RECIENTE --- */
+    .activity-list { display: flex; flex-direction: column; gap: 20px; }
+    .activity-item { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+    .activity-left { display: flex; align-items: center; gap: 12px; color: #374151; }
+    .activity-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .activity-time { color: #9ca3af; font-size: 12px; }
+
+    /* --- GRÁFICO DONA --- */
+    .donut-container { display: flex; flex-direction: column; align-items: center; gap: 24px; margin-top: 10px; }
+    .donut-legend { display: flex; gap: 16px; font-size: 12px; color: #6b7280; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+</style>
+
+<div class="dashboard-wrapper">
+    
+    <header class="dash-header">
+        <div class="dash-title">
+            <h1>Resumen General — Panel de Administración</h1>
+            <p>Visión ejecutiva del restaurante · Control diario</p>
+        </div>
+        <div class="dash-actions">
+            
+            <form method="GET" style="margin: 0;">
+                <div class="badge-info btn-interactive" onclick="document.getElementById('input_fecha_secreta').showPicker();" style="cursor: pointer;" title="Viajar a otro día">
+                    <i class="fa-regular fa-calendar" style="color: #9ca3af;"></i>
+                    <span>{{ fecha_actual|date:"l, j \d\e F \d\e Y" }}</span>
+                    <input type="date" id="input_fecha_secreta" name="fecha" value="{{ fecha_actual|date:'Y-m-d' }}" 
+                           style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;"
+                           onchange="this.form.submit()">
+                </div>
+            </form>
+
+            <div class="badge-info user-badge">
+                <div class="user-avatar">
+                    <i class="fa-regular fa-user"></i>
+                </div>
+                <div style="line-height: 1.2;">
+                    <strong style="display: block; color: #111827; font-size: 13px;">{{ request.user.get_full_name|default:request.user.username }}</strong>
+                    <span style="font-size: 11px; color: #6b7280;">{% if request.user.is_superuser %}Admin{% else %}Personal{% endif %}</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-head">
+                <span>Ventas del Día</span>
+                <div class="kpi-line" style="background: #c49a45;"></div>
+            </div>
+            <div class="kpi-value">${{ ventas_hoy|floatformat:2 }}</div>
+            <div class="kpi-trend trend-up">
+                <i class="fa-solid fa-arrow-trend-up"></i> En fecha seleccionada
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-head">
+                <span>Pedidos Activos</span>
+                <div class="kpi-line" style="background: #3b82f6;"></div>
+            </div>
+            <div class="kpi-value">{{ pedidos_activos }}</div>
+            <div class="kpi-trend trend-up">
+                <i class="fa-solid fa-bolt"></i> En cocina (En vivo)
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-head">
+                <span>Reservas del Día</span>
+                <div class="kpi-line" style="background: #8b5cf6;"></div>
+            </div>
+            <div class="kpi-value">{{ reservas_hoy }}</div>
+            <div class="kpi-trend trend-up">
+                <i class="fa-solid fa-calendar-check"></i> Para fecha seleccionada
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-head">
+                <span>Mesas Ocupadas</span>
+                <div class="kpi-line" style="background: #22c55e;"></div>
+            </div>
+            <div class="kpi-value">{{ mesas_ocupadas }} / {{ mesas_totales }}</div>
+            <div class="kpi-trend trend-up">
+                <i class="fa-solid fa-chair"></i> En uso ahora (En vivo)
+            </div>
+        </div>
+    </div>
+
+    <div class="content-grid">
+        <div class="card-panel">
+            <div class="panel-header">
+                <div>
+                    <h3 class="panel-title">Ventas — Últimos 7 días</h3>
+                    <p class="panel-subtitle">Total acumulado previo al {{ fecha_actual|date:"d/m/Y" }}: ${{ ventas_7_dias|floatformat:2 }}</p>
+                </div>
+                <button class="btn-outline btn-interactive" onclick="location.href='?'"><i class="fa-solid fa-rotate-right"></i> Volver a Hoy</button>
+            </div>
+            
+            <div style="height: 220px; width: 100%; position: relative; margin-top: 20px;">
+                <canvas id="ventasChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card-panel">
+            <div class="panel-header" style="margin-bottom: 24px;">
+                <div>
+                    <h3 class="panel-title">Top 5 Productos</h3>
+                </div>
+            </div>
+            <div class="top-list">
+                {% for prod in top_productos %}
+                <div class="top-item">
+                    <div class="top-rank" {% if not forloop.first %}style="background: #f3f4f6; color: #6b7280;"{% endif %}>{{ forloop.counter }}</div>
+                    <div class="top-img">
+                        {% if prod.id_platillo__imagen %}
+                            <img src="/media/{{ prod.id_platillo__imagen }}" alt="plato">
+                        {% else %}
+                            🍽️
+                        {% endif %}
+                    </div>
+                    <div class="top-info">
+                        <p class="top-name">{{ prod.id_platillo__nombre_platillo }}</p>
+                        <p class="top-sales">{{ prod.cantidad_total }} pedidos</p>
+                    </div>
+                    <div class="top-price">${{ prod.recaudado|floatformat:2 }}</div>
+                </div>
+                {% empty %}
+                <p style="font-size: 13px; color: #6b7280;">No hay ventas registradas.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="content-grid">
+        <div class="card-panel">
+            <div class="panel-header">
+                <div>
+                    <h3 class="panel-title">Actividad Reciente — Auditoría</h3>
+                    <p class="panel-subtitle">Últimos 5 movimientos del sistema</p>
+                </div>
+                <a href="{% url 'auditoria_lista' %}" class="btn-outline btn-interactive" style="text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                    Ver historial <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div class="activity-list">
+                {% for actividad in actividad_reciente %}
+                <div class="activity-item">
+                    <div class="activity-left">
+                        <div class="activity-dot" style="background: {% if actividad.modulo == 'menu' %}#c49a45{% elif actividad.modulo == 'pedidos' %}#3b82f6{% elif actividad.modulo == 'reservas' %}#22c55e{% else %}#8b5cf6{% endif %};"></div>
+                        <span>
+                            <strong>
+                                {% if actividad.id_usuario %}
+                                    {{ actividad.id_usuario.get_full_name|default:actividad.id_usuario.username }}
+                                {% else %}
+                                    Sistema
+                                {% endif %}
+                            </strong> 
+                            {{ actividad.accion }} · {{ actividad.detalle }}
+                        </span>
+                    </div>
+                    <div class="activity-time">{{ actividad.fecha_hora|date:"H:i" }}</div>
+                </div>
+                {% if not forloop.last %}<div style="height: 1px; background: #f3f4f6; width: 100%;"></div>{% endif %}
+                {% empty %}
+                <div class="activity-item"><span style="color: #6b7280;">No hay actividad reciente registrada.</span></div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card-panel">
+            <div class="panel-header">
+                <div>
+                    <h3 class="panel-title">Estado de Mesas (En Vivo)</h3>
+                    <p class="panel-subtitle">{{ mesas_totales }} mesas totales instaladas</p>
+                </div>
+            </div>
+            
+            <div class="donut-container">
+                <div style="width: 180px; height: 180px; position: relative;">
+                    <canvas id="mesasChart"></canvas>
+                </div>
+                
+                <div class="donut-legend">
+                    <div class="legend-item">
+                        <div class="activity-dot" style="background: #22c55e;"></div> Libres
+                    </div>
+                    <div class="legend-item">
+                        <div class="activity-dot" style="background: #ef4444;"></div> Ocupadas
+                    </div>
+                    <div class="legend-item">
+                        <div class="activity-dot" style="background: #c49a45;"></div> Reservadas
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctxVentas = document.getElementById('ventasChart').getContext('2d');
+        const labelsX = {{ chart_labels|safe }};
+        const dataY = {{ chart_data|safe }};
+
+        new Chart(ctxVentas, {
+            type: 'line',
+            data: {
+                labels: labelsX.length > 0 ? labelsX : ["Sin datos"],
+                datasets: [{
+                    label: 'Ventas ($)',
+                    data: dataY.length > 0 ? dataY : [0],
+                    borderColor: '#c49a45',
+                    backgroundColor: 'rgba(196, 154, 69, 0.04)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#c49a45',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { 
+                        grid: { color: '#f3f4f6', drawBorder: false }, 
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        const ctxMesas = document.getElementById('mesasChart').getContext('2d');
+        const libres = {{ mesas_libres|default:0 }};
+        const ocupadas = {{ mesas_ocupadas|default:0 }};
+        const reservadas = {{ mesas_reservadas|default:0 }};
+
+        new Chart(ctxMesas, {
+            type: 'doughnut',
+            data: {
+                labels: ['Libres', 'Ocupadas', 'Reservadas'],
+                datasets: [{
+                    data: [libres, ocupadas, reservadas],
+                    backgroundColor: ['#22c55e', '#ef4444', '#c49a45'],
+                    borderWidth: 0,
+                    cutout: '75%' 
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: true } }
+            }
+        });
+    });
+</script>
+{% endblock %}
