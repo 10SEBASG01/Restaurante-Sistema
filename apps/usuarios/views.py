@@ -148,17 +148,34 @@ def editar_usuario(request, pk):
     return render(request, 'usuarios/editar_usuario.html', {'form': form, 'usuario_editado': usuario})
 
 
-# --- ELIMINAR EMPLEADO ---
+# --- ELIMINAR EMPLEADO (SOFT DELETE + ANONIMIZACIÓN BALANCEADA) ---
 @login_required
 @requiere_permiso('modulo_usuarios')
 def eliminar_usuario(request, pk):
     usuario = get_object_or_404(Usuario, pk=pk)
     
     if request.method == 'POST':
-        usuario.delete()
+        usuario.is_active = False
+        usuario.set_unusable_password() 
+        
+        if request.POST.get('anonimizar') == 'on':
+            # Guardamos el username original antes de cambiarlo
+            username_original = usuario.username
+            
+            # 1. Conservamos el alias original pero le añadimos una marca de inactivo.
+            # Esto libera el username original por si contratan a alguien con el mismo alias,
+            # pero mantiene la CONSTANCIA de quién era en los reportes históricos.
+            usuario.username = f"{username_original}_anon_{usuario.id}"
+            
+            # 2. Borramos los datos personales reales (PII) que sí son sensibles
+            usuario.email = f"anonimo_{usuario.id}@sistema.local"
+            usuario.first_name = "Historial"
+            usuario.last_name = f"({username_original})" # Dejas el alias entre paréntesis para auditorías
+            
+        usuario.save()
         return redirect('lista_usuarios')
+        
     return render(request, 'usuarios/eliminar_usuario.html', {'usuario_eliminado': usuario})
-
 
 # --- ASIGNACIÓN DE PERMISOS POR MÓDULOS ---
 @login_required

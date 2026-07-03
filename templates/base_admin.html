@@ -8,6 +8,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        :root {
+            --primary-yellow: #c49a45;
+            --bg-white: #ffffff;
+            --border-color: #f0f0f0;
+            
+            /* Colores de estados / Alertas */
+            --status-green-bg: #e8f7ec;
+            --status-green-text: #27a857;
+            --status-orange-bg: #fdf5e6;
+            --status-orange-text: #df8a11;
+            --status-red-bg: #fce8e8;
+            --status-red-text: #e03b3b;
+        }
+
         body {
             margin: 0;
             padding: 0;
@@ -103,6 +117,32 @@
             padding: 40px;
             overflow-y: auto;
         }
+
+        /* --- ALERTAS GLOBALES (MENSAJES DJANGO) --- */
+        .alert-container {
+            margin-bottom: 25px;
+        }
+        .alert { 
+            padding: 15px 20px; 
+            border-radius: 8px; 
+            margin-bottom: 12px; 
+            font-size: 14px; 
+            font-weight: 500; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .alert-error { 
+            background-color: var(--status-red-bg); 
+            color: var(--status-red-text); 
+            border: 1px solid #fad4d4; 
+        }
+        .alert-success { 
+            background-color: var(--status-green-bg); 
+            color: var(--status-green-text); 
+            border: 1px solid #cceadd; 
+        }
     </style>
 </head>
 <body>
@@ -173,6 +213,21 @@
     </nav>
 
     <main class="main-content">
+        {% if messages %}
+            <div class="alert-container">
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+                        {% if message.tags == 'error' %}
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                        {% else %}
+                            <i class="fa-solid fa-circle-check"></i>
+                        {% endif %}
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         {% block content %}
         {% endblock %}
     </main>

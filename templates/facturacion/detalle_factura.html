@@ -15,6 +15,13 @@
         align-items: center; 
         gap: 8px;
     }
+    
+    /* Variación por si ocurre un error inesperado */
+    .no-print-status.alert-error {
+        background-color: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
 
     #ticket-impresion {
         display: none;
@@ -98,10 +105,10 @@
 
 <main class="main-wrapper" style="background-color: #f4f5f8; min-height: 100vh; padding: 32px;">
     
-    {% if "historial" not in request.META.HTTP_REFERER %}
-    <div class="no-print-status">
-        <span>🎉 ¡Factura emitida y registrada con éxito! La mesa asociada ha sido liberada.</span>
-    </div>
+    {% if "historial" not in request.META.HTTP_REFERER and not messages %}
+        <div class="no-print-status">
+            <span>🎉 ¡Factura emitida y registrada con éxito! La mesa asociada ha sido liberada.</span>
+        </div>
     {% endif %}
 
     <div class="grid-principal" style="display: grid; grid-template-columns: 1.8fr 1fr; gap: 24px; align-items: start;">
@@ -160,22 +167,22 @@
             </table>
 
             <div style="display: flex; justify-content: flex-end;">
-                <div style="width: 260px; font-size: 13px; color: #4b5563; display: flex; flex-direction: column; gap: 8px;">
+                <div style="width: 280px; font-size: 13px; color: #4b5563; display: flex; flex-direction: column; gap: 8px;">
                     <div style="display: flex; justify-content: space-between;">
-                        <span>Subtotal {{ factura.iva_porcentaje_aplicado }}%:</span>
+                        <span>Subtotal Original:</span>
                         <span style="font-weight: 500; color: #1f2937;">${{ factura.subtotal_12|floatformat:2 }}</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Subtotal 0%:</span>
-                        <span style="font-weight: 500; color: #1f2937;">$0.00</span>
+                    <div style="display: flex; justify-content: space-between; color: #16a34a;">
+                        <span>Descuento ({{ factura.descuento_porcentaje }}%):</span>
+                        <span style="font-weight: 600;">-${{ factura.descuento|floatformat:2 }}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-top: 1px dashed #f3f4f6; padding-top: 4px;">
+                        <span>Subtotal Neto:</span>
+                        <span style="font-weight: 500; color: #1f2937;">${{ factura.subtotal_neto|floatformat:2 }}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
                         <span>IVA ({{ factura.iva_porcentaje_aplicado }}%):</span>
                         <span style="font-weight: 500; color: #1f2937;">${{ factura.iva_valor|floatformat:2 }}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; color: #1f2937;">
-                        <span>Descuento:</span>
-                        <span style="font-weight: 500;">${{ factura.descuento|default:"0.00"|floatformat:2 }}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; border-top: 1px solid #e5e7eb; padding-top: 12px; font-size: 16px; font-weight: 700; color: #1f2937;">
                         <span>TOTAL COBRADO:</span>
@@ -264,16 +271,20 @@
     <div class="ticket-totales">
         <table>
             <tr>
-                <td>Subtotal {{ factura.iva_porcentaje_aplicado }}%:</td>
+                <td>Subtotal Original:</td>
                 <td style="text-align: right;">${{ factura.subtotal_12|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td style="color: #000;">Descuento ({{ factura.descuento_porcentaje }}%):</td>
+                <td style="text-align: right;">-${{ factura.descuento|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>Subtotal Neto:</td>
+                <td style="text-align: right;">${{ factura.subtotal_neto|floatformat:2 }}</td>
             </tr>
             <tr>
                 <td>IVA ({{ factura.iva_porcentaje_aplicado }}%):</td>
                 <td style="text-align: right;">${{ factura.iva_valor|floatformat:2 }}</td>
-            </tr>
-            <tr>
-                <td>Descuento:</td>
-                <td style="text-align: right;">${{ factura.descuento|default:"0.00"|floatformat:2 }}</td>
             </tr>
             <tr>
                 <td><strong>TOTAL:</strong></td>

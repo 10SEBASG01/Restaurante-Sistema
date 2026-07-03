@@ -294,15 +294,29 @@
         
         <div class="factura-card" style="padding: 20px;">
             <div class="card-title" style="margin-bottom: 12px;">Resumen</div>
-            <div class="info-row" style="padding: 8px 0;"><span class="info-label">Subtotal</span><span class="info-value">$<span id="lbl_subtotal">{{ subtotal_12|floatformat:2 }}</span></span></div>
+            
+            <div class="info-row" style="padding: 8px 0;">
+                <span class="info-label">Subtotal Original</span>
+                <span class="info-value">$<span id="lbl_subtotal">{{ subtotal_12|floatformat:2 }}</span></span>
+            </div>
+            
+            <div class="info-row" style="padding: 8px 0;">
+                <span class="info-label" style="color: #26dc44; font-weight: 500;">Descuento (<span id="lbl_descuento_porcentaje_txt">0</span>%)</span>
+                <span class="info-value" style="color: #26dc44; font-weight: 600;">-$<span id="lbl_descuento_dinero">0,00</span></span>
+            </div>
+
+            <div class="info-row" style="padding: 8px 0;">
+                <span class="info-label">Subtotal Neto</span>
+                <span class="info-value">$<span id="lbl_subtotal_neto">{{ subtotal_12|floatformat:2 }}</span></span>
+            </div>
             
             <div class="info-row" style="padding: 8px 0;">
                 <span class="info-label">IVA (<span id="lbl_tasa_iva_text">{{ iva_porcentaje }}</span>%)</span>
                 <span class="info-value">$<span id="lbl_iva_valor">{{ iva_valor|floatformat:2 }}</span></span>
             </div>
             
-            <div class="info-row" style="padding: 8px 0; display: flex; justify-content: space-between; align-items: center;">
-                <span class="info-label" style="color: #26dc44; font-weight: 500;">Descuento (%)</span>
+            <div class="info-row" style="padding: 8px 0; display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #f0f0f0; margin-top: 5px;">
+                <span class="info-label" style="color: #444; font-weight: 500;">Modificar Descuento (%)</span>
                 <div style="width: 120px; display: flex; justify-content: flex-end;">
                     {{ form.descuento }}
                 </div>
@@ -355,23 +369,31 @@
             </a>
         </div>
     </div>
-
 </form>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const inputDescuento = document.getElementById('id_descuento');
         const lblSubtotal = document.getElementById('lbl_subtotal');
+        const lblDescuentoPorcentajeTxt = document.getElementById('lbl_descuento_porcentaje_txt');
+        const lblDescuentoDinero = document.getElementById('lbl_descuento_dinero');
+        const lblSubtotalNeto = document.getElementById('lbl_subtotal_neto');
         const lblIvaValor = document.getElementById('lbl_iva_valor');
         const lblTotalGeneral = document.getElementById('lbl_total_general');
         const lblTasaIvaText = document.getElementById('lbl_tasa_iva_text');
 
         const subtotalOriginal = parseFloat(lblSubtotal.textContent.replace(',', '.'));
-        const tasaIva = parseFloat(lblTasaIvaText.textContent.trim()) || 12.00; 
+        const tasaIva = parseFloat(lblTasaIvaText.textContent.trim()) || 15.00; 
+
+        function redondearDosDecimales(numero) {
+            return Math.round((numero + Number.EPSILON) * 100) / 100;
+        }
+
+        function formatoMonedaLocal(numero) {
+            return numero.toFixed(2).replace('.', ',');
+        }
 
         function calcularDescuentoPorcentaje() {
-            this.value = this.value.replace(/[^0-9]/g, '');
-
             let valorTexto = this.value.trim();
             let porcentajeDescuento = parseInt(valorTexto, 10);
             
@@ -384,24 +406,34 @@
                 this.value = 100;
             }
 
-            let dineroDescuento = subtotalOriginal * (porcentajeDescuento / 100);
-            let nuevoSubtotal = subtotalOriginal - dineroDescuento;
-
-            let nuevoIva = nuevoSubtotal * (tasaIva / 100);
-            let totalConDescuento = nuevoSubtotal + nuevoIva;
+            let dineroDescuento = redondearDosDecimales(subtotalOriginal * (porcentajeDescuento / 100));
+            let nuevoSubtotalNeto = redondearDosDecimales(subtotalOriginal - dineroDescuento);
+            let nuevoIva = redondearDosDecimales(nuevoSubtotalNeto * (tasaIva / 100));
+            let totalConDescuento = redondearDosDecimales(nuevoSubtotalNeto + nuevoIva);
 
             if (totalConDescuento < 0) {
                 totalConDescuento = 0.00;
             }
 
-            lblIvaValor.textContent = nuevoIva.toFixed(2);
-            lblTotalGeneral.textContent = totalConDescuento.toFixed(2);
+            lblDescuentoPorcentajeTxt.textContent = porcentajeDescuento;
+            lblDescuentoDinero.textContent = formatoMonedaLocal(dineroDescuento);
+            lblSubtotalNeto.textContent = formatoMonedaLocal(nuevoSubtotalNeto);
+            lblIvaValor.textContent = formatoMonedaLocal(nuevoIva);
+            lblTotalGeneral.textContent = formatoMonedaLocal(totalConDescuento);
         }
 
         if (inputDescuento) {
             inputDescuento.addEventListener('input', calcularDescuentoPorcentaje);
-            inputDescuento.addEventListener('keyup', calcularDescuentoPorcentaje);
             inputDescuento.addEventListener('change', calcularDescuentoPorcentaje);
+            
+            calcularDescuentoPorcentaje.call(inputDescuento);
+
+            inputDescuento.addEventListener('blur', function() {
+                if (this.value.trim() === "") {
+                    this.value = 0;
+                    calcularDescuentoPorcentaje.call(this);
+                }
+            });
         }
     });
 </script>

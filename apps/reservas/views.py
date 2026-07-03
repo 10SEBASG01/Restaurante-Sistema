@@ -149,6 +149,7 @@ def crear_reserva(request):
         'reservas/reservas_form.html',
         {
             'form': form,
+            'reserva': None,
             'titulo': 'Nueva Reserva'
         }
     )
@@ -227,6 +228,7 @@ def editar_reserva(request, pk):
         'reservas/reservas_form.html',
         {
             'form': form,
+            'reserva': reserva,
             'titulo': 'Editar Reserva'
         }
     )

@@ -71,17 +71,17 @@
         border: 1px solid #fef08a;
     }
 
-    /* 🎯 TEXTO LIMPIO PARA FORMA DE PAGO */
-    .text-pago {
+    /* Texto limpio para el Cajero (Sin ícono) */
+    .staff-text {
         color: #475569;
         font-weight: 500;
         font-size: 13.5px;
     }
 
-    /* 🎯 ESTADO COBRADA SIN RECUADRO NI CHECK */
-    .text-estado-cobrada {
-        color: #16a34a;
-        font-weight: 700;
+    /* Método de Pago */
+    .text-pago {
+        color: #475569;
+        font-weight: 500;
         font-size: 13.5px;
     }
     
@@ -141,10 +141,10 @@
                 <tr>
                     <th>N° Factura</th>
                     <th>Cliente / RUC</th>
+                    <th>Cajero</th>
                     <th style="text-align: center;">Método de Pago</th>
                     <th>Fecha de Emisión</th>
                     <th>Total Cobrado</th>
-                    <th>Estado</th>
                     <th style="text-align: center;">Acciones</th>
                 </tr>
             </thead>
@@ -162,14 +162,18 @@
                             </div>
                         </div>
                     </td>
+
+                    <td>
+                        <span class="staff-text">
+                            {{ factura.id_cajero.get_full_name|default:factura.id_cajero.username|default:"Cajero" }}
+                        </span>
+                    </td>
                     
                     <td style="text-align: center;"><span class="text-pago">{{ factura.get_forma_pago_display }}</span></td>
                     
                     <td class="date-text">{{ factura.fecha_emision|date:"d M Y, H:i" }}</td>
                     
                     <td style="font-weight: 700; color: #1e293b; font-size: 15px;">${{ factura.total }}</td>
-                    
-                    <td><span class="text-estado-cobrada">Cobrada</span></td>
                     
                     <td style="text-align: center;">
                         <a href="{% url 'ver_detalle_factura' factura.id_factura %}" class="btn-view-detail" title="Ver Detalle">

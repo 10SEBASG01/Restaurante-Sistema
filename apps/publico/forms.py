@@ -25,9 +25,10 @@ class ReservaPublicaForm(forms.ModelForm):
         )
     )
 
-    # 🎯 CAMBIO MAESTRO: ModelChoiceField para validar correctamente los IDs numéricos enviados por JS
+    # 🎯 CAMBIO: Se mantiene ModelChoiceField para aprovechar el HTML, 
+    # pero el queryset se cargará con TODAS las mesas en el __init__
     mesa = forms.ModelChoiceField(
-        queryset=Mesa.objects.none(),  # Se inicializa vacío y se llena en el __init__
+        queryset=Mesa.objects.none(),  
         widget=forms.Select(
             attrs={
                 'class': 'form-select'
@@ -83,5 +84,17 @@ class ReservaPublicaForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # 🎯 Cargamos las mesas libres para mapear correctamente sus IDs en la validación del POST
-        self.fields['mesa'].queryset = Mesa.objects.filter(estado='libre').order_by('numero')
+        # 🎯 CORRECCIÓN: Cargamos TODAS las mesas. Una mesa ocupada HOY puede estar libre MAÑANA.
+        self.fields['mesa'].queryset = Mesa.objects.all().order_by('numero')
+
+    def clean_mesa(self):
+        """
+        🎯 CORRECCIÓN CLAVE: El módulo público envía un Objeto Mesa, pero la BD 
+        espera un texto. Transformamos el objeto al formato "Mesa X" para que 
+        coincida exactamente con la lógica del administrador.
+        """
+        mesa_obj = self.cleaned_data.get('mesa')
+        if mesa_obj:
+            # Asumiendo que tu modelo Mesa tiene un campo llamado 'numero'
+            return f"Mesa {mesa_obj.numero}"
+        return mesa_obj

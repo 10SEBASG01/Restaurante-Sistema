@@ -12,14 +12,16 @@
         margin-bottom: 25px;
     }
     .header-section h2 {
-        font-size: 24px;
-        font-weight: 600;
-        color: #18181b;
-        margin-bottom: 5px;
+        font-size: 28px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        letter-spacing: -0.5px;
     }
     .header-section p {
-        color: #8a8a8e;
-        font-size: 13px;
+        color: #64748b;
+        font-size: 14px;
+        margin-top: 6px;
     }
     
     /* 🎯 BOTONES DE ACCIÓN SUPERIOR */
@@ -29,45 +31,44 @@
     }
     .btn-action-secondary {
         background-color: #ffffff;
-        color: #4b5563;
-        border: 1px solid #e5e7eb;
-        padding: 8px 16px;
-        border-radius: 6px;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+        padding: 10px 18px;
+        border-radius: 8px;
         text-decoration: none;
         font-size: 13px;
-        font-weight: 500;
-        transition: 0.2s;
+        font-weight: 600;
+        transition: 0.3s;
         display: inline-flex;
         align-items: center;
         gap: 8px;
     }
     .btn-action-secondary:hover {
-        background-color: #f9fafb;
-        color: #1f2937;
-        border-color: #d1d5db;
+        background-color: #e2e8f0;
+        color: #1e293b;
     }
     .btn-action-primary {
-        background-color: #c49a45; /* Color dorado/marrón de tu panel */
+        background-color: #c49a45; 
         color: white;
-        padding: 8px 16px;
-        border-radius: 6px;
+        padding: 10px 18px;
+        border-radius: 8px;
         text-decoration: none;
         font-size: 13px;
-        font-weight: 500;
-        transition: 0.2s;
+        font-weight: 600;
+        transition: 0.3s;
         display: inline-flex;
         align-items: center;
         gap: 8px;
     }
     .btn-action-primary:hover {
-        background-color: #c49a45;
+        background-color: #b0873a;
     }
 
     .tabs-filtros {
         display: flex;
         gap: 15px;
         margin-bottom: 20px;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid #f1f5f9;
         padding-bottom: 10px;
     }
     .tab-item {
@@ -84,11 +85,13 @@
         background-color: #e6f7ed;
         color: #28a745;
     }
+    
+    /* 🎯 ADAPTACIÓN ESTRICTA AL DISEÑO INMUEBLE DEL HISTORIAL */
     .tabla-card {
         background: #ffffff;
-        border: 1px solid #f0f0f0;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.01);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+        border: 1px solid #f1f5f9;
         overflow: hidden;
     }
     .tabla-pedidos {
@@ -97,21 +100,48 @@
         text-align: left;
     }
     .tabla-pedidos th {
-        padding: 16px;
+        background: #f8fafc;
+        padding: 16px 20px;
         font-size: 12px;
-        color: #8a8a8e;
-        font-weight: 500;
-        border-bottom: 1px solid #f0f0f0;
-        background-color: #fafafa;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #e2e8f0;
     }
     .tabla-pedidos td {
-        padding: 16px;
-        font-size: 13px;
-        color: #444;
-        border-bottom: 1px solid #f0f0f0;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 14px;
+        color: #334155;
         vertical-align: middle;
     }
+    .tabla-pedidos tbody tr:hover {
+        background-color: #f8fafc;
+    }
     
+    /* 🎯 CONTENEDOR DE USUARIO COHESIVO */
+    .user-info { 
+        display: flex; 
+        align-items: center; 
+        gap: 10px; 
+        font-weight: 600; 
+        color: #1e293b; 
+    }
+    .user-avatar {
+        width: 32px; 
+        height: 32px; 
+        border-radius: 50%; 
+        background: #fffbeb;
+        color: #c49a45; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        font-size: 12px;
+        border: 1px solid #fef08a;
+    }
+
+    /* Estilos del badge de estado */
     .badge-estado {
         padding: 4px 8px;
         border-radius: 6px;
@@ -146,6 +176,9 @@
         font-size: 12px;
         font-weight: 500;
         transition: 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
     .btn-cobrar:hover:not(.disabled) {
         background-color: #444;
@@ -159,12 +192,13 @@
     .vacio-state {
         text-align: center;
         padding: 60px 20px;
-        color: #8a8a8e;
+        color: #94a3b8;
+        font-size: 14px;
     }
     .vacio-state i {
-        font-size: 36px;
-        color: #ccc;
-        margin-bottom: 15px;
+        font-size: 28px;
+        color: #cbd5e1;
+        margin-bottom: 12px;
         display: block;
     }
 </style>
@@ -207,9 +241,23 @@
                 <tbody>
                     {% for pedido in pedidos %}
                         <tr>
-                            <td style="font-weight: 600; color: #18181b;">#{{ pedido.id_pedido }}</td>
-                            <td>Mesa {{ pedido.id_mesa.numero }}</td>
-                            <td>{{ pedido.id_mesa.cliente_nombre|default:"Consumidor Final" }}</td>
+                            <td><strong style="color: #1e293b;">#{{ pedido.id_pedido }}</strong></td>
+                            
+                            <!-- Columna Mesa limpia -->
+                            <td style="font-weight: 500; color: #475569;">
+                                Mesa {{ pedido.id_mesa.numero }}
+                            </td>
+                            
+                            <!-- Columna Cliente con avatar e información en una sola línea -->
+                            <td>
+                                <div class="user-info">
+                                    <div class="user-avatar">
+                                        <i class="fa-regular fa-user"></i>
+                                    </div>
+                                    <span>{{ pedido.id_mesa.cliente_nombre|default:"Consumidor Final" }}</span>
+                                </div>
+                            </td>
+                            
                             <td>
                                 {% if pedido.estado_pedido == 'pendiente' %}
                                     <span class="badge-estado badge-pendiente">{{ pedido.get_estado_pedido_display }}</span>
@@ -220,9 +268,10 @@
                                 {% elif pedido.estado_pedido == 'entregado' %}
                                     <span class="badge-estado badge-entregado">{{ pedido.get_estado_pedido_display }}</span>
                                 {% else %}
-                                    <span class="badge-estado" style="background-color: #fafafa; color: #aaa;">{{ pedido.get_estado_pedido_display }}</span>
+                                    <span class="badge-estado" style="background-color: #f8fafc; color: #64748b;">{{ pedido.get_estado_pedido_display }}</span>
                                 {% endif %}
                             </td>
+                            
                             <td style="text-align: right;">
                                 <a href="{% url 'crear_factura' pedido.id_pedido %}" class="btn-cobrar {% if pedido.estado_pedido != 'entregado' %}disabled{% endif %}">
                                     <i class="fa-solid fa-hand-holding-dollar"></i> Cobrar
@@ -234,7 +283,7 @@
             </table>
         {% else %}
             <div class="vacio-state">
-                <i class="fa-regular fa-calendar-xmark"></i>
+                <i class="fa-solid fa-folder-open"></i>
                 <p>No hay pedidos pendientes de pago en este momento.</p>
             </div>
         {% endif %}

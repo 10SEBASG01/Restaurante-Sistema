@@ -35,9 +35,9 @@
     /* Estilos de los grupos de campos y los iconos agregados */
     .form-group { display: flex; flex-direction: column; gap: 8px; }
     .form-group label { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #334155; }
-    .form-group label i { color: #c49a45; font-size: 15px; } /* Iconos dorados */
+    .form-group label i { color: #c49a45; font-size: 15px; } 
 
-    /* Inputs (Se aplican directamente a los elementos form generados por Django) */
+    /* Inputs */
     .form-group input, 
     .form-group select, 
     .form-group textarea {
@@ -68,12 +68,10 @@
     .helptext { display: none !important; }
     ul.errorlist { color: #ef4444; font-size: 13px; list-style: none; padding: 0; margin: 4px 0 0 0; }
 
-    /* ==========================
-        PANEL DE MESAS (Diseño idéntico al público)
-    ========================== */
+    /* Panel de Mesas */
     .panel-mesas {
         margin-top: 30px;
-        background: #f8fafc; /* Fondo cálido idéntico al público */
+        background: #f8fafc; 
         padding: 25px;
         border-radius: 12px;
         border: 1px solid #e2e8f0;
@@ -84,7 +82,7 @@
         font-size: 16px; font-weight: 600; color: #2c2c2c; margin-bottom: 15px; margin-top: 0;
     }
     
-    .panel-mesas h3 i { color: #c49a45; font-size: 16px; } /* Mantuve tu tono dorado #c49a45 */
+    .panel-mesas h3 i { color: #c49a45; font-size: 16px; } 
 
     .mesas-selector {
         display: grid;
@@ -142,6 +140,30 @@
         font-size: 14px;
     }
 
+    /* Estilo para etiquetas de error y éxito */
+    .error-label {
+        background-color: #fef2f2;
+        border: 1px solid #fee2e2;
+        color: #ef4444;
+        padding: 10px 14px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        font-size: 13px;
+        font-weight: 500;
+        display: block;
+    }
+    .success-label {
+        background-color: #dcfce7;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+        padding: 10px 14px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        font-size: 13px;
+        font-weight: 500;
+        display: block;
+    }
+
     /* Botones de acción */
     .form-actions {
         display: flex; justify-content: flex-end; gap: 15px; margin-top: 35px;
@@ -173,7 +195,26 @@
 </div>
 
 <div class="form-card">
-    <form method="POST">
+    
+    {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+                <div class="{% if message.tags == 'success' %}success-label{% else %}error-label{% endif %}">
+                    <i class="fa-solid {% if message.tags == 'success' %}fa-circle-check{% else %}fa-circle-exclamation{% endif %}"></i> {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if form.non_field_errors %}
+        <div class="error-label">
+            {% for error in form.non_field_errors %}
+                <i class="fa-solid fa-circle-exclamation"></i> {{ error }}<br>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="POST" action="{% if reserva %}{% url 'reservas:editar' reserva.pk %}{% else %}{% url 'reservas:crear' %}{% endif %}">
         {% csrf_token %}
 
         <div class="form-grid">
@@ -262,6 +303,15 @@
             <div id="mesa-seleccionada">
                 Selecciona una mesa disponible de la lista
             </div>
+
+            {% if form.mesa.errors %}
+                <div class="error-label" style="margin-top: 15px;">
+                    {% for error in form.mesa.errors %}
+                        <i class="fa-solid fa-triangle-exclamation"></i> Error en la mesa: {{ error }}<br>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
         </div>
 
         <div class="form-actions">
@@ -274,13 +324,9 @@
 
 <script>
 function seleccionarMesa(valor, elemento) {
-    // 1. Quitar la selección anterior
     document.querySelectorAll('.mesa-card').forEach(card => card.classList.remove('selected'));
-    
-    // 2. Aplicar la nueva selección
     elemento.classList.add('selected');
     
-    // 3. Capturar dinámicamente los inputs del formulario
     let inputMesa = document.getElementById('id_mesa');
     let inputPersonas = document.getElementById('id_personas');
 
@@ -288,20 +334,18 @@ function seleccionarMesa(valor, elemento) {
         inputMesa.value = valor;
     }
 
-    // 4. Obtener la capacidad leyendo desde el data-raw
     let textoPersonas = elemento.querySelector('small.mesa-desc').getAttribute('data-raw');
     let numeros = textoPersonas.match(/\d+/g);
     if (numeros && inputPersonas) {
-        inputPersonas.value = numeros[numeros.length - 1]; // Toma el último número (capacidad)
+        inputPersonas.value = numeros[numeros.length - 1]; 
     }
     
-    // 5. Actualizar el texto del estado inferior
     let nombreMesa = elemento.querySelector('.mesa-name').innerText;
     document.getElementById('mesa-seleccionada').innerHTML = 'Mesa seleccionada: ' + nombreMesa;
 }
 
 window.addEventListener('DOMContentLoaded', function() {
-    // --- MAGIA VISUAL: Cortar el texto "Mesa 1 - 8 personas" a solo "8 personas" ---
+    // Formatear textos de capacidad
     document.querySelectorAll('.mesa-card').forEach(card => {
         let small = card.querySelector('small.mesa-desc');
         if (small) {
@@ -314,7 +358,7 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // --- MANTENER SELECCIÓN EN CASO DE ERROR DE VALIDACIÓN DE DJANGO ---
+    // Mantener la selección si recarga por validación de formulario
     let inputMesa = document.getElementById('id_mesa');
     if (inputMesa && inputMesa.value) {
         let mesaActual = inputMesa.value;

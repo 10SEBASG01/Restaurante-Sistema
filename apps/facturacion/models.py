@@ -70,8 +70,13 @@ class Factura(models.Model):
     # Valores económicos persistidos estáticos
     subtotal_12 = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     subtotal_0 = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    iva_valor = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    
+    # 🎯 NUEVOS CAMPOS AÑADIDOS PARA INTEGRAR EL DESCUENTO DINÁMICO
+    descuento_porcentaje = models.IntegerField(default=0, verbose_name="Porcentaje de Descuento")
     descuento = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Descuento")
+    subtotal_neto = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Subtotal Neto Afectado")
+    
+    iva_valor = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     class Meta:

@@ -294,6 +294,14 @@
         {% endfor %}
     {% endif %}
 
+    {% if form.non_field_errors %}
+        <div class="error-label" style="margin-bottom: 20px;">
+            {% for error in form.non_field_errors %}
+                <i class="fa-solid fa-circle-exclamation"></i> {{ error }}<br>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     <form method="POST" novalidate>
         {% csrf_token %}
 
@@ -367,17 +375,23 @@
                     </div>
                 {% empty %}
                     <div style="grid-column: 1 / -1; text-align: center; color: #9ca3af; padding: 20px;">
-                        <p>No hay mesas libres en este momento.</p>
+                        <p>No hay mesas disponibles en este momento.</p>
                     </div>
                 {% endfor %}
             </div>
             
             <div id="mesa-seleccionada">Selecciona una mesa disponible de la lista</div>
             
-            {% if form.mesa.errors or form.personas.errors %}
-                <span class="error-label">
-                    <i class="fa-solid fa-triangle-exclamation"></i> Selección de Mesa: Este campo es obligatorio.
-                </span>
+            {% if form.mesa.errors %}
+                <div class="error-label">
+                    {% for error in form.mesa.errors %}
+                        <i class="fa-solid fa-triangle-exclamation"></i> {{ error }}<br>
+                    {% endfor %}
+                </div>
+            {% elif form.personas.errors %}
+                <div class="error-label">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Por favor, seleccione una mesa válida de la lista.
+                </div>
             {% endif %}
         </div>
 
@@ -391,33 +405,26 @@
 
 <script>
 function seleccionarMesa(valor, elemento) {
-    // 1. Quitar los bordes dorados de selección de las otras tarjetas
     document.querySelectorAll('.mesa-card').forEach(card => card.classList.remove('selected'));
-    
-    // 2. Aplicar la selección visual a la tarjeta clickeada
     elemento.classList.add('selected');
     
-    // 3. Capturar dinámicamente los inputs del formulario que Django pintó
     let inputMesa = document.getElementById('{{ form.mesa.id_for_label }}') || document.getElementById('id_mesa');
     let inputPersonas = document.getElementById('{{ form.personas.id_for_label }}') || document.getElementById('id_personas');
 
     if (inputMesa) {
-        inputMesa.value = valor; // Inyecta el ID numérico limpio (ej: 1)
+        inputMesa.value = valor; 
     }
 
-    // 4. Obtener la capacidad numérica e inyectarla al campo de personas
     let textoPersonas = elemento.querySelector('small').innerText;
     let numeros = textoPersonas.match(/\d+/g);
     if (numeros && inputPersonas) {
         inputPersonas.value = numeros[0];
     }
     
-    // 5. Actualizar el texto del estado de selección inferior
     let nombreMesa = elemento.querySelector('.mesa-name').innerText;
     document.getElementById('mesa-seleccionada').innerHTML = 'Mesa elegida: ' + nombreMesa;
 }
 
-// Conservar el estado dorado de la mesa si la validación del backend retorna algún error en otros campos
 window.addEventListener('DOMContentLoaded', function() {
     let inputMesa = document.getElementById('{{ form.mesa.id_for_label }}') || document.getElementById('id_mesa');
     if (inputMesa && inputMesa.value) {

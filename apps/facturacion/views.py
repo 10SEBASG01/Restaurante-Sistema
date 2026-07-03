@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.contrib import messages
 from django.utils import timezone
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP  # 🎯 Importación de ROUND_HALF_UP añadida
 from django.db.models import Q
 
 # Importaciones de tus aplicaciones locales
@@ -11,6 +11,16 @@ from apps.pedidos.models import GestionPedido
 from apps.mesas.models import Mesa
 from .models import Factura, FacturaDetalle, ConfiguracionFacturacion  # 🎯 Importación añadida
 from .forms import FacturaForm
+
+
+# --- FUNCIÓN AUXILIAR DE REDONDEO (MÉTODO ESTRICTO) ---
+def interpolar_dos_decimales(valor):
+    """
+    Fuerza dos decimales exactos utilizando el redondeo matemático estándar
+    (ROUND_HALF_UP), imitando el comportamiento de Math.round() en JavaScript.
+    """
+    return Decimal(str(valor)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
 
 # --- LÓGICA DE ACCESO Y PERMISOS ---
 def acceso_facturacion(request):
@@ -70,7 +80,9 @@ def crear_factura(request, id_pedido=None):
             messages.error(request, "El pedido no contiene platillos para facturar.")
             return redirect('listar_pedidos_por_facturar')
 
+        # 🎯 Redondeamos el subtotal acumulado inicial para evitar arrastrar decimales basura
         subtotal_acumulado = sum(Decimal(str(d.cantidad)) * Decimal(str(d.precio_unitario)) for d in detalles_pedido)
+        subtotal_acumulado = interpolar_dos_decimales(subtotal_acumulado)
     else:
         subtotal_acumulado = Decimal('0.00')
 
@@ -81,8 +93,8 @@ def crear_factura(request, id_pedido=None):
 
     subtotal_12 = subtotal_acumulado
     subtotal_0 = Decimal('0.00')
-    iva_valor = subtotal_12 * factor_iva
-    total_general = subtotal_12 + iva_valor
+    iva_valor = interpolar_dos_decimales(subtotal_12 * factor_iva)
+    total_general = interpolar_dos_decimales(subtotal_12 + iva_valor)
 
     if request.method == 'POST':
         if not pedido:
@@ -116,17 +128,24 @@ def crear_factura(request, id_pedido=None):
                     except (ValueError, TypeError):
                         porcentaje_descuento = 0
                     
-                    descuento_en_dinero = (subtotal_12 * Decimal(str(porcentaje_descuento))) / Decimal('100.00')
-                    nuevo_subtotal_afectado = subtotal_12 - descuento_en_dinero
+                    # 🎯 REDONDEO ESTRICTO DE LOS VALORES ECONÓMICOS INTERMEDIOS (Sincronización con JS)
+                    descuento_en_dinero = interpolar_dos_decimales((subtotal_12 * Decimal(str(porcentaje_descuento))) / Decimal('100.00'))
+                    nuevo_subtotal_afectado = interpolar_dos_decimales(subtotal_12 - descuento_en_dinero)
                     
                     # 🎯 3. RECALCULO DE IVA BASADO EN LA TASA DINÁMICA
-                    iva_recalculado = nuevo_subtotal_afectado * factor_iva
+                    iva_recalculado = interpolar_dos_decimales(nuevo_subtotal_afectado * factor_iva)
                     
                     factura.subtotal_12 = subtotal_12
                     factura.subtotal_0 = subtotal_0
                     factura.descuento = descuento_en_dinero  
+                    
+                    # ===== 🛠️ ASIGNACIÓN DE PORCENTAJE Y NETO PARA GUARDAR EN BD =====
+                    factura.descuento_porcentaje = porcentaje_descuento  
+                    factura.subtotal_neto = nuevo_subtotal_afectado      
+                    # =================================================================
+                    
                     factura.iva_valor = iva_recalculado 
-                    factura.total = nuevo_subtotal_afectado + iva_recalculado
+                    factura.total = interpolar_dos_decimales(nuevo_subtotal_afectado + iva_recalculado)
                     
                     ultimo_registro = Factura.objects.order_by('-id_factura').first()
                     num_secuencial = (ultimo_registro.id_factura + 1) if (ultimo_registro and ultimo_registro.id_factura) else 1
@@ -197,7 +216,7 @@ def ver_detalle_factura(request, id_factura):
     factura = get_object_or_404(Factura, id_factura=id_factura)
     return render(request, 'facturacion/detalle_factura.html', {
         'factura':       factura,
-        'detalles':      factura.detalles_factura.all()
+        'detalles':      factura.detalles_factura.all()  # Retorna el set relacionado de detalles
     })
 
 
@@ -229,7 +248,6 @@ def historial_facturas(request):
 
 # --- GESTIÓN DE CONFIGURACIÓN DEL EMISOR E IVA ---
 @login_required
-@login_required
 def configuracion_facturacion(request):
     """Muestra y procesa las actualizaciones del panel de configuración de tasas y emisor."""
     if not acceso_facturacion(request):
@@ -244,7 +262,6 @@ def configuracion_facturacion(request):
         'iva_porcentaje': 12
     })
 
-    # Variable para recordar qué pestaña dejar abierta tras recargar
     tab_activa = 'empresa'
 
     if request.method == 'POST':
@@ -253,7 +270,7 @@ def configuracion_facturacion(request):
             config.nombre_comercial = request.POST.get('nombre_comercial')
             config.razon_social = request.POST.get('razon_social')
             config.ruc = request.POST.get('ruc')
-            config.provincia = request.POST.get('ciudad_provincia')  # 👈 Corregido el name aquí
+            config.provincia = request.POST.get('ciudad_provincia')
             config.direccion = request.POST.get('direccion')
             config.save()
             messages.success(request, "Datos de la cabecera comercial del emisor actualizados.")
@@ -261,23 +278,21 @@ def configuracion_facturacion(request):
         elif 'action_iva' in request.POST:
             tab_activa = 'impuestos'
             try:
-                # 👈 Corregido aquí para capturar 'iva_comercial' del HTML
                 config.iva_porcentaje = int(request.POST.get('iva_comercial', 12))
                 config.save()
                 messages.success(request, "Tasa impositiva del IVA actualizada correctamente.")
             except ValueError:
                 messages.error(request, "Porcentaje de IVA inválido.")
                 
-        # Pasamos la pestaña activa en la redirección por parámetro GET
         return redirect(f"{request.path}?tab={tab_activa}")
 
-    # Captura la pestaña que debe mostrarse activa
     tab_solicitada = request.GET.get('tab', 'empresa')
 
     return render(request, 'facturacion/configuracion_facturacion.html', {
         'config': config,
         'tab_solicitada': tab_solicitada
     })
+
 
 @login_required
 def configuracion_sistema(request):
