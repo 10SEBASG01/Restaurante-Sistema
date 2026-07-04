@@ -15,3 +15,5 @@ sh/
 .idea/
 media/
 *.log
+.env
+staticfiles/
