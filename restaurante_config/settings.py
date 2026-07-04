@@ -49,6 +49,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'cloudinary',
+    'cloudinary_storage',
+
     'apps.usuarios',
     'apps.menu',
     'apps.reservas',
@@ -154,23 +157,27 @@ USE_I18N = True
 USE_TZ = True
 
 # ==========================
-# ARCHIVOS ESTÁTICOS
+# ARCHIVOS ESTÁTICOS Y MEDIA (STORAGES)
 # ==========================
 
 STATIC_URL = "/static/"
-
 STATIC_ROOT = BASE_DIR / "staticfiles"
-
-STATICFILES_STORAGE = (
-    "whitenoise.storage.CompressedManifestStaticFilesStorage"
-)
-
-# ==========================
-# ARCHIVOS MEDIA
-# ==========================
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+STORAGES = {
+    "default": {
+        "BACKEND": (
+            "cloudinary_storage.storage.MediaCloudinaryStorage"
+            if os.getenv("CLOUDINARY_CLOUD_NAME")
+            else "django.core.files.storage.FileSystemStorage"
+        ),
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # ==========================
 # USUARIO PERSONALIZADO
@@ -179,7 +186,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
 # ==========================
-# CSRF
+# CSRF Y SEGURIDAD HTTPS
 # ==========================
 
 CSRF_TRUSTED_ORIGINS = [
@@ -196,6 +203,14 @@ if RENDER_EXTERNAL_HOSTNAME:
 
 CSRF_USE_SESSIONS = True
 
+# 1. Le dice a Django que Render está manejando el HTTPS por ti
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# 2. Obliga a que las cookies solo viajen por HTTPS en producción
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 # ==========================
 # LOGIN
 # ==========================
@@ -211,22 +226,14 @@ LOGOUT_REDIRECT_URL = 'login'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # ==========================
-# CLOUDINARY (DESCOMENTAR CUANDO LO INSTALES)
+# CLOUDINARY
 # ==========================
 
-
-if os.getenv("CLOUDINARY_CLOUD_NAME"):
-
-    CLOUDINARY_STORAGE = {
-        "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
-        "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
-        "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
-    }
-
-    DEFAULT_FILE_STORAGE = (
-        "cloudinary_storage.storage.MediaCloudinaryStorage"
-    )
-
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
+}
 
 # ==========================
 # DEFAULT PRIMARY KEY
