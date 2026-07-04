@@ -1,5 +1,5 @@
 from django import forms
-from .models import Mesa, ZonaMesa
+from .models import Mesa, ZonaMesa, Usuario
 
 # --- 🔥 NUEVO FORMULARIO: GESTIÓN DE ZONAS ---
 class ZonaMesaForm(forms.ModelForm):
@@ -33,6 +33,8 @@ class MesaForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['mesero_assigned'].queryset = Usuario.objects.filter(rol='mesero', is_active=True)
+        
         for field_name, field in self.fields.items():
             self.fields[field_name].widget.attrs.update({
                 'class': 'form-control',
@@ -72,3 +74,7 @@ class AsignarMeseroForm(forms.ModelForm):
                 'style': 'width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 15px;'
             })
         }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filtramos para que solo salgan meseros activos
+        self.fields['mesero_assigned'].queryset = Usuario.objects.filter(rol='mesero', is_active=True)    

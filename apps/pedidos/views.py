@@ -8,27 +8,27 @@ from django.db.models import Count, Q
 # 🛡️ Importamos el guardián de permisos desde la aplicación de usuarios
 from apps.usuarios.views import requiere_permiso
 
+# 🎯 IMPORTAMOS AUDITORÍA
+from apps.auditoria.models import Auditoria
+
 # 📦 Modelos del sistema
 from apps.pedidos.models import GestionPedido, DetallePedido, Comanda
 from apps.menu.models import GestionPlatillo, CategoriasPlato
 from apps.mesas.models import Mesa
 
 @login_required
-@requiere_permiso('modulo_pedidos')  # 🛡️ ESCUDO ACTIVADO
+@requiere_permiso('modulo_pedidos')
 def pedido_pantalla(request):
     """
     Renderiza la interfaz de toma de pedidos cargando los datos reales.
     Calcula dinámicamente la cantidad de platos disponibles por categoría.
     """
-    # 🔥 AQUÍ ATRAPAMOS AL FANTASMA: Añadimos activo=True a la consulta
     platillos = GestionPlatillo.objects.filter(disponible=True, activo=True)
     
-    # 🔥 Y TAMBIÉN AQUÍ: Actualizamos el contador para que las burbujas amarillas de las categorías no cuenten platillos borrados
     categorias = CategoriasPlato.objects.annotate(
         total_productos=Count('platillos', filter=Q(platillos__disponible=True, platillos__activo=True))
     )
     
-    # Muestra las mesas listas para ordenar
     mesas = Mesa.objects.filter(estado='ocupada')
     
     context = {
@@ -40,7 +40,7 @@ def pedido_pantalla(request):
 
 
 @login_required
-@requiere_permiso('modulo_pedidos')  # 🛡️ ESCUDO ACTIVADO
+@requiere_permiso('modulo_pedidos')
 @transaction.atomic
 def guardar_pedido_api(request):
     """
@@ -53,7 +53,7 @@ def guardar_pedido_api(request):
             
             id_mesa = data.get('id_mesa')
             observaciones = data.get('observaciones', '')
-            items = data.get('items', [])  # [{id_platillo: 1, qty: 2}, ...]
+            items = data.get('items', [])
             
             if not id_mesa or not items:
                 return JsonResponse({'success': False, 'error': 'Datos incompletos.'}, status=400)
@@ -62,32 +62,30 @@ def guardar_pedido_api(request):
             mesa = Mesa.objects.get(pk=id_mesa)
             empleado = request.user
             
-            # 2. Crear la cabecera del pedido (CORREGIDO: Ahora inicia como 'pendiente')
+            # 2. Crear la cabecera del pedido (Inicia como 'pendiente' para Caja)
             pedido = GestionPedido.objects.create(
                 id_empleado=empleado,
                 id_mesa=mesa,
                 observaciones=observaciones,
-                estado_pedido='pendiente'  # <-- CAMBIO AQUÍ: Nace en pendiente para pintar ROJO en caja
+                estado_pedido='pendiente'
             )
             
             # 3. Registrar los detalles del pedido
+            total_items = 0
             for item in items:
                 platillo_id = item.get('id_platillo') or item.get('id') or item.get('id_producto')
                 
                 if not platillo_id:
-                    return JsonResponse({
-                        'success': False, 
-                        'error': f'No se encontró la clave del platillo en el item: {item}'
-                    }, status=400)
+                    return JsonResponse({'success': False, 'error': f'Clave del platillo no encontrada: {item}'}, status=400)
 
-                # Nos aseguramos de buscar el platillo
                 platillo = GestionPlatillo.objects.get(pk=platillo_id)
-                amount = item.get('qty') or item.get('cantidad') or 1
+                amount = int(item.get('qty') or item.get('cantidad') or 1)
+                total_items += amount
 
                 DetallePedido.objects.create(
                     id_pedido=pedido,
                     id_platillo=platillo,
-                    cantidad=int(amount), 
+                    cantidad=amount, 
                     precio_unitario=platillo.precio 
                 )
             
@@ -98,12 +96,20 @@ def guardar_pedido_api(request):
                 nota_cocina=observaciones
             )
             
+            # 🎯 5. CONEXIÓN A AUDITORÍA: Registrar la toma del pedido exitosamente
+            Auditoria.objects.create(
+                id_usuario=empleado,
+                modulo='pedidos',
+                accion='Pedido Creado',
+                detalle=f"Generó pedido #{pedido.id_pedido} para Mesa {mesa.numero} ({total_items} platillos)."
+            )
+            
             return JsonResponse({'success': True, 'message': '¡Pedido enviado a cocina con éxito!', 'id_pedido': pedido.id_pedido})
             
         except Mesa.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'La mesa seleccionada no existe.'}, status=404)
         except GestionPlatillo.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Uno de los platillos enviados no existe en la base de datos.'}, status=404)
+            return JsonResponse({'success': False, 'error': 'Un platillo enviado no existe en la base de datos.'}, status=404)
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
             

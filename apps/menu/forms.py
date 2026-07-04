@@ -1,5 +1,5 @@
 from django import forms
-from .models import GestionPlatillo  # Quitamos CategoriasPlato porque no se usa aquí
+from .models import GestionPlatillo
 
 class PlatilloForm(forms.ModelForm):
     class Meta:
@@ -9,7 +9,7 @@ class PlatilloForm(forms.ModelForm):
             'nombre_platillo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Ceviche Premium'}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Ingredientes...'}),
             'precio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
-            'id_categoria': forms.Select(attrs={'class': 'form-control'}), # Usamos form-control para mantener tu diseño
+            'id_categoria': forms.Select(attrs={'class': 'form-control'}),
             'disponible': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'imagen': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }

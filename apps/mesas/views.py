@@ -1,13 +1,16 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages  # 🔥 Para mandar alertas seguras al usuario
-from django.db.models import ProtectedError  # 🔥 Para capturar el bloqueo de borrado si hay FK activas
+from django.contrib import messages
+from django.db.models import ProtectedError
 
 # 🛡️ IMPORTAMOS EL GUARDIÁN UNIVERSAL
 from apps.usuarios.views import requiere_permiso
 
+# 🎯 IMPORTAMOS AUDITORÍA
+from apps.auditoria.models import Auditoria
+
 from .models import Mesa, ZonaMesa
-from .forms import CambiarEstadoMesaForm, AsignarMeseroForm, MesaForm, ZonaMesaForm  # 🔥 Importado ZonaMesaForm
+from .forms import CambiarEstadoMesaForm, AsignarMeseroForm, MesaForm, ZonaMesaForm
 
 # --- VISTA PRINCIPAL: ESTADO DE MESAS ---
 @login_required
@@ -23,7 +26,6 @@ def lista_mesas(request):
     total_ocupadas = Mesa.objects.filter(estado='ocupada').count()
     total_reservadas = Mesa.objects.filter(estado='reservada').count()
 
-    # 1. Aplicar filtro de estados
     if filtro == 'libres':
         mesas = mesas.filter(estado='libre')
     elif filtro == 'ocupadas':
@@ -31,7 +33,6 @@ def lista_mesas(request):
     elif filtro == 'reservadas':
         mesas = mesas.filter(estado='reservada')
 
-    # 2. Filtramos usando la relación directa 'ubicacion'
     if filtro_ubicacion != 'todas':
         mesas = mesas.filter(ubicacion=filtro_ubicacion)
 
@@ -53,7 +54,15 @@ def crear_mesa(request):
     if request.method == 'POST':
         form = MesaForm(request.POST)
         if form.is_valid():
-            form.save()
+            mesa = form.save()
+            
+            # 🎯 Auditoría
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='mesas',
+                accion='Mesa Creada',
+                detalle=f"Registró la Mesa {mesa.numero} (Capacidad: {mesa.capacidad} pax)."
+            )
             return redirect('estado_mesas')
     else:
         form = MesaForm()
@@ -67,7 +76,15 @@ def editar_mesa(request, pk):
     if request.method == 'POST':
         form = MesaForm(request.POST, instance=mesa)
         if form.is_valid():
-            form.save()
+            mesa_editada = form.save()
+            
+            # 🎯 Auditoría
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='mesas',
+                accion='Mesa Editada',
+                detalle=f"Actualizó la configuración de la Mesa {mesa_editada.numero}."
+            )
             return redirect('estado_mesas')
     else:
         form = MesaForm(instance=mesa)
@@ -80,7 +97,16 @@ def editar_mesa(request, pk):
 def eliminar_mesa(request, pk):
     mesa = get_object_or_404(Mesa, pk=pk)
     if request.method == 'POST':
+        numero_mesa = mesa.numero
         mesa.delete()
+        
+        # 🎯 Auditoría
+        Auditoria.objects.create(
+            id_usuario=request.user,
+            modulo='mesas',
+            accion='Mesa Eliminada',
+            detalle=f"Eliminó permanentemente la Mesa {numero_mesa}."
+        )
         return redirect('estado_mesas')
         
     return render(request, 'mesas/eliminar_mesa.html', {'mesa': mesa})
@@ -90,10 +116,20 @@ def eliminar_mesa(request, pk):
 @requiere_permiso('modulo_mesas')  
 def cambiar_estado_mesa(request, pk):
     mesa = get_object_or_404(Mesa, pk=pk)
+    estado_anterior = mesa.get_estado_display()
+    
     if request.method == 'POST':
         form = CambiarEstadoMesaForm(request.POST, instance=mesa)
         if form.is_valid():
-            form.save()
+            mesa_actualizada = form.save()
+            
+            # 🎯 Auditoría
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='mesas',
+                accion='Cambio de Estado',
+                detalle=f"Mesa {mesa_actualizada.numero} pasó de '{estado_anterior}' a '{mesa_actualizada.get_estado_display()}'."
+            )
             return redirect('estado_mesas')
     else:
         form = CambiarEstadoMesaForm(instance=mesa)
@@ -111,7 +147,18 @@ def asignar_mesero_mesa(request, pk):
     if request.method == 'POST':
         form = AsignarMeseroForm(request.POST, instance=mesa)
         if form.is_valid():
-            form.save()
+            mesa_actualizada = form.save()
+            
+            mesero = mesa_actualizada.mesero_assigned.get_full_name() if mesa_actualizada.mesero_assigned else "Ninguno"
+            cliente = mesa_actualizada.cliente_nombre if mesa_actualizada.cliente_nombre else "No especificado"
+            
+            # 🎯 Auditoría
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='mesas',
+                accion='Asignación de Servicio',
+                detalle=f"Mesa {mesa_actualizada.numero}: Mesero ({mesero}) - Cliente ({cliente})."
+            )
             return redirect('estado_mesas')
     else:
         form = AsignarMeseroForm(instance=mesa)
@@ -122,7 +169,6 @@ def asignar_mesero_mesa(request, pk):
         'subtitulo': 'Vincula un mesero y registra al cliente para esta mesa.'
     })
 
-
 # =======================================================
 # 🔥 NUEVAS VISTAS: MÓDULO INDEPENDIENTE (CRUD DE ZONAS)
 # =======================================================
@@ -131,7 +177,6 @@ def asignar_mesero_mesa(request, pk):
 @requiere_permiso('modulo_mesas')
 def listar_zonas(request):
     zonas = ZonaMesa.objects.all()
-    # Apunta a la nueva carpeta que vas a crear
     return render(request, 'mesas/zonas/lista_zonas.html', {'zonas': zonas})
 
 @login_required
@@ -140,7 +185,15 @@ def crear_zona(request):
     if request.method == 'POST':
         form = ZonaMesaForm(request.POST)
         if form.is_valid():
-            form.save()
+            zona = form.save()
+            
+            # 🎯 Auditoría
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='mesas',
+                accion='Zona Creada',
+                detalle=f"Añadió la nueva zona: {zona.nombre_zona}."
+            )
             return redirect('listar_zonas')
     else:
         form = ZonaMesaForm()
@@ -151,11 +204,19 @@ def crear_zona(request):
 def eliminar_zona(request, pk):
     zona = get_object_or_404(ZonaMesa, pk=pk)
     if request.method == 'POST':
+        nombre_zona = zona.nombre_zona
         try:
             zona.delete()
+            
+            # 🎯 Auditoría
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='mesas',
+                accion='Zona Eliminada',
+                detalle=f"Eliminó la zona: {nombre_zona}."
+            )
             return redirect('listar_zonas')
         except ProtectedError:
-            # Capturamos el error si hay mesas usando la zona y mandamos una notificación
             messages.error(request, f"No se puede eliminar la zona '{zona.nombre_zona}' porque hay mesas asignadas a ella. Reasigna las mesas primero.")
             return redirect('listar_zonas')
             

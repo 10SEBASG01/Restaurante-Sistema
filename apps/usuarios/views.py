@@ -9,6 +9,9 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse_lazy
 
+# 🎯 IMPORTAMOS AUDITORÍA
+from apps.auditoria.models import Auditoria
+
 from .models import Usuario
 from .forms import CustomUserCreationForm, UsuarioEditForm
 
@@ -61,7 +64,6 @@ class CustomLoginView(LoginView):
             return reverse_lazy('reservas') 
             
         # 3. EMPLEADOS: Redirección dinámica basada en sus permisos reales
-        # 🔥 CORREGIDO: Ahora busca la llave correcta 'modulo_dashboard'
         if usuario.user_permissions.filter(codename='modulo_dashboard').exists():
             return reverse_lazy('dashboard')
             
@@ -120,7 +122,16 @@ def crear_usuario(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            form.save()
+            nuevo_usuario = form.save()
+            
+            # 🎯 AUDITORÍA: Creación de empleado
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='usuarios',
+                accion='Usuario Creado',
+                detalle=f"Registró al empleado: {nuevo_usuario.username} con rol de {nuevo_usuario.get_rol_display()}."
+            )
+            
             return redirect('lista_usuarios')
     else:
         form = CustomUserCreationForm()
@@ -132,6 +143,7 @@ def crear_usuario(request):
 @requiere_permiso('modulo_usuarios')
 def editar_usuario(request, pk):
     usuario = get_object_or_404(Usuario, pk=pk)
+    rol_anterior = usuario.get_rol_display()
     
     if request.user == usuario:
         return render(request, 'usuarios/acceso_denegado.html', {
@@ -141,7 +153,20 @@ def editar_usuario(request, pk):
     if request.method == 'POST':
         form = UsuarioEditForm(request.POST, instance=usuario)
         if form.is_valid():
-            form.save()
+            usuario_editado = form.save()
+            
+            # 🎯 AUDITORÍA: Edición de empleado
+            detalle_audit = f"Actualizó los datos del empleado: {usuario_editado.username}."
+            if rol_anterior != usuario_editado.get_rol_display():
+                detalle_audit += f" (Cambió su rol de {rol_anterior} a {usuario_editado.get_rol_display()})."
+                
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='usuarios',
+                accion='Usuario Editado',
+                detalle=detalle_audit
+            )
+            
             return redirect('lista_usuarios')
     else:
         form = UsuarioEditForm(instance=usuario)
@@ -158,21 +183,32 @@ def eliminar_usuario(request, pk):
         usuario.is_active = False
         usuario.set_unusable_password() 
         
-        if request.POST.get('anonimizar') == 'on':
-            # Guardamos el username original antes de cambiarlo
-            username_original = usuario.username
-            
-            # 1. Conservamos el alias original pero le añadimos una marca de inactivo.
-            # Esto libera el username original por si contratan a alguien con el mismo alias,
-            # pero mantiene la CONSTANCIA de quién era en los reportes históricos.
+        # Guardamos datos para la auditoría antes de cambiarlos
+        username_original = usuario.username
+        fue_anonimizado = request.POST.get('anonimizar') == 'on'
+        
+        if fue_anonimizado:
+            # Conservamos el alias original pero le añadimos una marca de inactivo.
             usuario.username = f"{username_original}_anon_{usuario.id}"
             
-            # 2. Borramos los datos personales reales (PII) que sí son sensibles
+            # Borramos los datos personales reales (PII) que sí son sensibles
             usuario.email = f"anonimo_{usuario.id}@sistema.local"
             usuario.first_name = "Historial"
-            usuario.last_name = f"({username_original})" # Dejas el alias entre paréntesis para auditorías
+            usuario.last_name = f"({username_original})"
             
         usuario.save()
+        
+        # 🎯 AUDITORÍA: Eliminación / Desactivación
+        accion_auditoria = 'Usuario Anonimizado' if fue_anonimizado else 'Usuario Desactivado'
+        detalle_auditoria = f"Eliminó y anonimizó los datos de {username_original}." if fue_anonimizado else f"Desactivó el acceso al usuario: {username_original}."
+        
+        Auditoria.objects.create(
+            id_usuario=request.user,
+            modulo='usuarios',
+            accion=accion_auditoria,
+            detalle=detalle_auditoria
+        )
+        
         return redirect('lista_usuarios')
         
     return render(request, 'usuarios/eliminar_usuario.html', {'usuario_eliminado': usuario})
@@ -187,6 +223,15 @@ def asignar_permisos(request, pk):
     if request.method == 'POST':
         permisos_ids = request.POST.getlist('permisos')
         usuario.user_permissions.set(permisos_ids)
+        
+        # 🎯 AUDITORÍA: Asignación de permisos
+        Auditoria.objects.create(
+            id_usuario=request.user,
+            modulo='usuarios',
+            accion='Permisos Modificados',
+            detalle=f"Actualizó la matriz de permisos para el empleado: {usuario.username}."
+        )
+        
         return redirect('lista_usuarios')
         
     usuario_permisos_ids = list(usuario.user_permissions.values_list('id', flat=True))

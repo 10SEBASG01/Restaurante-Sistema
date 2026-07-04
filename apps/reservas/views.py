@@ -7,6 +7,9 @@ from .models import Reserva
 from .forms import ReservaForm
 from apps.mesas.models import Mesa
 
+# 🎯 IMPORTAMOS AUDITORÍA
+from apps.auditoria.models import Auditoria
+
 
 def acceso_reservas(request):
 
@@ -131,6 +134,14 @@ def crear_reserva(request):
             except Exception:
                 pass
 
+            # 🎯 AUDITORÍA: Creación de reserva
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='reservas',
+                accion='Reserva Creada',
+                detalle=f"Reserva {reserva.codigo} a nombre de {reserva.cliente} para la {reserva.mesa} ({reserva.fecha} a las {reserva.hora})."
+            )
+
             messages.success(
                 request,
                 'Reserva creada correctamente.'
@@ -169,6 +180,9 @@ def editar_reserva(request, pk):
         Reserva,
         pk=pk
     )
+    
+    # Guardamos el estado anterior para saber si lo cambiaron
+    estado_anterior = reserva.get_estado_display()
 
     if request.method == 'POST':
 
@@ -179,7 +193,7 @@ def editar_reserva(request, pk):
 
         if form.is_valid():
 
-            reserva = form.save()
+            reserva_actualizada = form.save()
 
             # ==========================
             # ACTUALIZAR DATOS EN LA MESA
@@ -188,7 +202,7 @@ def editar_reserva(request, pk):
             try:
 
                 numero_mesa = int(
-                    reserva.mesa.replace(
+                    reserva_actualizada.mesa.replace(
                         'Mesa ',
                         ''
                     )
@@ -198,15 +212,27 @@ def editar_reserva(request, pk):
                     numero=numero_mesa
                 )
 
-                mesa.cliente_nombre = reserva.cliente
-                mesa.cliente_cedula = reserva.cedula
-                mesa.cliente_correo = reserva.correo
-                mesa.cliente_direccion = reserva.direccion
+                mesa.cliente_nombre = reserva_actualizada.cliente
+                mesa.cliente_cedula = reserva_actualizada.cedula
+                mesa.cliente_correo = reserva_actualizada.correo
+                mesa.cliente_direccion = reserva_actualizada.direccion
 
                 mesa.save()
 
             except Exception:
                 pass
+
+            # 🎯 AUDITORÍA: Edición de reserva
+            detalle_audit = f"Actualizó datos de la reserva {reserva_actualizada.codigo} de {reserva_actualizada.cliente}."
+            if estado_anterior != reserva_actualizada.get_estado_display():
+                detalle_audit += f" (Estado pasó a {reserva_actualizada.get_estado_display()})"
+
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='reservas',
+                accion='Reserva Editada',
+                detalle=detalle_audit
+            )
 
             messages.success(
                 request,
@@ -275,8 +301,20 @@ def eliminar_reserva(request, pk):
 
         except Exception:
             pass
+            
+        # 🎯 Capturamos los datos antes de borrar la reserva para la auditoría
+        codigo_reserva = reserva.codigo
+        cliente_reserva = reserva.cliente
 
         reserva.delete()
+        
+        # 🎯 AUDITORÍA: Eliminación de reserva
+        Auditoria.objects.create(
+            id_usuario=request.user,
+            modulo='reservas',
+            accion='Reserva Eliminada',
+            detalle=f"Eliminó la reserva {codigo_reserva} a nombre de {cliente_reserva}."
+        )
 
         messages.success(
             request,
@@ -298,5 +336,4 @@ def eliminar_reserva(request, pk):
 @login_required
 def observacion_reserva(request, id):
     reserva = get_object_or_404(Reserva, id=id)
-    # Aquí agregamos 'reservas/' antes del nombre del archivo 👇
     return render(request, 'reservas/observacion_reserva.html', {'reserva': reserva})

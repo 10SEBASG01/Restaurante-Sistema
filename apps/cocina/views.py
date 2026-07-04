@@ -126,7 +126,7 @@ def api_avanzar_comanda(request):
         data = json.loads(request.body)
         comanda_id = data.get('id') or data.get('id_comanda')
         
-        comanda = Comanda.objects.select_related('id_pedido').get(id_comanda=comanda_id)
+        comanda = Comanda.objects.select_related('id_pedido', 'id_pedido__id_mesa').get(id_comanda=comanda_id)
         estado_actual = comanda.estado_comanda
         nuevo_estado = None
         
@@ -150,6 +150,16 @@ def api_avanzar_comanda(request):
                 elif nuevo_estado == 'entregado':
                     pedido.estado_pedido = 'entregado'
                 pedido.save()
+            
+            # 🎯 CONEXIÓN A AUDITORÍA: Solo registramos cuando el ciclo se completa
+            if nuevo_estado == 'entregado':
+                from apps.auditoria.models import Auditoria
+                Auditoria.objects.create(
+                    id_usuario=request.user,
+                    modulo='pedidos',
+                    accion='Pedido Entregado',
+                    detalle=f"Despachó el pedido #{comanda.id_pedido.id_pedido} (Mesa {comanda.id_pedido.id_mesa.numero})."
+                )
             
         return JsonResponse({"success": True, "nuevo_estado": nuevo_estado})
         

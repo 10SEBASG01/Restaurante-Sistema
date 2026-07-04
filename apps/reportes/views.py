@@ -275,7 +275,16 @@ def exportar_pdf(request):
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="Reporte_Ventas_{desde}_al_{hasta}.pdf"'
 
-    doc = SimpleDocTemplate(response, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    doc = SimpleDocTemplate(
+        response, 
+        pagesize=letter, 
+        rightMargin=40, 
+        leftMargin=40, 
+        topMargin=40, 
+        bottomMargin=40,
+        title="Reporte de Ventas",  # ¡Esto es lo que va a leer la pestaña de Chrome!
+        author="Sabor & Arte"
+    )
     elementos = []
     estilos = getSampleStyleSheet()
 
@@ -285,7 +294,7 @@ def exportar_pdf(request):
     estilo_titulo.textColor = colors.HexColor('#1e293b')
     estilo_titulo.alignment = 0 
 
-    titulo = Paragraph("Sabor & Arte - Reporte de Auditoría", estilo_titulo)
+    titulo = Paragraph("Sabor & Arte - Reporte de Ventas", estilo_titulo)
     subtitulo = Paragraph(f"Período de análisis: {desde.strftime('%d/%m/%Y')} al {hasta.strftime('%d/%m/%Y')} | Generado: {timezone.now().strftime('%d/%m/%Y %H:%M')}", estilos['Normal'])
     elementos.append(titulo)
     elementos.append(subtitulo)

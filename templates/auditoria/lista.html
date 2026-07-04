@@ -69,6 +69,22 @@
     /* Badges de Acción Generales */
     .badge { padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; background: #f8fafc; border: 1px solid #e2e8f0; color: #475569;}
 
+    /* Badges de Módulos (Colores Dinámicos) */
+    .badge-modulo {
+        padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+        display: inline-block; text-align: center;
+    }
+    .mod-menu { background: #fefce8; color: #ca8a04; border: 1px solid #fef08a; }
+    .mod-pedidos { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+    .mod-reservas { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .mod-usuarios { background: #faf5ff; color: #9333ea; border: 1px solid #e9d5ff; }
+    .mod-facturacion { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    
+    /* 🎯 NUEVO: Color para las auditorías de Mesas (Naranja) */
+    .mod-mesas { background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; }
+    
+    .mod-default { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+
     .date-text { font-size: 13px; font-weight: 500; color: #64748b; }
 </style>
 
@@ -91,7 +107,7 @@
         <button type="submit" class="btn-search"><i class="fa-solid fa-magnifying-glass"></i> Filtrar</button>
         
         {% if usuario_query or fecha_query %}
-            <a href="{% url 'auditoria_lista' %}" style="color: #ef4444; font-size: 13px; text-decoration: none; margin-left: 10px; font-weight: 600;">
+            <a href="{% url 'auditoria:auditoria_lista' %}" style="color: #ef4444; font-size: 13px; text-decoration: none; margin-left: 10px; font-weight: 600;">
                 <i class="fa-solid fa-xmark"></i> Limpiar
             </a>
         {% endif %}
@@ -127,7 +143,11 @@
                     </div>
                 </td>
                 <td><span class="badge">{{ log.accion }}</span></td>
-                <td style="text-transform: capitalize; font-weight: 600; color: #c49a45;">{{ log.modulo }}</td>
+                <td>
+                    <span class="badge-modulo mod-{{ log.modulo|lower|default:'default' }}">
+                        {{ log.get_modulo_display }}
+                    </span>
+                </td>
                 <td>{{ log.detalle }}</td>
                 <td class="date-text">{{ log.fecha_hora|date:"d M Y, H:i" }}</td>
             </tr>

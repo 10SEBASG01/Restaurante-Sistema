@@ -1,9 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from django.db.models.signals import pre_save
-from django.dispatch import receiver
-from apps.auditoria.models import Auditoria
 
 class CategoriasPlato(models.Model):
     # Definimos las 9 categorías oficiales de tu documentación en una tupla
@@ -55,7 +52,7 @@ class GestionPlatillo(models.Model):
     )
     
     disponible = models.BooleanField(default=True)
-    activo = models.BooleanField(default=True)  # 🔥 AGREGADO: Campo para el borrado lógico
+    activo = models.BooleanField(default=True)  # Campo para el borrado lógico
     imagen = models.ImageField(upload_to='menu/platillos/', blank=True, null=True)
 
     class Meta:
@@ -65,24 +62,3 @@ class GestionPlatillo(models.Model):
 
     def __str__(self):
         return self.nombre_platillo
-    
-# --- TRIGGER: AUDITAR CAMBIO DE PRECIO ---
-@receiver(pre_save, sender=GestionPlatillo)
-def auditar_cambio_precio(sender, instance, **kwargs):
-    """
-    Se dispara ANTES de guardar el platillo para comparar el precio.
-    """
-    if instance.pk: # Verificamos que el platillo ya exista (edición, no creación)
-        try:
-            platillo_viejo = GestionPlatillo.objects.get(pk=instance.pk)
-            
-            # Si el precio viejo es diferente al precio que intentan guardar
-            if platillo_viejo.precio != instance.precio:
-                Auditoria.objects.create(
-                    id_usuario=None, # Lo dejamos como Sistema
-                    modulo='menu',   # 'menu' activa el punto AMARILLO
-                    accion='Modificó precio',
-                    detalle=f"{instance.nombre_platillo} ${platillo_viejo.precio} -> ${instance.precio}"
-                )
-        except GestionPlatillo.DoesNotExist:
-            pass

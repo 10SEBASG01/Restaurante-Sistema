@@ -170,6 +170,14 @@ def crear_factura(request, id_pedido=None):
                     mesa_afectada.cliente_direccion = None
                     mesa_afectada.mesero_assigned = None
                     mesa_afectada.save()
+                    
+                    from apps.auditoria.models import Auditoria
+                    Auditoria.objects.create(
+                        id_usuario=request.user,
+                        modulo='facturacion',
+                        accion='Factura Emitida',
+                        detalle=f"Factura {factura.secuencial} - Cliente: {factura.cliente_nombre} - Total: ${factura.total}"
+                    )
 
                     messages.success(request, f"Factura {factura.secuencial} emitida con éxito. Mesa {mesa_afectada.numero} liberada.")
                     return redirect('ver_detalle_factura', id_factura=factura.id_factura)
@@ -249,22 +257,13 @@ def historial_facturas(request):
 # --- GESTIÓN DE CONFIGURACIÓN DEL EMISOR E IVA ---
 @login_required
 def configuracion_facturacion(request):
-    """Muestra y procesa las actualizaciones del panel de configuración de tasas y emisor."""
-    if not acceso_facturacion(request):
-        return render(request, 'errors/acceso_denegado.html', status=403)
-
-    config, created = ConfiguracionFacturacion.objects.get_or_create(id=1, defaults={
-        'nombre_comercial': 'Sabor y Arte',
-        'razon_social': 'Sabor y Arte S.A.',
-        'ruc': '20456789012',
-        'provincia': 'Manta, Manabí',
-        'direccion': 'Av. Gastronomía 455, Miraflores',
-        'iva_porcentaje': 12
-    })
-
+    config, created = ConfiguracionFacturacion.objects.get_or_create(id=1)
     tab_activa = 'empresa'
 
     if request.method == 'POST':
+        # Importación local segura del modelo de Auditoría
+        from apps.auditoria.models import Auditoria
+        
         if 'action_emisor' in request.POST:
             tab_activa = 'empresa'
             config.nombre_comercial = request.POST.get('nombre_comercial')
@@ -273,6 +272,14 @@ def configuracion_facturacion(request):
             config.provincia = request.POST.get('ciudad_provincia')
             config.direccion = request.POST.get('direccion')
             config.save()
+            
+            # 🎯 REGISTRO EN AUDITORÍA: Cambios del emisor
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='facturacion',
+                accion='Configuración Empresa',
+                detalle=f"Actualizó datos del emisor comercial: {config.nombre_comercial}"
+            )
             messages.success(request, "Datos de la cabecera comercial del emisor actualizados.")
             
         elif 'action_iva' in request.POST:
@@ -280,6 +287,14 @@ def configuracion_facturacion(request):
             try:
                 config.iva_porcentaje = int(request.POST.get('iva_comercial', 12))
                 config.save()
+                
+                # 🎯 REGISTRO EN AUDITORÍA: Cambios en la tasa impositiva
+                Auditoria.objects.create(
+                    id_usuario=request.user,
+                    modulo='facturacion',
+                    accion='Configuración IVA',
+                    detalle=f"Actualizó tasa de IVA vigente al {config.iva_porcentaje}%"
+                )
                 messages.success(request, "Tasa impositiva del IVA actualizada correctamente.")
             except ValueError:
                 messages.error(request, "Porcentaje de IVA inválido.")

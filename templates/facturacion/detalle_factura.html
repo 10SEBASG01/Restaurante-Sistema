@@ -28,8 +28,10 @@
     }
 
     @media print {
+        /* AQUÍ ESTÁ LA CORRECCIÓN: Se añadieron .alert-container y .alert */
         #sidebar, .sidebar, .navbar, .main-header, 
-        .no-print-status, .control-card {
+        .no-print-status, .control-card,
+        .alert-container, .alert {
             display: none !important;
         }
 
