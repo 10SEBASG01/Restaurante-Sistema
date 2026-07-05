@@ -100,6 +100,12 @@
             color: var(--gold-primary);
         }
 
+        /* NUEVO: Animación de entrada suave para el contenido */
+        @keyframes fadeInContent {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .contenido-principal {
             flex: 1; /* Permite que el contenido empuje el footer hacia abajo */
             display: flex;
@@ -107,6 +113,8 @@
             align-items: flex-start;
             padding: 40px 20px;
             position: relative;
+            /* Se aplica la animación aquí */
+            animation: fadeInContent 0.3s ease-out forwards;
         }
 
         /* Footer Global */

@@ -12,7 +12,7 @@
             margin: 0;
             padding: 0;
             font-family: 'Inter', sans-serif;
-            background-color: #f4f6f9; /* Fondo gris claro liso y limpio */
+            background-color: #f4f6f9;
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -24,7 +24,7 @@
         .login-card {
             background: #ffffff;
             border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* Sombra más sutil */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
             padding: 40px;
             width: 100%;
             max-width: 380px;
@@ -118,49 +118,6 @@
         }
         .input-group input::placeholder { color: #9ca3af; }
 
-        /* Opciones: Checkbox y Enlace */
-        .options {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 13px;
-            margin-bottom: 25px;
-            margin-top: 5px;
-        }
-        
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #4b5563;
-            cursor: pointer;
-            font-weight: 500;
-        }
-        .checkbox-container input {
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            border: 2px solid #c49a45;
-            border-radius: 4px;
-            background-color: white;
-            cursor: pointer;
-            position: relative;
-            margin: 0;
-        }
-        .checkbox-container input:checked { background-color: #c49a45; }
-        .checkbox-container input:checked::after {
-            content: '\f00c';
-            font-family: 'FontAwesome';
-            font-size: 12px;
-            color: white;
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .options a { color: #c49a45; text-decoration: none; font-weight: 500; transition: 0.3s; }
-        .options a:hover { color: #a37f37; }
-
         /* Botón dorado */
         .btn-gold {
             width: 100%;
@@ -172,7 +129,7 @@
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: background 0.3s, opacity 0.3s;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -180,6 +137,12 @@
             font-family: 'Inter', sans-serif;
         }
         .btn-gold:hover { background-color: #b0883b; }
+
+        /* NUEVO: Estado de carga para el botón */
+        .btn-gold.is-loading {
+            pointer-events: none; /* Previene el doble clic bloqueando los eventos del ratón */
+            opacity: 0.7; /* Da un efecto visual de estar deshabilitado */
+        }
 
         /* Footer */
         .footer {
@@ -195,8 +158,8 @@
 
         input[type="password"]::-ms-reveal,
         input[type="password"]::-ms-clear {
-    display: none;
-}   
+            display: none;
+        }   
     </style>
 </head>
 <body>
@@ -209,7 +172,7 @@
         <h2>Bienvenido al Sistema de<br>Gestión Centralizado</h2>
         <p class="subtitle">Inicia sesión en tu cuenta</p>
         
-        <form method="POST">
+        <form method="POST" id="loginForm">
             {% csrf_token %}
             
             {% if form.errors %}
@@ -230,8 +193,7 @@
                 <i class="fa-regular fa-eye-slash right-icon" id="togglePassword" title="Mostrar/Ocultar contraseña"></i>
             </div>
             
-
-            <button type="submit" class="btn-gold">
+            <button type="submit" class="btn-gold" id="submitBtn">
                 <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
             </button>
         </form>
@@ -242,6 +204,7 @@
     </div>
 
     <script>
+        // Lógica de mostrar/ocultar contraseña
         const togglePassword = document.querySelector('#togglePassword');
         const password = document.querySelector('#pwdInput');
 
@@ -250,6 +213,18 @@
             password.setAttribute('type', type);
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
+        });
+
+        // NUEVO: Lógica para prevenir el doble clic y mostrar estado de carga
+        const loginForm = document.querySelector('#loginForm');
+        const submitBtn = document.querySelector('#submitBtn');
+
+        loginForm.addEventListener('submit', function () {
+            // 1. Añadimos la clase que aplica el pointer-events: none (evita doble clic)
+            submitBtn.classList.add('is-loading');
+            
+            // 2. Cambiamos el icono estático por el spinner animado de FontAwesome y actualizamos el texto
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Cargando...';
         });
     </script>
 </body>
