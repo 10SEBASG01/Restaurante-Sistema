@@ -1,6 +1,5 @@
 {% extends 'base_admin.html' %}
-
-{% block content %}
+{% load static %} {% block content %}
 <style>
     /* =========================================
        ESTILOS DEL DASHBOARD INTERACTIVO
@@ -294,7 +293,7 @@
                     <div class="top-rank" {% if not forloop.first %}style="background: #f3f4f6; color: #6b7280;"{% endif %}>{{ forloop.counter }}</div>
                     <div class="top-img">
                         {% if prod.id_platillo__imagen %}
-                            <img src="/media/{{ prod.id_platillo__imagen }}" alt="plato">
+                            <img src="{% get_media_prefix %}{{ prod.id_platillo__imagen }}" alt="plato">
                         {% else %}
                             🍽️
                         {% endif %}

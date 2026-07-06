@@ -1,19 +1,50 @@
+# Ignora qué archivos y carpetas no debe rastrear ni subir a tu repositorio (como GitHub).
+# Entornos virtuales
+# Estas carpetas contienen todas las librerías instaladas. Pesan muchísimo 
+# y cada integrante del grupo debe crear la suya localmente.
 venv/
 .venv/
 env/
 ENV/
 sh/
+
+# Caché y archivos compilados de Python
+# Archivos temporales que Python genera automáticamente para ejecutarse más rápido. 
+# No tiene sentido subirlos porque se regeneran solos en cada computadora.
 **/__pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
+
+# Bases de datos locales
+# Archivos de la base de datos por defecto de Django. Se ignoran para que 
+# los datos de prueba locales de un compañero no sobrescriban los tuyos al hacer pull.
 *.sqlite3
 *.sqlite3-journal
+
+# Configuraciones de editores de código
+# Oculta las configuraciones de tu editor. Así, tus preferencias de VS Code 
+# no interfieren con el entorno de los demás compañeros.
 .vscode/
 *.code-workspace
 .idea/
+
+# Archivos multimedia del proyecto
+# Oculta las imágenes o archivos que se suben mientras pruebas el sistema 
+# (por ejemplo, fotos de los platillos del restaurante o prototipos).
 media/
+
+# Registros del sistema
+# Archivos de texto donde el servidor anota errores y eventos.
 *.log
+
+# Variables de entorno ¡SÚPER IMPORTANTE!
+# Aquí es donde guardas contraseñas, tokens y las credenciales de tu base de datos.
+# Por pura seguridad, esto JAMÁS debe subirse al repositorio.
 .env
+
+# Archivos estáticos de producción
+# Es la carpeta que se genera al correr 'collectstatic'. Como se crea automáticamente 
+# durante el build en el servidor, no necesitamos guardarla en Git.
 staticfiles/
