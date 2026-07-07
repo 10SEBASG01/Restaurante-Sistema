@@ -17,11 +17,10 @@ class CategoriasPlato(models.Model):
     )
 
     id_categoria = models.AutoField(primary_key=True)
-    # Le añadimos las choices para que Django sepa cuáles son las únicas opciones válidas
+    # CORRECCIÓN: Se quitó el choices para permitir categorías dinámicas
     nombre_categoria = models.CharField(
         max_length=100, 
-        unique=True, 
-        choices=CATEGORIAS_CHOICES
+        unique=True
     )
 
     class Meta:
@@ -30,7 +29,8 @@ class CategoriasPlato(models.Model):
         verbose_name_plural = 'Categorías de Platos'
 
     def __str__(self):
-        return self.get_nombre_categoria_display() # Muestra el nombre legible limpio
+        # CORRECCIÓN: Como ya no usa choices, devolvemos el campo directo
+        return self.nombre_categoria
 
 
 class GestionPlatillo(models.Model):

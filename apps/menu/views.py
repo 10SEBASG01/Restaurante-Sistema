@@ -1,9 +1,10 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.db.models import Q
+from django.db.models import Q, ProtectedError
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 
 from apps.usuarios.views import requiere_permiso 
-from apps.auditoria.models import Auditoria  # 🔥 Importamos el modelo de Auditoría
+from apps.auditoria.models import Auditoria  
 
 from .models import GestionPlatillo, CategoriasPlato
 from .forms import PlatilloForm
@@ -11,11 +12,6 @@ from .forms import PlatilloForm
 @login_required
 @requiere_permiso('modulo_menu')
 def menu_gestion(request):
-    # AUTOMATIZACIÓN: Si la tabla de categorías está vacía, la poblamos con las 9 oficiales
-    if not CategoriasPlato.objects.exists():
-        for codigo, nombre in CategoriasPlato.CATEGORIAS_CHOICES:
-            CategoriasPlato.objects.get_or_create(nombre_categoria=codigo)
-
     # 1. Obtener todas las categorías para pintar las pestañas superiores
     categorias = CategoriasPlato.objects.all()
     
@@ -65,10 +61,6 @@ def menu_gestion(request):
 @login_required
 @requiere_permiso('modulo_menu')
 def crear_platillo(request):
-    if not CategoriasPlato.objects.exists():
-        for codigo, nombre in CategoriasPlato.CATEGORIAS_CHOICES:
-            CategoriasPlato.objects.get_or_create(nombre_categoria=codigo)
-
     if request.method == 'POST':
         form = PlatilloForm(request.POST, request.FILES)
         if form.is_valid():
@@ -145,3 +137,65 @@ def eliminar_platillo(request, id_platillo):
         return redirect('menu:menu_gestion')
         
     return render(request, 'menu/eliminar_platillo.html', {'platillo': platillo})
+
+
+@login_required
+@requiere_permiso('modulo_menu')
+def crear_categoria(request):
+    if request.method == 'POST':
+        nuevo_nombre = request.POST.get('nombre_categoria', '').strip()
+        
+        if nuevo_nombre:
+            categoria_nueva, creada = CategoriasPlato.objects.get_or_create(
+                nombre_categoria=nuevo_nombre.capitalize()
+            )
+            
+            if creada:
+                Auditoria.objects.create(
+                    id_usuario=request.user,
+                    modulo='menu',
+                    accion='Categoría Creada',
+                    detalle=f"Añadió una nueva pestaña al menú: {categoria_nueva.nombre_categoria}"
+                )
+            
+            return redirect('menu:menu_gestion')
+            
+    return render(request, 'menu/crear_categoria.html')
+
+
+@login_required
+@requiere_permiso('modulo_menu')
+def eliminar_categoria(request, nombre_categoria):
+    categoria = get_object_or_404(CategoriasPlato, nombre_categoria=nombre_categoria)
+    
+    if request.method == 'POST':
+        # Contamos si hay platillos que estén visibles (activos)
+        platillos_activos = categoria.platillos.filter(activo=True).count()
+        
+        if platillos_activos > 0:
+            # Si hay platillos visibles, bloqueamos la acción
+            return render(request, 'menu/eliminar_categoria.html', {
+                'categoria': categoria,
+                'error_protegido': True
+            })
+        else:
+            try:
+                # Si no hay platillos activos, limpiamos los inactivos y borramos categoría
+                categoria.platillos.all().delete()
+                categoria.delete()
+                
+                Auditoria.objects.create(
+                    id_usuario=request.user,
+                    modulo='menu',
+                    accion='Categoría Eliminada',
+                    detalle=f"Eliminó la pestaña del menú: {nombre_categoria}"
+                )
+                messages.success(request, f'La categoría "{nombre_categoria}" fue eliminada.')
+                return redirect('menu:menu_gestion')
+            except ProtectedError:
+                return render(request, 'menu/eliminar_categoria.html', {
+                    'categoria': categoria,
+                    'error_protegido': True
+                })
+            
+    return render(request, 'menu/eliminar_categoria.html', {'categoria': categoria})

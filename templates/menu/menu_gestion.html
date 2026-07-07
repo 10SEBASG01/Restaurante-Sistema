@@ -13,10 +13,20 @@
     .search-input { padding-left: 36px; padding-right: 16px; border: 1px solid #d1d5db; border-radius: 8px; width: 240px; height: 40px; outline: none; font-size: 14px; }
     
     .select-filter { border: 1px solid #d1d5db; border-radius: 8px; padding: 0 16px; height: 40px; background-color: #ffffff; outline: none; font-size: 14px; cursor: pointer; }
-    .btn-nuevo { background-color: #c49a45; color: #ffffff; border: none; font-weight: 500; padding: 0 20px; height: 40px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; text-decoration: none; justify-content: center; }
     
-    .tabs-categories { display: flex; border-bottom: 1px solid #e5e7eb; margin-bottom: 24px; gap: 24px; }
-    .tab-link { padding-bottom: 12px; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.2s; color: #6b7280; }
+    .btn-nuevo { background-color: #c49a45; color: #ffffff; border: none; font-weight: 500; padding: 0 20px; height: 40px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; text-decoration: none; justify-content: center; transition: 0.2s; }
+    .btn-nuevo:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(196, 154, 69, 0.2); }
+    
+    /* 🔥 ESTILOS PARA LAS ALERTAS DINÁMICAS EN PANTALLA */
+    .alert-box { display: flex; align-items: center; gap: 15px; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); animation: fadeIn 0.3s ease-out; }
+    .alert-error { background-color: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; }
+    .alert-error .alert-icon { color: #dc2626; font-size: 20px; }
+    .alert-success { background-color: #f0fdf4; border-left: 4px solid #22c55e; color: #166534; }
+    .alert-success .alert-icon { color: #16a34a; font-size: 20px; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .tabs-categories { display: flex; border-bottom: 1px solid #e5e7eb; margin-bottom: 24px; gap: 24px; overflow-x: auto; padding-bottom: 4px; }
+    .tab-link { padding-bottom: 12px; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.2s; color: #6b7280; white-space: nowrap; }
     .tab-active { border-bottom: 2px solid #c49a45; color: #c49a45; }
     
     .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; }
@@ -67,6 +77,16 @@
                 <option value="No disponible" {% if filtro_disponibilidad == 'No disponible' %}selected{% endif %}>No disponible</option>
             </select>
 
+            {% if categoria_activa != 'Todos' %}
+                <a href="{% url 'menu:eliminar_categoria' categoria_activa %}" class="btn-nuevo" style="background-color: #ef4444; border: 1px solid #dc2626;">
+                    <i class="fas fa-trash"></i> Eliminar Categoría
+                </a>
+            {% endif %}
+
+            <a href="{% url 'menu:crear_categoria' %}" class="btn-nuevo">
+                <i class="fas fa-plus"></i> Nueva Categoría
+            </a>
+
             <a href="{% url 'menu:crear_platillo' %}" class="btn-nuevo">
                 <i class="fas fa-plus"></i> Nuevo Platillo
             </a>
@@ -75,7 +95,27 @@
 
     <div style="flex-grow: 1;">
         
-        <div class="tabs-categories">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert-box {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+                    <div class="alert-icon">
+                        {% if message.tags == 'error' %}
+                            <i class="fa-solid fa-shield-halved"></i>
+                        {% else %}
+                            <i class="fa-solid fa-circle-check"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {% if message.tags == 'error' %}
+                            <strong style="display: block; margin-bottom: 4px; color: #b91c1c;">¡Acción Denegada!</strong>
+                        {% endif %}
+                        {{ message }}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="tabs-categories" style="align-items: flex-end;">
             <a href="?categoria=Todos{% if search %}&search={{ search }}{% endif %}&disponible={{ filtro_disponibilidad }}" 
                class="tab-link {% if categoria_activa == 'Todos' %}tab-active{% endif %}">
                 Todos
@@ -87,7 +127,9 @@
                     {{ cat.nombre_categoria }}
                 </a>
             {% empty %}
-                <p style="color: #9ca3af; font-size: 14px; padding-bottom: 8px;">No hay categorías registradas.</p>
+                <span style="color: #9ca3af; font-size: 14px; margin: 0; padding-bottom: 12px;">
+                    No hay más categorías registradas.
+                </span>
             {% endfor %}
         </div>
 
@@ -115,10 +157,10 @@
                         <div class="card-footer">
                             <span class="card-precio">${{ item.precio }}</span>
                             <div class="card-actions">
-                                <a href="{% url 'menu:editar_platillo' item.id_platillo %}" style="color: #9ca3af;">
+                                <a href="{% url 'menu:editar_platillo' item.id_platillo %}" style="color: #9ca3af;" title="Editar">
                                     <i class="fas fa-pencil-alt"></i>
                                 </a>
-                                <a href="{% url 'menu:eliminar_platillo' item.id_platillo %}" style="color: #f87171;">
+                                <a href="{% url 'menu:eliminar_platillo' item.id_platillo %}" style="color: #f87171;" title="Eliminar">
                                     <i class="fas fa-trash"></i>
                                 </a>
                             </div>
