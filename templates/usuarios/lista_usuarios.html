@@ -14,6 +14,7 @@
         outline: none; font-size: 14px; color: #4a5568; background-color: #f8fafc;
     }
     .filters-bar input[type="text"]:focus, .filters-bar select:focus { border-color: #c49a45; }
+    .filter-input-search { width: 300px; }
     
     .btn-gold { background-color: #c49a45; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: 0.3s; white-space: nowrap; }
     .btn-gold:hover { background-color: #b0883b; }
@@ -63,7 +64,7 @@
     </div>
     
     <form method="GET" class="filters-bar">
-        <input type="text" name="q" value="{{ query }}" placeholder="🔍 Buscar usuario..." onkeypress="if(event.keyCode == 13){ this.form.submit(); }">
+        <input type="text" name="q" value="{{ query }}" placeholder="🔍 Buscar por nombre o apellido..." class="filter-input-search" onkeypress="if(event.keyCode == 13){ this.form.submit(); }">
         <select name="rol" onchange="this.form.submit()">
             <option value="Todos">Roles: Todos</option>
             {% for clave, valor in roles_disponibles %}
@@ -85,7 +86,7 @@
     <table>
         <thead>
             <tr>
-                <th>Usuario</th>
+                <th>Nombre y Apellidos</th>
                 <th>Correo Electrónico</th>
                 <th>Rol</th>
                 <th>Estado</th>

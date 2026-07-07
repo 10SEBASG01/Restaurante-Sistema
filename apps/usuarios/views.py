@@ -90,12 +90,17 @@ def cerrar_sesion(request):
 def lista_usuarios(request):
     usuarios = Usuario.objects.exclude(rol='cliente')
     
-    query = request.GET.get('q', '')
+    query = request.GET.get('q', '').strip()
     rol_filter = request.GET.get('rol', 'Todos')
     estado_filter = request.GET.get('estado', 'Todos')
 
     if query:
-        usuarios = usuarios.filter(Q(username__icontains=query) | Q(email__icontains=query))
+        usuarios = usuarios.filter(
+            Q(username__icontains=query) | 
+            Q(first_name__icontains=query) | 
+            Q(last_name__icontains=query)
+        )
+        
     if rol_filter != 'Todos':
         usuarios = usuarios.filter(rol=rol_filter)
     if estado_filter == 'Activo':

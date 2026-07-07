@@ -238,10 +238,14 @@ def historial_facturas(request):
     facturas = Factura.objects.all()
 
     if search_query:
+        # Se agregaron los campos id_cajero__first_name, last_name y username al filtro Q
         facturas = facturas.filter(
             Q(cliente_nombre__icontains=search_query) |
             Q(cliente_identificacion__icontains=search_query) |
-            Q(secuencial__icontains=search_query)
+            Q(secuencial__icontains=search_query) |
+            Q(id_cajero__first_name__icontains=search_query) |
+            Q(id_cajero__last_name__icontains=search_query) |
+            Q(id_cajero__username__icontains=search_query)
         )
 
     if fecha_query:
