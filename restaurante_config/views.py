@@ -4,11 +4,16 @@
 import json
 from datetime import timedelta, datetime
 import zoneinfo
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db.models import Sum, F, Count
 from django.db.models.functions import TruncDate
+
+# 👇 NUEVAS IMPORTACIONES PARA CONTRASEÑAS Y ALERTAS
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 
 # Importamos los modelos de las diferentes aplicaciones del sistema.
 from apps.facturacion.models import Factura
@@ -127,3 +132,36 @@ def dashboard_view(request):
     }
     
     return render(request, 'panel_principal.html', context)
+
+# 💡 NUEVA VISTA: Cambio de Contraseña del Usuario Logueado
+@login_required(login_url='login')
+def cambiar_mi_password_view(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            
+            # Mantener la sesión activa para no expulsar al usuario tras el cambio
+            update_session_auth_hash(request, user)
+            
+            # Registro en auditoría (Ajusta los campos si tu modelo Auditoria tiene nombres distintos)
+            # Registro en auditoría corregido
+            Auditoria.objects.create(
+                id_usuario=user,
+                modulo='usuarios', # Asignamos el módulo correcto
+                accion='Cambio de contraseña',
+                detalle='El usuario cambió su propia contraseña desde el perfil'
+            )
+            
+            messages.success(request, 'Tu contraseña ha sido actualizada correctamente.')
+            return redirect('dashboard')
+        else:
+            messages.error(request, 'Por favor corrige los errores señalados abajo.')
+    else:
+        form = PasswordChangeForm(request.user)
+        
+    context = {
+        'form': form,
+        'titulo': 'Cambiar Contraseña'
+    }
+    return render(request, 'usuarios/cambiar_password.html', context)

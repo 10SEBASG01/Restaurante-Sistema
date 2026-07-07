@@ -6,7 +6,8 @@ from .views import (
     crear_usuario, 
     editar_usuario, 
     eliminar_usuario, 
-    asignar_permisos
+    asignar_permisos,
+    cambiar_password_admin
 )
 
 urlpatterns = [
@@ -19,4 +20,5 @@ urlpatterns = [
     path('editar/<int:pk>/', editar_usuario, name='editar_usuario'),
     path('eliminar/<int:pk>/', eliminar_usuario, name='eliminar_usuario'),
     path('permisos/<int:pk>/', asignar_permisos, name='asignar_permisos'),
+    path('<int:pk>/cambiar-password/', cambiar_password_admin, name='cambiar_password_admin'),
 ]

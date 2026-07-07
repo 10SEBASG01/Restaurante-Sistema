@@ -8,7 +8,8 @@ from django.contrib.auth.views import LoginView
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse_lazy
-
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib import messages
 # 🎯 IMPORTAMOS AUDITORÍA
 from apps.auditoria.models import Auditoria
 
@@ -245,4 +246,44 @@ def asignar_permisos(request, pk):
         'usuario': usuario, 
         'permisos': permisos,
         'usuario_permisos_ids': usuario_permisos_ids
+    })
+
+@login_required
+@requiere_permiso('modulo_usuarios')
+def cambiar_password_admin(request, pk):
+    """
+    Permite modificar la contraseña de un usuario exigiendo primero
+    la introducción de su contraseña actual por motivos de seguridad.
+    """
+    usuario_objetivo = get_object_or_404(Usuario, pk=pk)
+    
+    if request.method == 'POST':
+        # PasswordChangeForm añade y valida automáticamente el campo de "Contraseña actual"
+        form = PasswordChangeForm(user=usuario_objetivo, data=request.POST)
+        if form.is_valid():
+            form.save()
+            
+            # 🎯 REGISTRO EN EL MÓDULO DE AUDITORÍA
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='usuarios',
+                accion='Contraseña Modificada',
+                detalle=f"Se modificó la contraseña del usuario {usuario_objetivo.username} tras validar su clave actual."
+            )
+            
+            messages.success(request, f'La contraseña de {usuario_objetivo.username} se ha actualizado con éxito.')
+            return redirect('lista_usuarios')
+    else:
+        form = PasswordChangeForm(user=usuario_objetivo)
+        
+        # Aplicamos de forma automática los estilos visuales a los 3 campos
+        for field_name, field in form.fields.items():
+            field.widget.attrs.update({
+                'class': 'form-control',
+                'style': 'width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 15px;'
+            })
+            
+    return render(request, 'usuarios/cambiar_password.html', {
+        'form': form, 
+        'usuario_objetivo': usuario_objetivo
     })

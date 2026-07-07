@@ -66,6 +66,11 @@ def crear_mesa(request):
             return redirect('estado_mesas')
     else:
         form = MesaForm()
+        
+        # 💡 TRUCO: Cambiamos las opciones del select para que muestre el Nombre Completo
+        if 'mesero_assigned' in form.fields:
+            form.fields['mesero_assigned'].label_from_instance = lambda obj: f"{obj.first_name} {obj.last_name}".strip() or obj.username
+            
     return render(request, 'mesas/crear_mesa.html', {'form': form})
 
 # --- EDITAR MESA ---
@@ -88,6 +93,10 @@ def editar_mesa(request, pk):
             return redirect('estado_mesas')
     else:
         form = MesaForm(instance=mesa)
+        
+        # 💡 TRUCO: Cambiamos las opciones del select para que muestre el Nombre Completo
+        if 'mesero_assigned' in form.fields:
+            form.fields['mesero_assigned'].label_from_instance = lambda obj: f"{obj.first_name} {obj.last_name}".strip() or obj.username
         
     return render(request, 'mesas/editar_mesa.html', {'form': form, 'mesa': mesa})
 
@@ -162,6 +171,11 @@ def asignar_mesero_mesa(request, pk):
             return redirect('estado_mesas')
     else:
         form = AsignarMeseroForm(instance=mesa)
+        
+        # 💡 TRUCO: Cambiamos las opciones del select para que muestre el Nombre Completo
+        # Sobrescribimos el método que Django usa para etiquetar cada opción del select
+        if 'mesero_assigned' in form.fields:
+            form.fields['mesero_assigned'].label_from_instance = lambda obj: f"{obj.first_name} {obj.last_name}".strip() or obj.username
     
     return render(request, 'mesas/accion_mesa.html', {
         'form': form, 'mesa': mesa, 

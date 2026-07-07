@@ -1,18 +1,19 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
-from django.views.generic import RedirectView 
+# 👇 CORRECCIÓN: Añadido TemplateView aquí para evitar el error de definición
+from django.views.generic import RedirectView, TemplateView 
 from django.conf import settings
 from django.conf.urls.static import static
 
-# 👇 CORRECCIÓN: Importamos las vistas globales de tu proyecto (donde está el nuevo dashboard)
+# Importamos las vistas globales del proyecto
 from restaurante_config import views as core_views
 
 urlpatterns = [
-    # LA RUTA RAÍZ: Ahora los manda al Dashboard por defecto.
+    # LA RUTA RAÍZ: Manda al Dashboard por defecto.
     path('', RedirectView.as_view(pattern_name='dashboard', permanent=False), name='index'),
     
-    # 📊 CORRECCIÓN: Ahora usamos la vista "dashboard_view" exclusiva para el diseño de Figma
+    # Vista "dashboard_view" exclusiva para el diseño de Figma
     path('dashboard/', core_views.dashboard_view, name='dashboard'),
 
     path('admin/', admin.site.urls),
@@ -25,15 +26,22 @@ urlpatterns = [
     path('pedidos/', include('apps.pedidos.urls')),
     path('cocina/', include('apps.cocina.urls')),
     
-    # 📊 MÓDULO DE REPORTES 
+    # MÓDULO DE REPORTES 
     path('reportes/', include('apps.reportes.urls')),
     
     path('facturacion/', include('apps.facturacion.urls')),
 
     path('publico/', include('apps.publico.urls')),
     
-    # 🔥 AQUÍ AGREGAMOS EL MÓDULO DE AUDITORÍA (NUEVO)
+    # MÓDULO DE AUDITORÍA
     path('auditoria/', include('apps.auditoria.urls')),
+    
+    # 👇 NUEVAS RUTAS PARA EL CIERRE DE SESIÓN CON CONFIRMACIÓN
+    path('confirmar-salida/', TemplateView.as_view(template_name='errors/confirmar_cierre.html'), name='confirmar_logout'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='/usuarios/login/'), name='logout'),
+    
+    # 💡 NUEVA RUTA: CAMBIO DE CONTRASEÑA (Apunta a la view personalizada para auditoría)
+    path('mi-password/', core_views.cambiar_mi_password_view, name='cambiar_mi_password'),
     
     # --- SISTEMA PROFESIONAL DE RECUPERACIÓN DE CONTRASEÑAS ---
     path('password_reset/', auth_views.PasswordResetView.as_view(template_name='usuarios/password_reset.html'), name='password_reset'),
