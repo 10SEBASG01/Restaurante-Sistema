@@ -62,17 +62,18 @@
             line-height: 1;
         }
 
-        /* Ajuste para que el icono no tome la fuente cursiva */
         .navbar-brand i {
             font-family: "Font Awesome 6 Free";
             font-weight: 900;
             font-size: 22px;
         }
 
+        /* Enlaces (Desktop) */
         .navbar-links {
             display: flex;
             gap: 30px;
             list-style: none;
+            transition: all 0.3s ease;
         }
 
         .navbar-links a {
@@ -100,20 +101,28 @@
             color: var(--gold-primary);
         }
 
-        /* NUEVO: Animación de entrada suave para el contenido */
+        /* Botón de Menú (Oculto en Desktop) */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--gold-primary);
+            cursor: pointer;
+        }
+
         @keyframes fadeInContent {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .contenido-principal {
-            flex: 1; /* Permite que el contenido empuje el footer hacia abajo */
+            flex: 1; 
             display: flex;
             justify-content: center;
             align-items: flex-start;
             padding: 40px 20px;
             position: relative;
-            /* Se aplica la animación aquí */
             animation: fadeInContent 0.3s ease-out forwards;
         }
 
@@ -128,18 +137,52 @@
             margin-top: auto;
         }
 
-        /* Ajustes responsivos para la navegación */
+        /* --- AJUSTES RESPONSIVOS PARA TELÉFONOS (MOBILE FIRST) --- */
         @media(max-width: 768px){
             .navbar-publica {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
                 padding: 15px 20px;
             }
+
+            .mobile-menu-btn {
+                display: block; /* Muestra el botón de hamburguesa */
+            }
+
             .navbar-links {
-                gap: 20px;
-                flex-wrap: wrap;
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background: var(--nav-bg);
+                box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+                gap: 0;
+                /* Propiedades para el menú colapsado */
+                max-height: 0;
+                overflow: hidden;
+                opacity: 0;
+            }
+
+            /* Clase que se activa mediante JavaScript */
+            .navbar-links.active {
+                max-height: 300px;
+                opacity: 1;
+                border-top: 1px solid #f0f0f0;
+            }
+
+            .navbar-links li {
+                width: 100%;
+                text-align: center;
+            }
+
+            .navbar-links a {
+                padding: 15px 20px;
                 justify-content: center;
+                font-size: 16px;
+                border-bottom: 1px solid #f9f9f9;
+            }
+            
+            .navbar-links li:last-child a {
+                border-bottom: none;
             }
         }
     </style>
@@ -150,7 +193,13 @@
         <a href="{% url 'publico:inicio' %}" class="navbar-brand">
             <i class="fa-solid fa-utensils"></i> Sabor & Arte
         </a>
-        <ul class="navbar-links">
+        
+        <!-- Botón para móviles -->
+        <button class="mobile-menu-btn" id="mobileMenuBtn">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <ul class="navbar-links" id="navbarLinks">
             <li>
                 <a href="{% url 'publico:inicio' %}">
                     <i class="fa-solid fa-house"></i> Inicio
@@ -178,5 +227,24 @@
         © 2026 Sabor & Arte RESTAURANTE. Todos los derechos reservados. | Soporte Técnico
     </footer>
 
+    <!-- Script para funcionalidad del menú en móviles -->
+    <script>
+        const btnMobile = document.getElementById('mobileMenuBtn');
+        const navLinks = document.getElementById('navbarLinks');
+        const icon = btnMobile.querySelector('i');
+
+        btnMobile.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            
+            // Cambia el ícono de hamburguesa a la 'X' para cerrar
+            if (navLinks.classList.contains('active')) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-xmark');
+            } else {
+                icon.classList.remove('fa-xmark');
+                icon.classList.add('fa-bars');
+            }
+        });
+    </script>
 </body>
 </html>

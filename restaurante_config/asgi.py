@@ -1,16 +1,15 @@
 """
-ASGI config for restaurante_config project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/6.0/howto/deployment/asgi/
+Configuración ASGI para el proyecto restaurante_config.
+Expone la aplicación ASGI para servidores web asíncronos.
 """
 
 import os
-
 from django.core.asgi import get_asgi_application
 
+# 1. Configuración del entorno
+# Indicamos a Django dónde encontrar los ajustes principales del proyecto.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'restaurante_config.settings')
 
+# 2. Inicialización de la aplicación
+# Creamos la instancia ASGI que los servidores usarán para recibir las peticiones.
 application = get_asgi_application()

@@ -67,7 +67,7 @@
         /* Tarjeta Principal */
         .card {
             background: #ffffff;
-            width: 100%;
+            width: 90%; /* Ajuste a % para mejor respuesta */
             max-width: 420px;
             padding: 50px 40px;
             border-radius: 8px;
@@ -179,6 +179,19 @@
             font-size: 0.75rem;
             color: var(--text-gray);
             z-index: 2;
+        }
+
+        /* --- RESPONSIVIDAD PARA MÓVILES --- */
+        @media (max-width: 480px) {
+            .card {
+                padding: 35px 25px; /* Reduce padding para ganar espacio interior */
+            }
+            h1.brand-name {
+                font-size: 2.8rem; /* Evita que el texto rompa el diseño */
+            }
+            .bg-decoration {
+                display: none; /* Oculta los tenedores laterales en celulares */
+            }
         }
     </style>
 </head>

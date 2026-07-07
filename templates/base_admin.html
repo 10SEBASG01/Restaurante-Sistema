@@ -37,15 +37,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .main-content {
-            flex-grow: 1;
-            padding: 40px;
-            overflow-y: auto;
-            /* Agregas la animación aquí, que dure solo 0.3 segundos */
-            animation: fadeInContent 0.3s ease-out forwards; 
-        }
-
-        /* --- SIDEBAR OSCURO --- */
+        /* --- SIDEBAR OSCURO (SIEMPRE FIJO) --- */
         .sidebar {
             width: 260px;
             background-color: #18181b;
@@ -86,6 +78,7 @@
             flex-direction: column;
             padding: 0 15px;
             gap: 6px;
+            overflow-y: auto; /* Permite scroll si la pantalla es baja horizontalmente */
         }
 
         .nav-item {
@@ -125,10 +118,13 @@
             border-radius: 4px;
         }
 
+        /* --- CONTENIDO PRINCIPAL --- */
         .main-content {
             flex-grow: 1;
             padding: 40px;
             overflow-y: auto;
+            animation: fadeInContent 0.3s ease-out forwards; 
+            width: 100%;
         }
 
         /* --- ALERTAS GLOBALES (MENSAJES DJANGO) --- */
@@ -156,6 +152,23 @@
             color: var(--status-green-text); 
             border: 1px solid #cceadd; 
         }
+
+        /* --- OPTIMIZACIÓN DE ESPACIO PARA TABLETS (SIN OCULTAR MENÚ) --- */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 230px; /* Reducimos ligeramente el ancho del menú para ganar espacio */
+            }
+            .sidebar-header {
+                padding: 20px 15px;
+            }
+            .nav-item {
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+            .main-content {
+                padding: 20px; /* Reducimos el margen para que las tablas del POS quepan mejor */
+            }
+        }
     </style>
 </head>
 <body>
@@ -176,44 +189,35 @@
                 <i class="fa-solid fa-border-all"></i> Dashboard
             </a>
             
-            <a href="{% url 'lista_usuarios' %}"
-                class="nav-item {% if '/usuarios/' in request.path %}active{% endif %}">
-                <i class="fa-regular fa-user"></i>
-                Usuarios
+            <a href="{% url 'lista_usuarios' %}" class="nav-item {% if '/usuarios/' in request.path %}active{% endif %}">
+                <i class="fa-regular fa-user"></i> Usuarios
             </a>
             
-            <a href="{% url 'menu:menu_gestion' %}"
-                class="nav-item {% if '/menu/' in request.path %}active{% endif %}">
-                <i class="fa-solid fa-utensils"></i>
-                Menú
+            <a href="{% url 'menu:menu_gestion' %}" class="nav-item {% if '/menu/' in request.path %}active{% endif %}">
+                <i class="fa-solid fa-utensils"></i> Menú
             </a>
 
-            <a href="{% url 'estado_mesas' %}" 
-                class="nav-item {% if '/mesas/' in request.path %}active{% endif %}">
-                <i class="fa-solid fa-table-cells"></i> 
-                Mesas
+            <a href="{% url 'estado_mesas' %}" class="nav-item {% if '/mesas/' in request.path %}active{% endif %}">
+                <i class="fa-solid fa-table-cells"></i> Mesas
             </a>
 
-            <a href="{% url 'reservas:lista' %}"
-                class="nav-item {% if '/reservas/' in request.path %}active{% endif %}">
-                <i class="fa-regular fa-calendar-check"></i>
-                Reservas
+            <a href="{% url 'reservas:lista' %}" class="nav-item {% if '/reservas/' in request.path %}active{% endif %}">
+                <i class="fa-regular fa-calendar-check"></i> Reservas
             </a>
 
-            <a href="{% url 'pedidos:pedido_pantalla' %}" 
-                class="nav-item {% if '/pedidos/' in request.path %}active{% endif %}">
+            <a href="{% url 'pedidos:pedido_pantalla' %}" class="nav-item {% if '/pedidos/' in request.path %}active{% endif %}">
                 <i class="fa-solid fa-bag-shopping"></i> Pedidos
             </a>
-            <a href="{% url 'cocina:tablero_cocina' %}" 
-                class="nav-item {% if '/cocina/' in request.path %}active{% endif %}">
+            
+            <a href="{% url 'cocina:tablero_cocina' %}" class="nav-item {% if '/cocina/' in request.path %}active{% endif %}">
                 <i class="fa-solid fa-fire-burner"></i> Cocina
             </a>
+            
             <a href="{% url 'listar_pedidos_por_facturar' %}" class="nav-item {% if '/facturacion/' in request.path %}active{% endif %}">
                 <i class="fa-solid fa-file-invoice-dollar"></i> Facturación
             </a>
             
-            <a href="{% url 'reportes:dashboard' %}" 
-                class="nav-item {% if '/reportes/' in request.path %}active{% endif %}">
+            <a href="{% url 'reportes:dashboard' %}" class="nav-item {% if '/reportes/' in request.path %}active{% endif %}">
                 <i class="fa-solid fa-chart-column"></i> Reportes
             </a>
             

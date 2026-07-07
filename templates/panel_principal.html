@@ -287,19 +287,20 @@
                     <h3 class="panel-title">Top 5 Productos</h3>
                 </div>
             </div>
+            <!-- SECCIÓN CORREGIDA PARA CLOUDINARY -->
             <div class="top-list">
                 {% for prod in top_productos %}
                 <div class="top-item">
                     <div class="top-rank" {% if not forloop.first %}style="background: #f3f4f6; color: #6b7280;"{% endif %}>{{ forloop.counter }}</div>
                     <div class="top-img">
-                        {% if prod.id_platillo__imagen %}
-                            <img src="{% get_media_prefix %}{{ prod.id_platillo__imagen }}" alt="plato">
+                        {% if prod.imagen %}
+                            <img src="{{ prod.imagen.url }}" alt="{{ prod.nombre_platillo }}">
                         {% else %}
-                            🍽️
+                            <div class="placeholder-img" style="font-size: 16px;">🍽️</div>
                         {% endif %}
                     </div>
                     <div class="top-info">
-                        <p class="top-name">{{ prod.id_platillo__nombre_platillo }}</p>
+                        <p class="top-name">{{ prod.nombre_platillo }}</p>
                         <p class="top-sales">{{ prod.cantidad_total }} pedidos</p>
                     </div>
                     <div class="top-price">${{ prod.recaudado|floatformat:2 }}</div>
@@ -308,6 +309,7 @@
                 <p style="font-size: 13px; color: #6b7280;">No hay ventas registradas.</p>
                 {% endfor %}
             </div>
+            <!-- FIN SECCIÓN CORREGIDA -->
         </div>
     </div>
 

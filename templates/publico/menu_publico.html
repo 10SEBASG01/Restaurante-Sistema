@@ -6,6 +6,9 @@
         display: flex; 
         flex-direction: column; 
         height: 100%; 
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
     }
     
     .menu-header { 
@@ -78,6 +81,7 @@
         text-decoration: none; 
         transition: all 0.2s; 
         color: #6b7280; 
+        white-space: nowrap; /* Evita que el texto se rompa en dos líneas */
     }
     
     .tab-active { 
@@ -149,6 +153,28 @@
         font-size: 18px; 
         font-weight: 700; 
         color: #c49a45; 
+    }
+
+    /* --- RESPONSIVIDAD PARA MÓVILES --- */
+    @media (max-width: 768px) {
+        .menu-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 15px;
+            padding: 15px 20px;
+        }
+        .filter-form, .search-box, .search-input {
+            width: 100%; /* El buscador ocupa todo el ancho */
+        }
+        .tabs-categories {
+            overflow-x: auto; /* Permite scroll horizontal en móviles */
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 5px;
+            scrollbar-width: none; /* Oculta scrollbar en Firefox */
+        }
+        .tabs-categories::-webkit-scrollbar {
+            display: none; /* Oculta scrollbar en Chrome/Safari */
+        }
     }
 </style>
 
