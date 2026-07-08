@@ -1,4 +1,6 @@
+from datetime import datetime, timedelta
 from django import forms
+from django.core.exceptions import ValidationError
 from .models import Reserva
 from apps.mesas.models import Mesa
 
@@ -160,3 +162,38 @@ class ReservaForm(forms.ModelForm):
                 )
 
         self.fields['mesa'].choices = opciones
+
+    # 🔥 VALIDACIÓN DE CHOQUE DE HORARIOS (1 Hora Exacta)
+    def clean(self):
+        cleaned_data = super().clean()
+        fecha = cleaned_data.get('fecha')
+        hora = cleaned_data.get('hora')
+        mesa = cleaned_data.get('mesa')
+        estado = cleaned_data.get('estado')
+
+        if fecha and hora and mesa and estado != 'Cancelada':
+            tiempo_reserva = datetime.combine(fecha, hora)
+            
+            # Margen de 59 minutos antes y después para asegurar la hora exacta
+            rango_inicio = (tiempo_reserva - timedelta(minutes=59)).time()
+            rango_fin = (tiempo_reserva + timedelta(minutes=59)).time()
+
+            # Buscar conflictos en la base de datos
+            choques = Reserva.objects.filter(
+                mesa=mesa,
+                fecha=fecha,
+                hora__gte=rango_inicio,
+                hora__lte=rango_fin
+            ).exclude(estado='Cancelada') 
+            
+            # Ignorar la reserva actual si estamos editando
+            if self.instance and self.instance.pk:
+                choques = choques.exclude(pk=self.instance.pk)
+
+            # Si existe un cruce, lanzamos el error al usuario
+            if choques.exists():
+                raise ValidationError(
+                    "¡Choque de horarios! Esta mesa ya tiene una reserva en ese rango. Las reservas duran 1 hora exacta."
+                )
+
+        return cleaned_data

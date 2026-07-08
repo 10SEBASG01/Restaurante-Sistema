@@ -98,24 +98,25 @@ class Reserva(models.Model):
                     'cedula': 'La cédula no puede ser cero, ingrese un número válido.'
                 })
 
-        hoy = timezone.localdate()
-
-        if self.fecha < hoy:
-            raise ValidationError({
-                'fecha': 'No se puede reservar una fecha pasada.'
-            })
-
-        if self.fecha == hoy:
-            hora_actual = timezone.localtime().time()
-
-            if self.hora <= hora_actual:
-                raise ValidationError({
-                    'hora': 'La hora debe ser posterior a la actual.'
-                })
+        # 🔥 LÓGICA DE TIEMPO COMENTADA PARA DAR LIBERTAD DE REGISTRO
+        # hoy = timezone.localdate()
+        # 
+        # if self.fecha < hoy:
+        #     raise ValidationError({
+        #         'fecha': 'No se puede reservar una fecha pasada.'
+        #     })
+        # 
+        # if self.fecha == hoy:
+        #     hora_actual = timezone.localtime().time()
+        # 
+        #     if self.hora <= hora_actual:
+        #         raise ValidationError({
+        #             'hora': 'La hora debe ser posterior a la actual.'
+        #         })
 
         # ======================================
-        # NO PERMITIR DOS RESERVAS EN LA MISMA
-        # MESA, FECHA Y HORA
+        # NO PERMITIR DOS RESERVAS EXACTAMENTE IGUALES
+        # (El margen de 1 hora ya lo maneja forms.py)
         # ======================================
 
         reserva_existente = Reserva.objects.filter(
@@ -130,7 +131,7 @@ class Reserva(models.Model):
 
         if reserva_existente.exists():
             raise ValidationError({
-                'mesa': 'Esta mesa ya está reservada para esa fecha y hora.'
+                'mesa': 'Esta mesa ya está reservada para esa fecha y hora exacta.'
             })
 
     def save(self, *args, **kwargs):
@@ -148,3 +149,4 @@ class Reserva(models.Model):
             self.codigo = f"R-{numero:04d}"
 
         super().save(*args, **kwargs)
+        
