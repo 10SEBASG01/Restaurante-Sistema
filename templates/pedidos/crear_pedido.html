@@ -24,7 +24,6 @@
         padding: 16px 12px;
         display: flex;
         flex-direction: column;
-        /* 👉 CORRECCIÓN: Separación aumentada de 2px a 8px */
         gap: 8px; 
         flex-shrink: 0;
     }
@@ -109,6 +108,40 @@
         font-size: 12px;
         color: #6b7280;
         margin: 1px 0 0 0;
+    }
+
+    /* --- CONTENEDOR Y BOTÓN "MIS PEDIDOS" --- */
+    .barra-superior-acciones {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .btn-mis-pedidos {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        background-color: #ffffff;
+        border: 1.5px solid #e5e7eb;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .btn-mis-pedidos:hover {
+        background-color: #f8fafc;
+        border-color: #cbd5e1;
+        color: #1e293b;
+    }
+
+    .btn-mis-pedidos i {
+        font-size: 14px;
+        color: #c59b27;
     }
 
     .custom-dropdown-container {
@@ -309,6 +342,9 @@
     .carrito-header {
         padding: 16px 20px;
         border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .carrito-header h3 {
@@ -322,6 +358,25 @@
         font-size: 12px;
         color: #6b7280;
         margin: 1px 0 0 0;
+    }
+
+    /* ESTILO SUTIL PARA EL BOTÓN LIMPIAR (OCULTO POR DEFECTO) */
+    .btn-limpiar-todo {
+        font-size: 13px;
+        font-weight: 600;
+        color: #ef4444;
+        background: transparent;
+        border: none;
+        padding: 4px 8px;
+        cursor: pointer;
+        display: none; /* Se maneja dinámicamente con JS */
+        align-items: center;
+        gap: 5px;
+        transition: opacity 0.2s ease;
+    }
+
+    .btn-limpiar-todo:hover {
+        opacity: 0.8;
     }
 
     .carrito-items-lista {
@@ -520,27 +575,34 @@
                 <p id="subtitulo-productos">Todos · {{ platillos.count }} productos</p>
             </div>
             
-            <div class="custom-dropdown-container">
-                <div class="badge-mesa-selector-btn" id="customDropdownBtn">
-                    <div class="indicador-punto"></div>
-                    <span id="customDropdownLabel">Seleccionar Mesa</span>
-                    <div class="custom-dropdown-arrow" id="customDropdownArrow">
-                        <svg style="width: 12px; height: 12px; fill: currentColor;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                        </svg>
-                    </div>
-                </div>
-                
-                <ul class="dropdown-mesas-lista" id="customDropdownUl">
-                    <li data-value="" class="disabled-option">Seleccionar Mesa</li>
-                    {% for mesa in mesas %}
-                        <li data-value="{{ mesa.id }}">Mesa #{{ mesa.numero }}</li>
-                    {% empty %}
-                        <li data-value="" class="disabled-option">No hay mesas registradas</li>
-                    {% endfor %}
-                </ul>
+            <div class="barra-superior-acciones">
+                <a href="{% url 'pedidos:mis_pedidos_mesero' %}" class="btn-mis-pedidos">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>Mis Pedidos</span>
+                </a>
 
-                <input type="hidden" id="select-mesa-id" value="">
+                <div class="custom-dropdown-container">
+                    <div class="badge-mesa-selector-btn" id="customDropdownBtn">
+                        <div class="indicador-punto"></div>
+                        <span id="customDropdownLabel">Seleccionar Mesa</span>
+                        <div class="custom-dropdown-arrow" id="customDropdownArrow">
+                            <svg style="width: 12px; height: 12px; fill: currentColor;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <ul class="dropdown-mesas-lista" id="customDropdownUl">
+                        <li data-value="" class="disabled-option">Seleccionar Mesa</li>
+                        {% for mesa in mesas %}
+                            <li data-value="{{ mesa.id }}">Mesa #{{ mesa.numero }}</li>
+                        {% empty %}
+                            <li data-value="" class="disabled-option">No hay mesas registradas</li>
+                        {% endfor %}
+                    </ul>
+
+                    <input type="hidden" id="select-mesa-id" value="">
+                </div>
             </div>
         </div>
 
@@ -560,7 +622,7 @@
                             </div>
                             <div class="card-pedido-footer">
                                 <p class="prod-price">${{ p.precio }}</p>
-                                <button class="btn-add-circle">+</button>
+                                <button class="btn-add-circle" onclick="event.stopPropagation(); agregarAlCarrito('{{ p.id_platillo }}', '{{ p.nombre_platillo }}', '{{ p.precio }}', '{% if p.imagen %}{{ p.imagen.url }}{% endif %}')">+</button>
                             </div>
                         </div>
                     </div>
@@ -571,8 +633,13 @@
 
     <div class="panel-carrito">
         <div class="carrito-header">
-            <h3>Pedido Actual</h3>
-            <p id="carrito-resumen-cant">0 items</p>
+            <div>
+                <h3>Pedido Actual</h3>
+                <p id="carrito-resumen-cant">0 items</p>
+            </div>
+            <button id="btn-limpiar-carrito-completo" class="btn-limpiar-todo">
+                <span style="color: #ef4444; font-weight: bold; font-size: 11px; margin-right: 2px;">✕</span> Limpiar
+            </button>
         </div>
 
         <div id="carrito-lista" class="carrito-items-lista">
@@ -602,13 +669,28 @@
 <script>
     let carrito = [];
 
-    // --- LÓGICA DE INTERACTIVIDAD DEL NUEVO DROPDOWN PERSONALIZADO ---
+    // --- EVALUAR SI HAY DATOS INGRESADOS EN EL SISTEMA ---
+    function verificarEstadoDeDatos() {
+        const idMesa = document.getElementById('select-mesa-id').value;
+        const obs = document.getElementById('tx-observaciones').value.trim();
+        const btnLimpiar = document.getElementById('btn-limpiar-carrito-completo');
+
+        // Si hay una mesa seleccionada, texto en observaciones o items en el carrito: mostrar botón
+        if (idMesa !== "" || obs !== "" || carrito.length > 0) {
+            btnLimpiar.style.display = 'flex';
+        } else {
+            btnLimpiar.style.display = 'none';
+        }
+    }
+
+    // --- LÓGICA DE INTERACTIVIDAD DEL DROPDOWN PERSONALIZADO ---
     document.addEventListener("DOMContentLoaded", function() {
         const dropBtn = document.getElementById('customDropdownBtn');
         const dropUl = document.getElementById('customDropdownUl');
         const dropLabel = document.getElementById('customDropdownLabel');
         const dropArrow = document.getElementById('customDropdownArrow');
         const realInput = document.getElementById('select-mesa-id');
+        const txObs = document.getElementById('tx-observaciones');
 
         dropBtn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -628,17 +710,21 @@
 
             dropUl.classList.remove('show');
             dropArrow.style.transform = 'translateY(-50%) rotate(0deg)';
+            
+            verificarEstadoDeDatos(); // Comprobar cambios
         });
 
         document.addEventListener('click', function() {
             dropUl.classList.remove('show');
             dropArrow.style.transform = 'translateY(-50%) rotate(0deg)';
         });
+
+        // Escuchar cuando escriban en las observaciones
+        txObs.addEventListener('input', verificarEstadoDeDatos);
     });
 
     // --- MANEJO DEL CARRITO DE COMPRAS ---
     function agregarAlCarrito(id, nombre, precio, imgUrl) {
-        // 👉 CORRECCIÓN: Reemplazamos la coma que manda Django por un punto para que JS calcule bien los decimales
         const precioNum = parseFloat(precio.replace(',', '.'));
         const existente = carrito.find(item => item.id_platillo === id);
 
@@ -648,6 +734,7 @@
             carrito.push({ id_platillo: id, name: nombre, price: precioNum, img: imgUrl, qty: 1 });
         }
         renderizarCarrito();
+        verificarEstadoDeDatos();
     }
 
     function cambiarCantidad(id, delta) {
@@ -659,6 +746,7 @@
             }
         }
         renderizarCarrito();
+        verificarEstadoDeDatos();
     }
 
     function renderizarCarrito() {
@@ -712,6 +800,7 @@
         totalMonto.innerText = `$${acumTotal.toFixed(2)}`;
     }
 
+    // --- FILTRADO DE CATEGORÍAS ---
     document.querySelectorAll('.btn-cat-item').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.btn-cat-item').forEach(b => b.classList.remove('active'));
@@ -733,7 +822,20 @@
         });
     });
 
-    // Envío a Cocina vía API
+    // --- ACCIÓN DE LIMPIEZA INMEDIATA (SIN MENSAJES DE CONFIRMACIÓN) ---
+    document.getElementById('btn-limpiar-carrito-completo').addEventListener('click', function() {
+        // Resetear variables y campos de forma directa
+        carrito = [];
+        document.getElementById('tx-observaciones').value = '';
+        document.getElementById('select-mesa-id').value = '';
+        document.getElementById('customDropdownLabel').textContent = 'Seleccionar Mesa';
+        
+        // Actualizar UI
+        renderizarCarrito();
+        verificarEstadoDeDatos(); // Ocultará el botón de inmediato ya que todo quedó vacío
+    });
+
+    // --- ENVÍO A COCINA VÍA API ---
     document.getElementById('btn-enviar-comanda-cocina').addEventListener('click', function() {
         const idMesa = document.getElementById('select-mesa-id').value;
         const obs = document.getElementById('tx-observaciones').value;
@@ -780,11 +882,10 @@
                 }).then(() => {
                     carrito = [];
                     document.getElementById('tx-observaciones').value = '';
-                    
                     document.getElementById('select-mesa-id').value = '';
                     document.getElementById('customDropdownLabel').textContent = 'Seleccionar Mesa';
-                    
                     renderizarCarrito();
+                    verificarEstadoDeDatos();
                 });
             } else {
                 Swal.fire({

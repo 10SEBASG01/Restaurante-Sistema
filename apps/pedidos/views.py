@@ -114,3 +114,78 @@ def guardar_pedido_api(request):
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
             
     return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+@login_required
+@requiere_permiso('modulo_pedidos')
+def mis_pedidos_mesero(request):
+    """
+    Subcaso 7.7: Consultar Estado del Pedido
+    Muestra al mesero sus comandas activas y oculta automáticamente 
+    aquellas que ya han sido entregadas a la mesa.
+    """
+    # 1. Traemos los pedidos del mesero actual
+    pedidos_mesero = GestionPedido.objects.filter(
+        id_empleado=request.user
+    ).select_related('id_mesa').order_by('-id_pedido')
+    
+    pedidos_activos = []
+    
+    # 2. Vinculamos con su comanda y filtramos las que ya terminaron su ciclo
+    for pedido in pedidos_mesero:
+        comanda = Comanda.objects.filter(id_pedido=pedido).first()
+        estado = comanda.estado_comanda if comanda else 'pendiente'
+        
+        # 🌟 FILTRO CRÍTICO: Si el estado ya es 'entregado', se ignora y no se añade a la lista
+        if estado != 'entregado':
+            pedido.estado_cocina = estado
+            pedidos_activos.append(pedido)
+
+    context = {
+        'pedidos': pedidos_activos,  # Enviamos únicamente las comandas vivas o en proceso
+    }
+    
+    return render(request, 'pedidos/mis_pedidos_mesero.html', context)
+
+@login_required
+@requiere_permiso('modulo_pedidos')
+@transaction.atomic
+def eliminar_pedido_api(request, id_pedido):
+    """
+    Permite al mesero cancelar un pedido de su lista SI Y SOLO SI
+    su comanda asociada sigue con estado 'pendiente' en la cocina.
+    """
+    if request.method == 'POST':
+        try:
+            # 1. Buscar el pedido y su comanda asociada
+            pedido = GestionPedido.objects.get(pk=id_pedido, id_empleado=request.user)
+            comanda = Comanda.objects.filter(id_pedido=pedido).first()
+            
+            if not comanda:
+                return JsonResponse({'success': False, 'error': 'No se encontró la comanda vinculada.'}, status=44)
+            
+            # 2. Validar que siga pendiente antes de borrar
+            if comanda.estado_comanda != 'pendiente':
+                return JsonResponse({
+                    'success': False, 
+                    'error': f'No puedes eliminar este pedido porque ya se encuentra {comanda.estado_comanda}.'
+                }, status=400)
+            
+            # 3. Registrar acción en auditoría antes de limpiar
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='pedidos',
+                accion='Pedido Cancelado/Eliminado',
+                detalle=f"Canceló el pedido #{pedido.id_pedido} (Mesa {pedido.id_mesa.numero}) cuando estaba pendiente."
+            )
+            
+            # 4. Eliminar el pedido de la base de datos (por cascada borrará sus detalles y comanda)
+            pedido.delete()
+            
+            return JsonResponse({'success': True, 'message': 'El pedido fue cancelado y eliminado correctamente.'})
+            
+        except GestionPedido.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'El pedido no existe o no tienes permisos sobre él.'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+            
+    return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)

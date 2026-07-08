@@ -9,4 +9,9 @@ urlpatterns = [
     
     # Ruta tipo API para recibir el JSON del carrito
     path('guardar-api/', views.guardar_pedido_api, name='guardar_pedido_api'),
+
+    path('mis-pedidos/', views.mis_pedidos_mesero, name='mis_pedidos_mesero'),
+
+    # Ruta tipo API para eliminar un pedido pendiente
+    path('eliminar-api/<int:id_pedido>/', views.eliminar_pedido_api, name='eliminar_pedido_api'),
 ]

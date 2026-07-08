@@ -1,0 +1,469 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+    /* --- CONTENEDOR PRINCIPAL --- */
+    .historial-container {
+        padding: 24px;
+        font-family: 'Inter', sans-serif;
+        background-color: #f9fafb;
+        min-height: calc(100vh - 64px);
+    }
+
+    /* --- ENCABEZADO --- */
+    .header-seccion-pedidos {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        background: #ffffff;
+        padding: 20px 24px;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .header-seccion-pedidos h2 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1c1c1e;
+        margin: 0;
+    }
+
+    .header-seccion-pedidos p {
+        color: #6b7280;
+        font-size: 13px;
+        margin: 4px 0 0 0;
+    }
+
+    /* --- SECCIÓN DE BÚSQUEDA --- */
+    .busqueda-wrapper-flex {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 24px;
+        width: 100%;
+        max-width: 520px;
+    }
+
+    .input-busqueda-relativo {
+        position: relative;
+        flex: 1;
+    }
+
+    .input-busqueda-relativo .icono-lupa-inside {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        font-size: 15px;
+        pointer-events: none;
+    }
+
+    .input-busqueda-custom {
+        width: 100%;
+        padding: 11px 16px 11px 40px;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        font-size: 14px;
+        color: #1f2937;
+        background-color: #ffffff;
+        outline: none;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    .input-busqueda-custom:focus {
+        border-color: #c59b27;
+        box-shadow: 0 0 0 3px rgba(197, 155, 39, 0.1);
+    }
+
+    .input-busqueda-custom::placeholder {
+        color: #9ca3af;
+        font-weight: 400;
+    }
+
+    .btn-circular-filtro {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        color: #4b5563;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    .btn-circular-filtro:hover {
+        background-color: #f9fafb;
+        color: #1f2937;
+        border-color: #cbd5e1;
+    }
+
+    /* --- BOTÓN VOLVER --- */
+    .btn-volver-menu {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 20px;
+        background-color: #ffffff;
+        border: 1.5px solid #e5e7eb;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-volver-menu:hover {
+        background-color: #f8fafc;
+        border-color: #cbd5e1;
+    }
+
+    .btn-volver-menu i {
+        color: #c59b27;
+    }
+
+    /* --- TARJETA DE LA TABLA --- */
+    .tabla-card-container {
+        background: #ffffff;
+        border-radius: 14px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+    }
+
+    .tabla-monitoreo {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .tabla-monitoreo th {
+        background: #f8fafc;
+        padding: 16px 20px;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .tabla-monitoreo td {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 13.5px;
+        color: #1f2937;
+        vertical-align: middle;
+    }
+
+    /* --- BADGES DE ESTADOS --- */
+    .badge-estado {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12.5px;
+        font-weight: 600;
+    }
+
+    .badge-pendiente { background-color: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; }
+    .badge-preparacion { background-color: #fef3c7; color: #d97706; border: 1px solid #fcd34d; }
+    .badge-listo { background-color: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
+
+    .punto-indicador {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background-color: currentColor;
+    }
+
+    /* --- BOTONES DE ACCIÓN --- */
+    .btn-eliminar-pedido {
+        background-color: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fee2e2;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-eliminar-pedido:hover {
+        background-color: #dc2626;
+        color: #ffffff;
+        border-color: #dc2626;
+    }
+
+    .btn-eliminar-pedido:disabled {
+        background-color: #f3f4f6;
+        color: #9ca3af;
+        border-color: #e5e7eb;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .estado-vacio-monitoreo {
+        text-align: center;
+        padding: 60px 20px;
+        color: #9ca3af;
+    }
+
+    .estado-vacio-monitoreo i {
+        font-size: 36px;
+        color: #cbd5e1;
+        margin-bottom: 14px;
+    }
+
+    /* --- ESTILOS MODERNOS Y SUTILES PARA EL POPUP DE CONFIRMACIÓN --- */
+    .swal2-popup-sutil {
+        border-radius: 16px !important;
+        padding: 24px !important;
+        font-family: 'Inter', sans-serif !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03) !important;
+        width: 380px !important; /* Más compacto */
+    }
+
+    .alerta-icono-sutil {
+        color: #dc2626 !important;
+        font-size: 28px !important;
+        margin-bottom: 12px !important;
+        display: block !important;
+        text-align: center !important;
+    }
+
+    .alerta-titulo-sutil {
+        font-size: 18px !important;
+        font-weight: 600 !important;
+        color: #111827 !important;
+        margin-bottom: 8px !important;
+        text-align: center !important;
+    }
+
+    .alerta-cuerpo-sutil {
+        font-size: 13.5px !important;
+        color: #4b5563 !important;
+        line-height: 1.5 !important;
+        text-align: center !important;
+        margin-bottom: 20px !important;
+    }
+
+    .btn-swal-sutil-cancel {
+        background-color: #f3f4f6 !important;
+        color: #4b5563 !important;
+        border-radius: 8px !important;
+        padding: 9px 18px !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        border: none !important;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+        margin-right: 8px !important;
+    }
+    .btn-swal-sutil-cancel:hover { background-color: #e5e7eb !important; }
+
+    .btn-swal-sutil-confirm {
+        background-color: #dc2626 !important;
+        color: #ffffff !important;
+        border-radius: 8px !important;
+        padding: 9px 18px !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        border: none !important;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+    .btn-swal-sutil-confirm:hover { background-color: #b91c1c !important; }
+</style>
+
+<div class="historial-container">
+    
+    <div class="header-seccion-pedidos">
+        <div>
+            <h2>Monitoreo en Tiempo Real</h2>
+            <p>Monitorea y gestiona las comandas que has despachado a la cocina.</p>
+        </div>
+        <div>
+            <a href="{% url 'pedidos:pedido_pantalla' %}" class="btn-volver-menu">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Volver al Menú</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="busqueda-wrapper-flex">
+        <div class="input-busqueda-relativo">
+            <i class="fa-solid fa-magnifying-glass icono-lupa-inside"></i>
+            <input type="text" id="inputBuscarPedido" class="input-busqueda-custom" placeholder="Buscar por pedido, mesa o estado...">
+        </div>
+        <button type="button" class="btn-circular-filtro" title="Opciones de filtrado">
+            <i class="fa-solid fa-sliders"></i>
+        </button>
+    </div>
+
+    <div class="tabla-card-container">
+        {% if pedidos %}
+            <table class="tabla-monitoreo" id="tablaPedidos">
+                <thead>
+                    <tr>
+                        <th>N° Pedido</th>
+                        <th>Mesa Asignada</th>
+                        <th>Observaciones de Comanda</th>
+                        <th>Estado en Cocina</th>
+                        <th style="text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pedido in pedidos %}
+                        <tr id="fila-pedido-{{ pedido.id_pedido }}" class="fila-pedido-datos">
+                            <td><strong style="color: #1c1c1e;">#{{ pedido.id_pedido }}</strong></td>
+                            <td>
+                                <span style="font-weight: 600; color: #374151;">
+                                    Mesa #{{ pedido.id_mesa.numero }}
+                                </span>
+                            </td>
+                            <td style="color: #6b7280; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                {{ pedido.observaciones|default:"Sin especificaciones o notas especiales." }}
+                            </td>
+                            <td>
+                                {% if pedido.estado_cocina == 'pendiente' %}
+                                    <span class="badge-estado badge-pendiente">
+                                        <div class="punto-indicador"></div>Pendiente
+                                    </span>
+                                {% elif pedido.estado_cocina == 'en_preparacion' %}
+                                    <span class="badge-estado badge-preparacion">
+                                        <div class="punto-indicador"></div>En Preparación
+                                    </span>
+                                {% elif pedido.estado_cocina == 'listo' or pedido.estado_cocina == 'lista' %}
+                                    <span class="badge-estado badge-listo">
+                                        <div class="punto-indicador"></div>Listo
+                                    </span>
+                                {% else %}
+                                    <span class="badge-estado badge-pendiente">
+                                        <div class="punto-indicador"></div>{{ pedido.estado_cocina }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                {% if pedido.estado_cocina == 'pendiente' %}
+                                    <button class="btn-eliminar-pedido" onclick="eliminarPedido('{{ pedido.id_pedido }}')">
+                                        <i class="fa-solid fa-trash-can"></i> Cancelar
+                                    </button>
+                                {% else %}
+                                    <button class="btn-eliminar-pedido" disabled title="No se puede cancelar un pedido en proceso">
+                                        <i class="fa-solid fa-lock"></i> En Cocina
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="estado-vacio-monitoreo">
+                <i class="fa-solid fa-clipboard-list"></i>
+                <p>No tienes pedidos enviados o activos bajo tu usuario en este momento.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// --- FUNCIÓN PARA NORMALIZAR TEXTO (Maneja errores de tipeo y acentos comunes) ---
+function normalizarTextoParaBusqueda(texto) {
+    return texto
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quita tildes
+        .replace(/preraci0on|preparaci0n|preparacion/g, "preparacion") // Mapea variantes erróneas comunes a la palabra base
+        .trim();
+}
+
+// --- FILTRADO DINÁMICO MEJORADO ---
+document.getElementById('inputBuscarPedido').addEventListener('keyup', function() {
+    let filtro = normalizarTextoParaBusqueda(this.value);
+    let filas = document.querySelectorAll('.fila-pedido-datos');
+
+    filas.forEach(fila => {
+        let textoFila = normalizarTextoParaBusqueda(fila.innerText);
+        if (textoFila.includes(filtro)) {
+            fila.style.display = '';
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+});
+
+function eliminarPedido(idPedido) {
+    Swal.fire({
+        html: `
+            <div class="alerta-icono-sutil">
+                <i class="fa-solid fa-circle-exclamation"></i>
+            </div>
+            <h2 class="alerta-titulo-sutil">¿Cancelar comanda?</h2>
+            <div class="alerta-cuerpo-sutil">
+                ¿Estás seguro de que deseas cancelar el <strong>Pedido #${idPedido}</strong>? Esta acción no se puede deshacer.
+            </div>
+        `,
+        showCancelButton: true,
+        reverseButtons: true, 
+        buttonsStyling: false,
+        customClass: {
+            popup: 'swal2-popup-custom swal2-popup-sutil',
+            confirmButton: 'btn-swal-sutil-confirm',
+            cancelButton: 'btn-swal-sutil-cancel'
+        },
+        confirmButtonText: 'Sí, cancelar',
+        cancelButtonText: 'No, mantener'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/pedidos/eliminar-api/${idPedido}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: '¡Cancelado!',
+                        text: data.message,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    
+                    const fila = document.getElementById(`fila-pedido-${idPedido}`);
+                    if(fila) {
+                        fila.style.transition = "all 0.4s ease";
+                        fila.style.opacity = "0";
+                        setTimeout(() => fila.remove(), 400);
+                    }
+                } else {
+                    Swal.fire('Error', data.error, 'error');
+                }
+            })
+            .catch(error => {
+                Swal.fire('Error de red', 'No se pudo comunicar con el servidor.', 'error');
+            });
+        }
+    });
+}
+</script>
+{% endblock %}
