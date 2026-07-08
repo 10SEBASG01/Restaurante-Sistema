@@ -79,6 +79,16 @@
             padding: 0 15px;
             gap: 6px;
             overflow-y: auto; 
+            flex-grow: 1;
+            
+            /* Oculta la barra de scroll en Firefox, IE y Edge */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        /* Oculta la barra de scroll en Chrome, Safari y Opera */
+        .nav-menu::-webkit-scrollbar {
+            display: none;
         }
 
         .nav-item {
@@ -118,6 +128,16 @@
             border-radius: 4px;
         }
 
+        /* CONTENEDOR FIJO PARA EL PIE DEL SIDEBAR */
+        .sidebar-footer {
+            padding: 15px 15px 20px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            border-top: 1px solid #27272a;
+            background-color: #18181b;
+        }
+
         /* --- CONTENIDO PRINCIPAL --- */
         .main-content {
             flex-grow: 1;
@@ -153,7 +173,7 @@
             border: 1px solid #cceadd; 
         }
 
-        /* --- OPTIMIZACIÓN DE ESPACIO PARA TABLETS (SIN OCULTAR MENÚ) --- */
+        /* --- OPTIMIZACIÓN DE ESPACIO PARA TABLETS --- */
         @media (max-width: 1024px) {
             .sidebar {
                 width: 230px; 
@@ -220,17 +240,16 @@
             <a href="{% url 'reportes:dashboard' %}" class="nav-item {% if '/reportes/' in request.path %}active{% endif %}">
                 <i class="fa-solid fa-chart-column"></i> Reportes
             </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <a href="{% url 'cambiar_mi_password' %}" class="nav-item {% if '/mi-password/' in request.path %}active{% endif %}">
+                <i class="fa-solid fa-key"></i> Cambiar Contraseña
+            </a>
             
-            <div style="margin-top: auto; padding-bottom: 20px;">
-                <!-- 💡 NUEVO BOTÓN: Cambiar Contraseña -->
-                <a href="{% url 'cambiar_mi_password' %}" class="nav-item {% if '/mi-password/' in request.path %}active{% endif %}">
-                    <i class="fa-solid fa-key"></i> Cambiar Contraseña
-                </a>
-                
-                <a href="{% url 'confirmar_logout' %}" class="nav-item" style="color: #ef4444; margin-top: 5px;">
-                    <i class="fa-solid fa-power-off"></i> Cerrar Sesión
-                </a>
-            </div>
+            <a href="{% url 'confirmar_logout' %}" class="nav-item" style="color: #ef4444;">
+                <i class="fa-solid fa-power-off"></i> Cerrar Sesión
+            </a>
         </div>
     </nav>
 

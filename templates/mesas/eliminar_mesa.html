@@ -8,22 +8,56 @@
     .delete-title { font-size: 24px; color: #1e293b; margin: 0 0 10px 0; font-weight: 700; }
     .delete-text { color: #64748b; font-size: 15px; margin-bottom: 30px; line-height: 1.5; }
     .actions { display: flex; gap: 15px; justify-content: center; }
-    .btn-cancel { background-color: #f1f5f9; color: #475569; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.3s; }
+    .btn-cancel { background-color: #f1f5f9; color: #475569; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.3s; display: inline-block; box-sizing: border-box; }
     .btn-cancel:hover { background-color: #e2e8f0; }
     .btn-danger { background-color: #ef4444; color: white; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.3s; }
     .btn-danger:hover { background-color: #dc2626; }
+    
+    /* Caja roja interna para el error de bloqueo */
+    .alert-box { background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; border-radius: 4px; text-align: left; margin-bottom: 25px; }
+    .alert-box strong { color: #b91c1c; display: block; margin-bottom: 5px; }
+    .alert-box p { color: #991b1b; font-size: 13px; margin: 0; line-height: 1.4; }
 </style>
 
 <div class="delete-container">
     <div class="delete-card">
-        <div class="delete-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-        <h2 class="delete-title">¿Eliminar Mesa {{ mesa.numero }}?</h2>
-        <p class="delete-text">Estás a punto de eliminar permanentemente la información de esta mesa de tu restaurante. Esta acción no se puede deshacer.</p>
-        <form method="POST" class="actions">
-            {% csrf_token %}
-            <a href="{% url 'estado_mesas' %}" class="btn-cancel">Cancelar</a>
-            <button type="submit" class="btn-danger">Sí, Eliminar Mesa</button>
-        </form>
+        
+        {# 🔍 CORREGIDO: Comparamos contra 'libre' en minúsculas #}
+        {% if mesa.estado != 'libre' %}
+            <div class="delete-icon" style="background-color: #fffbeb; color: #d97706;">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h2 class="delete-title">Acción Denegada</h2>
+            
+            <div class="alert-box">
+                <strong>No se puede eliminar la mesa</strong>
+                <p>La <b>"Mesa {{ mesa.numero }}"</b> se encuentra actualmente <b>{{ mesa.estado }}</b>.</p>
+            </div>
+            
+            <p class="delete-text">
+                Por seguridad el sistema no permite borrar mesas en uso. Debes liberar la mesa en caja o cancelar su reservación primero.
+            </p>
+            
+            <div class="actions">
+                <a href="{% url 'estado_mesas' %}" class="btn-cancel" style="width: 100%; text-align: center;">
+                    Volver al Plano de Mesas
+                </a>
+            </div>
+            
+        {% else %}
+            <div class="delete-icon">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h2 class="delete-title">¿Eliminar Mesa {{ mesa.numero }}?</h2>
+            <p class="delete-text">Estás a punto de eliminar permanentemente la información de esta mesa de tu restaurante. Esta acción no se puede deshacer.</p>
+            
+            <form method="POST" class="actions">
+                {% csrf_token %}
+                <a href="{% url 'estado_mesas' %}" class="btn-cancel">Cancelar</a>
+                <button type="submit" class="btn-danger">Sí, Eliminar Mesa</button>
+            </form>
+        {% endif %}
+        
     </div>
 </div>
 {% endblock %}

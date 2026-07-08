@@ -105,7 +105,13 @@ def editar_mesa(request, pk):
 @requiere_permiso('modulo_mesas')  
 def eliminar_mesa(request, pk):
     mesa = get_object_or_404(Mesa, pk=pk)
+    
     if request.method == 'POST':
+        # 🔒 Validación de seguridad en el servidor (en minúsculas)
+        if mesa.estado != 'libre':
+            messages.error(request, f"No se puede eliminar la Mesa {mesa.numero} porque no está libre.")
+            return redirect('estado_mesas')
+            
         numero_mesa = mesa.numero
         mesa.delete()
         
