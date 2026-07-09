@@ -210,10 +210,15 @@ def exportar_excel(request):
     
     for fac in facturas:
         total_general += fac.total
+        
+        # 🔥 SOLUCIÓN APLICADA: Validación segura para evitar Error 500
+        mesa_asignada = "Sin Mesa"
+        if fac.id_pedido and fac.id_pedido.id_mesa:
+            mesa_asignada = f"Mesa {fac.id_pedido.id_mesa.numero}"
 
         ws.cell(row=row_num, column=1, value=fac.secuencial).alignment = Alignment(horizontal='center')
         ws.cell(row=row_num, column=2, value=fac.fecha_emision.strftime('%d/%m/%Y %H:%M'))
-        ws.cell(row=row_num, column=3, value=f"Mesa {fac.id_pedido.id_mesa.numero}")
+        ws.cell(row=row_num, column=3, value=mesa_asignada) # <--- Aquí usamos la variable segura
         ws.cell(row=row_num, column=4, value=fac.id_cajero.get_full_name() or fac.id_cajero.username)
         ws.cell(row=row_num, column=5, value=fac.cliente_nombre)
         
@@ -282,7 +287,7 @@ def exportar_pdf(request):
         leftMargin=40, 
         topMargin=40, 
         bottomMargin=40,
-        title="Reporte de Ventas",  # ¡Esto es lo que va a leer la pestaña de Chrome!
+        title="Reporte de Ventas",
         author="Sabor & Arte"
     )
     elementos = []
@@ -305,11 +310,16 @@ def exportar_pdf(request):
 
     for fac in facturas:
         total_general += fac.total
+        
+        # 🔥 SOLUCIÓN APLICADA: Validación segura para el generador PDF
+        mesa_asignada = "Sin Mesa"
+        if fac.id_pedido and fac.id_pedido.id_mesa:
+            mesa_asignada = f"Mesa {fac.id_pedido.id_mesa.numero}"
 
         datos_tabla.append([
             fac.secuencial,
             fac.fecha_emision.strftime('%d/%m/%Y %H:%M'),
-            f"Mesa {fac.id_pedido.id_mesa.numero}",
+            mesa_asignada, # <--- Aquí usamos la variable segura
             fac.id_cajero.get_full_name() or fac.id_cajero.username,
             f"${fac.total:.2f}"
         ])
