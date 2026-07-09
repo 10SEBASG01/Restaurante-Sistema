@@ -275,6 +275,7 @@ def configuracion_facturacion(request):
             config.ruc = request.POST.get('ruc')
             config.provincia = request.POST.get('ciudad_provincia')
             config.direccion = request.POST.get('direccion')
+            config.telefono = request.POST.get('telefono')
             config.save()
             
             # 🎯 REGISTRO EN AUDITORÍA: Cambios del emisor

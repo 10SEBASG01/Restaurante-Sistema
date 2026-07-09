@@ -67,14 +67,14 @@
         /* Tarjeta Principal */
         .card {
             background: #ffffff;
-            width: 90%; /* Ajuste a % para mejor respuesta */
+            width: 90%;
             max-width: 420px;
             padding: 50px 40px;
             border-radius: 8px;
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.06);
             text-align: center;
             z-index: 2;
-            margin-bottom: 60px; /* Espacio para el footer */
+            margin-bottom: 60px;
         }
 
         /* Logo y Títulos */
@@ -107,7 +107,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 35px;
+            margin: 0 auto 25px; /* Reducido un poco para dar espacio al texto */
             width: 60%;
         }
 
@@ -125,6 +125,39 @@
             background-color: var(--gold-primary);
             border-radius: 50%;
             margin: 0 10px;
+        }
+
+        /* 🎯 Estilos de la nueva sección de contacto */
+        .card-contact-info {
+            margin-bottom: 25px; /* Da espacio antes de los botones */
+            font-size: 0.85rem;
+            color: var(--text-gray);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            line-height: 1.4;
+            padding: 0 10px;
+        }
+
+        .contact-number-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        .contact-number-wrapper svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: var(--gold-primary);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
 
         /* Botones */
@@ -184,13 +217,13 @@
         /* --- RESPONSIVIDAD PARA MÓVILES --- */
         @media (max-width: 480px) {
             .card {
-                padding: 35px 25px; /* Reduce padding para ganar espacio interior */
+                padding: 35px 25px;
             }
             h1.brand-name {
-                font-size: 2.8rem; /* Evita que el texto rompa el diseño */
+                font-size: 2.8rem;
             }
             .bg-decoration {
-                display: none; /* Oculta los tenedores laterales en celulares */
+                display: none;
             }
         }
     </style>
@@ -228,6 +261,19 @@
         <div class="divider" id="divider-1">
             <div class="dot"></div>
         </div>
+
+        <!-- 🎯 SECCIÓN MODIFICADA: Texto explicativo arriba de los botones -->
+        {% if config and config.telefono %}
+        <div class="card-contact-info">
+            <span>Para consultar o registrar sus reservaciones, contáctenos por llamada o WhatsApp al:</span>
+            <div class="contact-number-wrapper">
+                <svg viewBox="0 0 24 24">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+                <span>{{ config.telefono }}</span>
+            </div>
+        </div>
+        {% endif %}
 
         <a href="{% url 'publico:menu_publico' %}" class="btn" id="btn-menu-1">
             <svg viewBox="0 0 24 24">

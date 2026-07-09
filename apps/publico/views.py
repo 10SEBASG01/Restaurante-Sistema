@@ -6,15 +6,21 @@ from apps.menu.models import GestionPlatillo, CategoriasPlato
 from apps.reservas.models import Reserva
 from apps.publico.forms import ReservaPublicaForm
 from apps.mesas.models import Mesa
+# 🎯 IMPORTANTE: Importamos tu modelo de configuración
+from apps.facturacion.models import ConfiguracionFacturacion  
 
 # ======================================================
 # PÁGINA PRINCIPAL PÚBLICA
 # ======================================================
 
 def inicio_publico(request):
+    # Traemos el registro de configuración activo
+    config = ConfiguracionFacturacion.objects.first()
+    
     return render(
         request,
-        'publico/inicio.html'
+        'publico/inicio.html',
+        {'config': config} # 🎯 Pasamos la configuración como contexto al HTML
     )
 
 

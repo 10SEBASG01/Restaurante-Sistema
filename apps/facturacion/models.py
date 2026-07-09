@@ -10,6 +10,7 @@ class ConfiguracionFacturacion(models.Model):
     ruc = models.CharField(max_length=13, default="20456789012", verbose_name="RUC del Establecimiento")
     provincia = models.CharField(max_length=100, default="Manta, Manabí", verbose_name="Ciudad / Provincia")
     direccion = models.CharField(max_length=255, default="Av. Gastronomía 455, Miraflores", verbose_name="Dirección Matriz")
+    telefono = models.CharField(max_length=10, blank=True, null=True, verbose_name="Teléfono Principal")
     iva_porcentaje = models.IntegerField(default=12, verbose_name="Tasa de IVA Vigente (%)")
 
     class Meta:
