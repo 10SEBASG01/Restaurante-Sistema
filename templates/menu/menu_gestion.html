@@ -2,46 +2,193 @@
 
 {% block content %}
 <style>
-    .menu-container { display: flex; flex-direction: column; height: 100%; }
-    .menu-header { background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    /* Contenedor principal: Ocupa toda la altura disponible y apila en columna */
+    .menu-container { 
+        display: flex; 
+        flex-direction: column; 
+        height: 100%; 
+    }
+    
+    /* Cabecera del menú: Caja blanca superior con bordes suaves, separando 
+       visualmente el título de las herramientas de filtrado */
+    .menu-header { 
+        background-color: #ffffff; 
+        border: 1px solid #e5e7eb; 
+        border-radius: 12px; 
+        padding: 20px 32px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; 
+        margin-bottom: 24px; 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+    }
     .menu-header h2 { font-size: 24px; font-weight: 700; color: #1f2937; margin: 0; }
     .menu-header p { font-size: 14px; color: #6b7280; margin-top: 4px; margin-bottom: 0; }
     
-    .filter-form { display: flex; align-items: center; gap: 16px; margin: 0; }
+    /* Formulario de filtros: Agrupa el buscador, selector y botones en una línea */
+    .filter-form { 
+        display: flex; 
+        align-items: center; 
+        gap: 16px; 
+        margin: 0; 
+    }
+    
+    /* Caja de búsqueda: Contenedor relativo para posicionar el icono de la lupa */
     .search-box { position: relative; display: flex; align-items: center; }
     .search-box i { position: absolute; left: 12px; color: #9ca3af; }
-    .search-input { padding-left: 36px; padding-right: 16px; border: 1px solid #d1d5db; border-radius: 8px; width: 240px; height: 40px; outline: none; font-size: 14px; }
+    .search-input { 
+        padding-left: 36px; 
+        padding-right: 16px; 
+        border: 1px solid #d1d5db; 
+        border-radius: 8px; 
+        width: 240px; 
+        height: 40px; 
+        outline: none; 
+        font-size: 14px; 
+    }
     
-    .select-filter { border: 1px solid #d1d5db; border-radius: 8px; padding: 0 16px; height: 40px; background-color: #ffffff; outline: none; font-size: 14px; cursor: pointer; }
+    /* Selector desplegable de disponibilidad */
+    .select-filter { 
+        border: 1px solid #d1d5db; 
+        border-radius: 8px; 
+        padding: 0 16px; 
+        height: 40px; 
+        background-color: #ffffff; 
+        outline: none; 
+        font-size: 14px; 
+        cursor: pointer; 
+    }
     
-    .btn-nuevo { background-color: #c49a45; color: #ffffff; border: none; font-weight: 500; padding: 0 20px; height: 40px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; text-decoration: none; justify-content: center; transition: 0.2s; }
-    .btn-nuevo:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(196, 154, 69, 0.2); }
+    /* Botones de acción principales (Nuevo Platillo / Categoría) */
+    .btn-nuevo { 
+        background-color: #c49a45; 
+        color: #ffffff; 
+        border: none; 
+        font-weight: 500; 
+        padding: 0 20px; 
+        height: 40px; 
+        border-radius: 8px; 
+        cursor: pointer; 
+        display: inline-flex; 
+        align-items: center; 
+        gap: 8px; 
+        font-size: 14px; 
+        text-decoration: none; 
+        justify-content: center; 
+        transition: 0.2s; 
+    }
+    .btn-nuevo:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 4px 6px rgba(196, 154, 69, 0.2); 
+    }
     
-    /* 🔥 ESTILOS PARA LAS ALERTAS DINÁMICAS EN PANTALLA */
-    .alert-box { display: flex; align-items: center; gap: 15px; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); animation: fadeIn 0.3s ease-out; }
+    /* ESTILOS PARA LAS ALERTAS DINÁMICAS EN PANTALLA */
+    /* Caja base de alerta con animación de entrada (fadeIn) */
+    .alert-box { 
+        display: flex; 
+        align-items: center; 
+        gap: 15px; 
+        padding: 16px 20px; 
+        border-radius: 8px; 
+        margin-bottom: 24px; 
+        font-size: 14px; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
+        animation: fadeIn 0.3s ease-out; 
+    }
+    /* Modificadores de color según el tipo de alerta (Error o Éxito) */
     .alert-error { background-color: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; }
     .alert-error .alert-icon { color: #dc2626; font-size: 20px; }
     .alert-success { background-color: #f0fdf4; border-left: 4px solid #22c55e; color: #166534; }
     .alert-success .alert-icon { color: #16a34a; font-size: 20px; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Animación clave para que las alertas desciendan suavemente al aparecer */
+    @keyframes fadeIn { 
+        from { opacity: 0; transform: translateY(-10px); } 
+        to { opacity: 1; transform: translateY(0); } 
+    }
 
-    .tabs-categories { display: flex; border-bottom: 1px solid #e5e7eb; margin-bottom: 24px; gap: 24px; overflow-x: auto; padding-bottom: 4px; }
-    .tab-link { padding-bottom: 12px; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.2s; color: #6b7280; white-space: nowrap; }
+    /* Pestañas de categorías: Habilita desplazamiento horizontal (overflow-x) si hay muchas */
+    .tabs-categories { 
+        display: flex; 
+        border-bottom: 1px solid #e5e7eb; 
+        margin-bottom: 24px; 
+        gap: 24px; 
+        overflow-x: auto; 
+        padding-bottom: 4px; 
+    }
+    .tab-link { 
+        padding-bottom: 12px; 
+        font-size: 14px; 
+        font-weight: 600; 
+        text-decoration: none; 
+        transition: all 0.2s; 
+        color: #6b7280; 
+        white-space: nowrap; 
+    }
     .tab-active { border-bottom: 2px solid #c49a45; color: #c49a45; }
     
-    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; }
-    .card-item { background-color: #ffffff; border-radius: 16px; border: 1px solid #f3f4f6; overflow: hidden; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    /* Cuadrícula de platillos: Se adapta automáticamente al ancho, mínimo 240px por tarjeta */
+    .menu-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
+        gap: 24px; 
+    }
     
-    .card-badge { position: absolute; top: 12px; right: 12px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; color: #ffffff; z-index: 10; }
+    /* Diseño individual de la tarjeta del platillo */
+    .card-item { 
+        background-color: #ffffff; 
+        border-radius: 16px; 
+        border: 1px solid #f3f4f6; 
+        overflow: hidden; 
+        position: relative; 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+    }
+    
+    /* Etiquetas de disponibilidad flotantes sobre la imagen */
+    .card-badge { 
+        position: absolute; 
+        top: 12px; 
+        right: 12px; 
+        font-size: 11px; 
+        font-weight: 600; 
+        padding: 4px 10px; 
+        border-radius: 20px; 
+        color: #ffffff; 
+        z-index: 10; 
+    }
     .badge-disponible { background-color: #10b981; }
     .badge-nodisponible { background-color: #ef4444; }
     
-    .card-img-box { height: 160px; background-color: #f3f4f6; position: relative; display: flex; align-items: center; justify-content: center; }
+    /* Contenedor de la imagen: Centra iconos por defecto si no hay foto */
+    .card-img-box { 
+        height: 160px; 
+        background-color: #f3f4f6; 
+        position: relative; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+    }
     .card-img { width: 100%; height: 100%; object-fit: cover; }
+    
+    /* Cuerpo textual de la tarjeta */
     .card-body { padding: 20px; }
     .card-body h3 { font-size: 16px; font-weight: 700; color: #1f2937; margin: 0 0 6px 0; }
-    .card-body p { color: #6b7280; font-size: 13px; margin: 0 0 16px 0; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 38px; line-height: 1.4; }
     
+    /* Descripción trunca: Corta el texto a un máximo de 2 líneas con puntos suspensivos */
+    .card-body p { 
+        color: #6b7280; 
+        font-size: 13px; 
+        margin: 0 0 16px 0; 
+        display: -webkit-box; 
+        -webkit-line-clamp: 2; 
+        line-clamp: 2; 
+        -webkit-box-orient: vertical; 
+        overflow: hidden; 
+        height: 38px; 
+        line-height: 1.4; 
+    }
+    
+    /* Pie de la tarjeta: Separa el precio a la izquierda y las acciones a la derecha */
     .card-footer { display: flex; align-items: center; justify-content: space-between; }
     .card-precio { font-size: 18px; font-weight: 700; color: #c49a45; }
     .card-actions { display: flex; gap: 14px; align-items: center; }
@@ -95,26 +242,6 @@
 
     <div style="flex-grow: 1;">
         
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert-box {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
-                    <div class="alert-icon">
-                        {% if message.tags == 'error' %}
-                            <i class="fa-solid fa-shield-halved"></i>
-                        {% else %}
-                            <i class="fa-solid fa-circle-check"></i>
-                        {% endif %}
-                    </div>
-                    <div>
-                        {% if message.tags == 'error' %}
-                            <strong style="display: block; margin-bottom: 4px; color: #b91c1c;">¡Acción Denegada!</strong>
-                        {% endif %}
-                        {{ message }}
-                    </div>
-                </div>
-            {% endfor %}
-        {% endif %}
-
         <div class="tabs-categories" style="align-items: flex-end;">
             <a href="?categoria=Todos{% if search %}&search={{ search }}{% endif %}&disponible={{ filtro_disponibilidad }}" 
                class="tab-link {% if categoria_activa == 'Todos' %}tab-active{% endif %}">
@@ -181,11 +308,14 @@
 <script>
     let t_bomba; 
 
+    // Función de 'Debounce': Espera a que el usuario deje de teclear por 400ms 
+    // antes de enviar el formulario para no sobrecargar el servidor
     function buscarEnTiempoReal() {
         clearTimeout(t_bomba);
         const inputBusqueda = document.getElementById('menuSearchInput');
         const formulario = document.getElementById('searchForm');
 
+        // Si el buscador está vacío, limpia los parámetros de búsqueda de la URL
         if (inputBusqueda.value.trim() === '') {
             document.querySelectorAll('.tab-link').forEach(enlace => {
                 let url = new URL(enlace.href, window.location.origin);
@@ -201,6 +331,8 @@
         }, 400);
     }
 
+    // Mantiene el cursor (focus) al final del texto en la barra de búsqueda 
+    // después de que la página se recarga al aplicar un filtro
     document.addEventListener('DOMContentLoaded', function() {
         const inputBusqueda = document.getElementById('menuSearchInput');
         if (inputBusqueda && inputBusqueda.value !== '') {

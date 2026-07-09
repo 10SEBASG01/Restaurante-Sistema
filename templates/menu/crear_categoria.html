@@ -2,12 +2,17 @@
 
 {% block content %}
 <style>
+    /* Contenedor principal: Usa Flexbox para centrar la tarjeta vertical y horizontalmente.
+       El 'min-height' calcula el alto de la pantalla restando el espacio del navbar/footer */
     .form-wrapper {
         display: flex;
         justify-content: center;
         align-items: center;
         min-height: calc(100vh - 150px);
     }
+    
+    /* Tarjeta blanca que envuelve el formulario: Define esquinas redondeadas, 
+       un ancho máximo controlado para pantallas grandes y una sombra muy suave (box-shadow) */
     .form-card {
         background: #ffffff;
         border-radius: 16px;
@@ -15,31 +20,43 @@
         width: 100%;
         max-width: 450px;
         box-shadow: 0 10px 25px rgba(0,0,0,0.03);
-        border: 1px solid #f1f5f9;
+        border: 1px solid #f1f5f9; /* Borde sutil grisáceo */
     }
+    
+    /* Encabezado: Alinea el texto al centro y gestiona los márgenes inferiores */
     .form-header {
         text-align: center;
         margin-bottom: 30px;
     }
+    
+    /* Icono superior: Define un tamaño grande (40px) y el color dorado de la marca */
     .form-header i {
         font-size: 40px;
-        color: #c49a45;
+        color: #c49a45; 
         margin-bottom: 15px;
     }
+    
+    /* Título principal de la tarjeta: Tipografía gruesa y color oscuro slate */
     .form-header h2 {
         font-size: 24px;
         font-weight: 700;
         color: #1e293b;
         margin: 0 0 8px 0;
     }
+    
+    /* Subtítulo o texto descriptivo: Color gris atenuado y tamaño legible */
     .form-header p {
         color: #64748b;
         font-size: 14px;
         margin: 0;
     }
+    
+    /* Separador de los campos: Deja un espacio prudente antes de los botones */
     .input-group {
         margin-bottom: 25px;
     }
+    
+    /* Etiquetas de los campos: Estilo en bloque, seminegrita y espaciado inferior */
     .input-group label {
         display: block;
         font-size: 14px;
@@ -47,6 +64,9 @@
         color: #334155;
         margin-bottom: 8px;
     }
+    
+    /* Campo de texto (Input): Ocupa el 100% de la tarjeta, define rellenos cómodos (padding)
+       y usa 'box-sizing: border-box' para que el padding no altere el ancho total */
     .custom-input {
         width: 100%;
         padding: 12px 16px;
@@ -54,18 +74,26 @@
         border-radius: 8px;
         font-size: 15px;
         color: #1e293b;
-        outline: none;
-        transition: 0.3s;
+        outline: none; /* Remueve el borde azul por defecto de los navegadores */
+        transition: 0.3s; /* Animación suave para cuando el usuario hace clic */
         box-sizing: border-box;
     }
+    
+    /* Estado de Enfoque (Focus): Cambia el borde al color dorado corporativo
+       y añade un leve halo difuminado alrededor del campo */
     .custom-input:focus {
         border-color: #c49a45;
         box-shadow: 0 0 0 3px rgba(196, 154, 69, 0.1);
     }
+    
+    /* Contenedor de botones: Organiza los elementos en fila con un espacio de 15px */
     .actions {
         display: flex;
         gap: 15px;
     }
+    
+    /* Botón Cancelar: Estilo secundario gris, 'flex: 1' para que ocupe la mitad exacta 
+       del contenedor, remueve el subrayado de enlace y suaviza los cambios de color */
     .btn-cancelar {
         flex: 1;
         background: #f1f5f9;
@@ -78,10 +106,15 @@
         transition: 0.2s;
         border: 1px solid #e2e8f0;
     }
+    
+    /* Efecto Hover Cancelar: Oscurece ligeramente el fondo al pasar el mouse */
     .btn-cancelar:hover {
         background: #e2e8f0;
         color: #1e293b;
     }
+    
+    /* Botón Guardar: Estilo primario en color dorado, 'flex: 1' para ocupar la otra mitad,
+       remueve bordes nativos y transforma el cursor en una mano indicadora */
     .btn-guardar {
         flex: 1;
         background: #c49a45;
@@ -94,8 +127,11 @@
         cursor: pointer;
         transition: 0.2s;
     }
+    
+    /* Efecto Hover Guardar: Oscurece el botón dorado para dar feedback visual de acción */
     .btn-guardar:hover {
-        background: #c49a45;
+        background: #b0883b;
+        
     }
 </style>
 
@@ -108,7 +144,8 @@
         </div>
 
         <form method="POST" action="">
-            {% csrf_token %}
+            
+            {% csrf_token %} 
             
             <div class="input-group">
                 <label for="nombre_categoria">Nombre de la Categoría</label>

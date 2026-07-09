@@ -13,7 +13,7 @@
     .page-title { font-size: 28px; color: #1e293b; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
     .page-subtitle { color: #64748b; font-size: 15px; margin-top: 6px; }
 
-    /* Tarjeta del formulario */
+    /* Tarjeta contenedora del formulario */
     .form-card {
         background: rgba(255, 255, 255, 0.98);
         border-radius: 16px;
@@ -24,21 +24,22 @@
         margin: 10px auto;
     }
 
-    /* Grid para organizar a 2 columnas */
+    /* Sistema de Rejilla (Grid de 2 columnas para campos estándar) */
     .form-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 24px;
         margin-bottom: 20px;
     }
+    /* Clase utilitaria para elementos que abarcan todo el ancho */
     .full-width { grid-column: span 2; }
 
-    /* Estilos de los grupos de campos y los iconos agregados */
+    /* Estilos de los grupos de campos y etiquetas */
     .form-group { display: flex; flex-direction: column; gap: 8px; position: relative; }
     .form-group label { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #334155; }
-    .form-group label i { color: #c49a45; font-size: 15px; } /* Iconos dorados */
+    .form-group label i { color: #c49a45; font-size: 15px; } /* Iconografía dorada del sistema */
 
-    /* Inputs y Textareas */
+    /* Inputs, Selects y Textareas generales */
     .form-group input[type="text"],
     .form-group input[type="number"],
     .form-group input[type="file"],
@@ -57,6 +58,7 @@
         font-family: inherit;
     }
     
+    /* Estados de enfoque (Focus) alineados a la paleta del restaurante */
     .form-group input:focus, 
     .form-group select:focus, 
     .form-group textarea:focus {
@@ -67,14 +69,14 @@
 
     .form-group textarea { resize: vertical; min-height: 100px; }
 
-    /* Input con borde de error cuando es inválido */
+    /* Feedback visual inmediato cuando un input es inválido */
     .form-group input.is-invalid {
         border-color: #ef4444 !important;
         box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
         background-color: #fef2f2 !important;
     }
 
-    /* ESTILO DE ALERTA DE ERROR PERSONALIZADO */
+    /* Estilo de alerta de error personalizada */
     .custom-error-alert {
         background-color: #fef2f2;
         border: 1px solid #fee2e2;
@@ -90,7 +92,7 @@
         transition: all 0.2s ease;
     }
 
-    /* Contenedor del Toggle Switch (Estilo amarillento) */
+    /* Contenedor del Toggle Switch (Interruptor de disponibilidad) */
     .toggle-container {
         display: flex;
         align-items: center;
@@ -111,7 +113,7 @@
     .toggle-title { font-weight: 700; color: #1e293b; font-size: 14px; margin: 0; cursor: pointer; }
     .toggle-desc { font-size: 12px; color: #64748b; line-height: 1.5; }
 
-    /* Diseño del Switch */
+    /* Mecanismo puramente visual del interruptor deslizable */
     .toggle-switch {
         position: relative;
         display: inline-block;
@@ -136,7 +138,7 @@
     .toggle-switch input:focus + .slider { box-shadow: 0 0 1px #c49a45; }
     .toggle-switch input:checked + .slider:before { transform: translateX(24px); }
 
-    /* Botones de acción */
+    /* Barra de botones final */
     .form-actions {
         display: flex; justify-content: flex-end; gap: 15px; margin-top: 35px;
         padding-top: 25px; border-top: 1px solid #f1f5f9;
@@ -172,9 +174,7 @@
 
 <div class="form-card">
     <form id="platilloForm" method="POST" enctype="multipart/form-data" novalidate>
-        {% csrf_token %}
-        
-        <div class="form-grid">
+        {% csrf_token %} <div class="form-grid">
             
             <div class="form-group">
                 <label for="{{ form.nombre_platillo.id_for_label }}"><i class="fa-solid fa-tag"></i> Nombre del Platillo</label>
@@ -253,8 +253,7 @@
                 </div>
             </div>
             <label class="toggle-switch">
-                {{ form.disponible }}
-                <span class="slider"></span>
+                {{ form.disponible }} <span class="slider"></span>
             </label>
         </div>
         
@@ -277,19 +276,21 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('platilloForm');
-        const precioInput = document.getElementById('id_precio');
+        const precioInput = document.getElementById('id_precio'); // ID autogenerado por Django para el campo 'precio'
         const errorAlert = document.getElementById('error_precio_js');
 
         if (precioInput) {
+            // Seteo explícito de propiedades numéricas HTML5 para soporte móvil y de escritorio
             precioInput.setAttribute('type', 'number');
             precioInput.setAttribute('step', '0.01');
 
+            // Función evaluadora que audita el valor actual del input
             function validarPrecio() {
                 const valor = parseFloat(precioInput.value);
                 
                 if (valor < 0) {
-                    errorAlert.style.display = 'flex';
-                    precioInput.classList.add('is-invalid');
+                    errorAlert.style.display = 'flex'; // Despliega la advertencia customizada
+                    precioInput.classList.add('is-invalid'); // Añade bordes de error rojos
                     return false;
                 } else {
                     errorAlert.style.display = 'none';
@@ -298,19 +299,22 @@
                 }
             }
 
+            // Monitoreo en caliente mientras el usuario interactúa con la interfaz
             precioInput.addEventListener('input', validarPrecio);
             precioInput.addEventListener('change', validarPrecio);
 
+            // Filtro físico: Evita que se introduzcan signos negativos o notaciones científicas (exponenciales)
             precioInput.addEventListener('keydown', function(e) {
                 if (e.key === '-' || e.key === 'e' || e.key === 'E') {
-                    e.preventDefault();
+                    e.preventDefault(); // Anula la pulsación del teclado
                 }
             });
 
+            // Interceptación de seguridad final al presionar el botón de envío
             form.addEventListener('submit', function(e) {
                 if (!validarPrecio()) {
-                    e.preventDefault();
-                    precioInput.focus();
+                    e.preventDefault(); // Detiene el envío HTTP hacia las vistas de Django
+                    precioInput.focus(); // Enfoca automáticamente el cursor en el campo erróneo
                 }
             });
         }
