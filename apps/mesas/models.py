@@ -1,7 +1,8 @@
 from django.db import models
+from django.core.validators import MinValueValidator
 from apps.usuarios.models import Usuario
 
-# 🔥 NUEVO MODELO: Para manejar de forma dinámica las zonas desde tu base de datos
+# 🔥 MODELO: Para manejar de forma dinámica las zonas desde tu base de datos
 class ZonaMesa(models.Model):
     id_zona = models.AutoField(primary_key=True)
     nombre_zona = models.CharField(
@@ -27,14 +28,14 @@ class Mesa(models.Model):
         ('reservada', 'Reservada'),
     )
 
-    # ❌ SE ELIMINÓ LA TUPLA UBICACIONES ESTÁTICA
-
+    # 💡 Se removió unique=True y se configuró para que solo acepte enteros positivos >= 1
     numero = models.PositiveIntegerField(
-        unique=True,
+        validators=[MinValueValidator(1)],
         verbose_name="Número de Mesa"
     )
 
     capacidad = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)],
         verbose_name="Capacidad (Personas)"
     )
 
@@ -44,22 +45,19 @@ class Mesa(models.Model):
         default='libre'
     )
 
-    # 🔥 CORREGIDO: Ahora es una relación FK dinámica apuntando a la nueva tabla
     ubicacion = models.ForeignKey(
         ZonaMesa,
-        on_delete=models.PROTECT, # No permite borrar una zona si contiene mesas asignadas
+        on_delete=models.PROTECT, 
         db_column='id_zona',
         related_name='mesas',
-        null=True, # Permite nulos temporalmente para migrar las mesas actuales sin errores
+        null=True, 
         blank=True,
         verbose_name="Ubicación / Zona"
     )
 
     # ==========================
     # INFORMACIÓN DEL CLIENTE
-    # (USO INTERNO DEL SISTEMA)
     # ==========================
-
     cliente_nombre = models.CharField(
         max_length=100,
         blank=True,
@@ -96,10 +94,26 @@ class Mesa(models.Model):
         verbose_name="Mesero Asignado"
     )
 
+    # 🔥 INTERRUPTOR CRÍTICO: Borrado Lógico
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Mesa Activa"
+    )
+
     class Meta:
         ordering = ['numero']
         verbose_name = "Mesa"
         verbose_name_plural = "Mesas"
+        
+        # 🔥 PODER DE POSTGRESQL: La unicidad del número solo aplica a mesas activas.
+        # Las mesas inactivas (históricas) no bloquearán la creación de nuevas mesas.
+        constraints = [
+            models.UniqueConstraint(
+                fields=['numero'],
+                condition=models.Q(is_active=True),
+                name='unique_numero_mesa_activa'
+            )
+        ]
 
     def __str__(self):
         estado_display = self.get_estado_display()

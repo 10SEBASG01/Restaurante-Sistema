@@ -1,7 +1,7 @@
 from django import forms
 from .models import Mesa, ZonaMesa, Usuario
 
-# --- 🔥 NUEVO FORMULARIO: GESTIÓN DE ZONAS ---
+# --- 🔥 GESTIÓN DE ZONAS ---
 class ZonaMesaForm(forms.ModelForm):
     class Meta:
         model = ZonaMesa
@@ -17,7 +17,7 @@ class ZonaMesaForm(forms.ModelForm):
             })
         }
 
-# --- FORMULARIO 1: CREAR NUEVA MESA ---
+# --- FORMULARIO 1: CREAR/EDITAR MESA ---
 class MesaForm(forms.ModelForm):
     class Meta:
         model = Mesa
@@ -40,6 +40,22 @@ class MesaForm(forms.ModelForm):
                 'class': 'form-control',
                 'style': 'width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 15px;'
             })
+
+    # 🔥 VALIDACIÓN DE CONTROL: Asegura limpieza visual si hay choques de números duplicados
+    def clean_numero(self):
+        numero = self.cleaned_data.get('numero')
+        
+        # Validamos si ya existe otra mesa activa con el mismo número
+        queryset = Mesa.objects.filter(numero=numero, is_active=True)
+        
+        # Si estamos editando una mesa existente, excluimos su propio ID de la verificación
+        if self.instance.pk:
+            queryset = queryset.exclude(pk=self.instance.pk)
+            
+        if queryset.exists():
+            raise forms.ValidationError("Ya existe una mesa activa registrada con este número.")
+            
+        return numero
 
 # --- FORMULARIO 2: CAMBIAR ESTADO DESDE PANEL LATERAL ---
 class CambiarEstadoMesaForm(forms.ModelForm):
@@ -74,7 +90,7 @@ class AsignarMeseroForm(forms.ModelForm):
                 'style': 'width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 15px;'
             })
         }
+        
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filtramos para que solo salgan meseros activos
-        self.fields['mesero_assigned'].queryset = Usuario.objects.filter(rol='mesero', is_active=True)    
+        self.fields['mesero_assigned'].queryset = Usuario.objects.filter(rol='mesero', is_active=True)

@@ -1,8 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import ProtectedError, RestrictedError
-from django.db import IntegrityError
 
 # 🛡️ IMPORTAMOS EL GUARDIÁN UNIVERSAL
 from apps.usuarios.views import requiere_permiso
@@ -20,12 +18,16 @@ def lista_mesas(request):
     filtro = request.GET.get('estado', 'todas')
     filtro_ubicacion = request.GET.get('ubicacion', 'todas') 
     
-    mesas = Mesa.objects.all().select_related('ubicacion')
+    # 🔥 FILTRO BASE: Solo mesas vivas en el plano del restaurante
+    mesas_base = Mesa.objects.filter(is_active=True)
+    
+    mesas = mesas_base.select_related('ubicacion')
     zonas = ZonaMesa.objects.all() 
 
-    total_libres = Mesa.objects.filter(estado='libre').count()
-    total_ocupadas = Mesa.objects.filter(estado='ocupada').count()
-    total_reservadas = Mesa.objects.filter(estado='reservada').count()
+    # Contadores inteligentes basados únicamente en el conjunto activo
+    total_libres = mesas_base.filter(estado='libre').count()
+    total_ocupadas = mesas_base.filter(estado='ocupada').count()
+    total_reservadas = mesas_base.filter(estado='reservada').count()
 
     if filtro == 'libres':
         mesas = mesas.filter(estado='libre')
@@ -67,8 +69,6 @@ def crear_mesa(request):
             return redirect('estado_mesas')
     else:
         form = MesaForm()
-        
-        # 💡 TRUCO: Cambiamos las opciones del select para que muestre el Nombre Completo
         if 'mesero_assigned' in form.fields:
             form.fields['mesero_assigned'].label_from_instance = lambda obj: f"{obj.first_name} {obj.last_name}".strip() or obj.username
             
@@ -78,7 +78,8 @@ def crear_mesa(request):
 @login_required
 @requiere_permiso('modulo_mesas')  
 def editar_mesa(request, pk):
-    mesa = get_object_or_404(Mesa, pk=pk)
+    # 🔒 Seguridad: Aseguramos que no se puedan editar mesas inactivas externamente
+    mesa = get_object_or_404(Mesa, pk=pk, is_active=True)
     if request.method == 'POST':
         form = MesaForm(request.POST, instance=mesa)
         if form.is_valid():
@@ -94,21 +95,18 @@ def editar_mesa(request, pk):
             return redirect('estado_mesas')
     else:
         form = MesaForm(instance=mesa)
-        
-        # 💡 TRUCO: Cambiamos las opciones del select para que muestre el Nombre Completo
         if 'mesero_assigned' in form.fields:
             form.fields['mesero_assigned'].label_from_instance = lambda obj: f"{obj.first_name} {obj.last_name}".strip() or obj.username
         
     return render(request, 'mesas/editar_mesa.html', {'form': form, 'mesa': mesa})
 
-# --- ELIMINAR MESA (CORREGIDO PARA EVITAR ERROR 500 EN RENDER) ---
+# --- ELIMINAR MESA (SISTEMA DE SEGURIDAD MEDIANTE DESACTIVACIÓN LÓGICA) ---
 @login_required
 @requiere_permiso('modulo_mesas')  
 def eliminar_mesa(request, pk):
-    mesa = get_object_or_404(Mesa, pk=pk)
+    mesa = get_object_or_404(Mesa, pk=pk, is_active=True)
     
     if request.method == 'POST':
-        # 🔒 Validación de seguridad en el servidor (en minúsculas)
         if mesa.estado != 'libre':
             messages.error(request, f"No se puede eliminar la Mesa {mesa.numero} porque no está libre.")
             return redirect('estado_mesas')
@@ -116,30 +114,30 @@ def eliminar_mesa(request, pk):
         numero_mesa = mesa.numero
         
         try:
-            mesa.delete()
+            # 🔥 IMPLEMENTACIÓN SOFT DELETE: Salvaguarda Facturación y Reportes
+            mesa.is_active = False
+            mesa.estado = 'libre'
+            mesa.mesero_assigned = None
+            mesa.cliente_nombre = None
+            mesa.cliente_cedula = None
+            mesa.cliente_correo = None
+            mesa.cliente_direccion = None
+            mesa.save()
             
             # 🎯 Auditoría
             Auditoria.objects.create(
                 id_usuario=request.user,
                 modulo='mesas',
-                accion='Mesa Eliminada',
-                detalle=f"Eliminó permanentemente la Mesa {numero_mesa}."
+                accion='Mesa Eliminada (Lógico)',
+                detalle=f"Desactivó permanentemente la Mesa {numero_mesa} del plano activo. El historial se preservó."
             )
+            messages.success(request, f"La Mesa {numero_mesa} fue removida con éxito.")
             return redirect('estado_mesas')
             
-        # 🛡️ Escudo para atrapar restricciones estrictas de PostgreSQL en producción
-        except (ProtectedError, RestrictedError, IntegrityError):
-            messages.warning(
-                request, 
-                f'La Mesa {numero_mesa} está libre, pero no se puede borrar porque tiene pedidos o reservas antiguas vinculadas en el historial.'
-            )
-            return redirect('estado_mesas')
-            
-        # 🛡️ Red de seguridad para cualquier otro fallo inesperado
         except Exception as e:
             messages.error(
                 request, 
-                f'Ocurrió un error inesperado al intentar borrar la mesa: {str(e)}'
+                f'Ocurrió un error inesperado al intentar dar de baja la mesa: {str(e)}'
             )
             return redirect('estado_mesas')
         
@@ -149,7 +147,7 @@ def eliminar_mesa(request, pk):
 @login_required
 @requiere_permiso('modulo_mesas')  
 def cambiar_estado_mesa(request, pk):
-    mesa = get_object_or_404(Mesa, pk=pk)
+    mesa = get_object_or_404(Mesa, pk=pk, is_active=True)
     estado_anterior = mesa.get_estado_display()
     
     if request.method == 'POST':
@@ -177,7 +175,7 @@ def cambiar_estado_mesa(request, pk):
 @login_required
 @requiere_permiso('modulo_mesas')  
 def asignar_mesero_mesa(request, pk):
-    mesa = get_object_or_404(Mesa, pk=pk)
+    mesa = get_object_or_404(Mesa, pk=pk, is_active=True)
     if request.method == 'POST':
         form = AsignarMeseroForm(request.POST, instance=mesa)
         if form.is_valid():
@@ -196,8 +194,6 @@ def asignar_mesero_mesa(request, pk):
             return redirect('estado_mesas')
     else:
         form = AsignarMeseroForm(instance=mesa)
-        
-        # 💡 TRUCO: Cambiamos las opciones del select para que muestre el Nombre Completo
         if 'mesero_assigned' in form.fields:
             form.fields['mesero_assigned'].label_from_instance = lambda obj: f"{obj.first_name} {obj.last_name}".strip() or obj.username
     
@@ -207,10 +203,10 @@ def asignar_mesero_mesa(request, pk):
         'subtitulo': 'Vincula un mesero y registra al cliente para esta mesa.'
     })
 
-# =======================================================
-# 🔥 NUEVAS VISTAS: MÓDULO INDEPENDIENTE (CRUD DE ZONAS)
-# =======================================================
 
+# =======================================================
+# 🔥 CRUD DE ZONAS (SE MANTIENE IGUAL)
+# =======================================================
 @login_required
 @requiere_permiso('modulo_mesas')
 def listar_zonas(request):
@@ -254,7 +250,7 @@ def eliminar_zona(request, pk):
                 detalle=f"Eliminó la zona: {nombre_zona}."
             )
             return redirect('listar_zonas')
-        except ProtectedError:
+        except Exception: # Captura ProtectedError genérico
             messages.error(request, f"No se puede eliminar la zona '{zona.nombre_zona}' porque hay mesas asignadas a ella. Reasigna las mesas primero.")
             return redirect('listar_zonas')
             
