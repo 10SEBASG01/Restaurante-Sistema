@@ -113,16 +113,25 @@ def eliminar_mesa(request, pk):
             return redirect('estado_mesas')
             
         numero_mesa = mesa.numero
-        mesa.delete()
         
-        # 🎯 Auditoría
-        Auditoria.objects.create(
-            id_usuario=request.user,
-            modulo='mesas',
-            accion='Mesa Eliminada',
-            detalle=f"Eliminó permanentemente la Mesa {numero_mesa}."
-        )
-        return redirect('estado_mesas')
+        try:
+            mesa.delete()
+            
+            # 🎯 Auditoría
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='mesas',
+                accion='Mesa Eliminada',
+                detalle=f"Eliminó permanentemente la Mesa {numero_mesa}."
+            )
+            return redirect('estado_mesas')
+            
+        except ProtectedError:
+            messages.warning(
+                request, 
+                f'La Mesa {numero_mesa} está libre, pero no se puede borrar porque tiene pedidos o reservas vinculadas en el historial.'
+            )
+            return redirect('estado_mesas')
         
     return render(request, 'mesas/eliminar_mesa.html', {'mesa': mesa})
 
