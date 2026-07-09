@@ -101,7 +101,6 @@ def dashboard_reportes(request):
     # ESTADÍSTICAS RÁPIDAS COMPLEMENTARIAS CORREGIDAS
     mejor_dia = "Sin datos"
     mejor_hora = "Sin datos"
-    mesa_activa = "Sin datos"
     producto_estrella = "Sin datos"
 
     if total_pedidos > 0:
@@ -111,13 +110,6 @@ def dashboard_reportes(request):
         ).order_by('-total_vendido').first()
         if producto_top:
             producto_estrella = producto_top['id_platillo__nombre_platillo']
-
-        # Mesa más activa (Buscando a través del pedido de la factura)
-        mesa_top = facturas_filtradas.values('id_pedido__id_mesa__numero').annotate(
-            total_tickets=Count('id_factura')
-        ).order_by('-total_tickets').first()
-        if mesa_top and mesa_top['id_pedido__id_mesa__numero']:
-            mesa_activa = f"Mesa {mesa_top['id_pedido__id_mesa__numero']}"
 
         # Horario con mayor concurrencia de facturación
         hora_top = facturas_filtradas.annotate(
@@ -157,7 +149,6 @@ def dashboard_reportes(request):
         'hasta_input': hasta.strftime('%Y-%m-%d'),
         'mejor_dia': mejor_dia,
         'mejor_hora': mejor_hora,
-        'mesa_activa': mesa_activa,
         'producto_estrella': producto_estrella,
         'actividad_reciente': actividad_reciente,
     }
@@ -196,7 +187,8 @@ def exportar_excel(request):
     header_font = Font(bold=True, color="FFFFFF", name="Segoe UI")
     header_fill = PatternFill(start_color="C49A45", end_color="C49A45", fill_type="solid")
     
-    headers = ['N° Factura', 'Fecha y Hora', 'Ubicación / Mesa', 'Cajero Responsable', 'Cliente', 'Total Cobrado']
+    # ❌ SE QUITÓ "Ubicación / Mesa" DE LA LISTA
+    headers = ['N° Factura', 'Fecha y Hora', 'Cajero Responsable', 'Cliente', 'Total Cobrado']
     for col_num, header_title in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col_num, value=header_title)
         cell.font = header_font
@@ -211,27 +203,23 @@ def exportar_excel(request):
     for fac in facturas:
         total_general += fac.total
         
-        # 🔥 SOLUCIÓN APLICADA: Validación segura para evitar Error 500
-        mesa_asignada = "Sin Mesa"
-        if fac.id_pedido and fac.id_pedido.id_mesa:
-            mesa_asignada = f"Mesa {fac.id_pedido.id_mesa.numero}"
-
+        # ❌ SE REORDENARON LAS COLUMNAS AL QUITAR LA MESA
         ws.cell(row=row_num, column=1, value=fac.secuencial).alignment = Alignment(horizontal='center')
         ws.cell(row=row_num, column=2, value=fac.fecha_emision.strftime('%d/%m/%Y %H:%M'))
-        ws.cell(row=row_num, column=3, value=mesa_asignada) # <--- Aquí usamos la variable segura
-        ws.cell(row=row_num, column=4, value=fac.id_cajero.get_full_name() or fac.id_cajero.username)
-        ws.cell(row=row_num, column=5, value=fac.cliente_nombre)
+        ws.cell(row=row_num, column=3, value=fac.id_cajero.get_full_name() or fac.id_cajero.username)
+        ws.cell(row=row_num, column=4, value=fac.cliente_nombre)
         
-        cell_monto = ws.cell(row=row_num, column=6, value=float(fac.total))
+        cell_monto = ws.cell(row=row_num, column=5, value=float(fac.total))
         cell_monto.number_format = '"$"#,##0.00'
         cell_monto.alignment = Alignment(horizontal='right')
         
         row_num += 1
 
-    ws.cell(row=row_num, column=5, value="TOTAL GENERAL FACTURADO:").font = Font(bold=True, name="Segoe UI")
-    ws.cell(row=row_num, column=5).alignment = Alignment(horizontal='right')
+    # ❌ SE AJUSTÓ LA POSICIÓN DEL TOTAL GENERAL
+    ws.cell(row=row_num, column=4, value="TOTAL GENERAL FACTURADO:").font = Font(bold=True, name="Segoe UI")
+    ws.cell(row=row_num, column=4).alignment = Alignment(horizontal='right')
     
-    cell_total = ws.cell(row=row_num, column=6, value=float(total_general))
+    cell_total = ws.cell(row=row_num, column=5, value=float(total_general))
     cell_total.font = Font(bold=True, color="C49A45", name="Segoe UI")
     cell_total.number_format = '"$"#,##0.00'
     cell_total.alignment = Alignment(horizontal='right')
@@ -305,41 +293,41 @@ def exportar_pdf(request):
     elementos.append(subtitulo)
     elementos.append(Spacer(1, 25))
 
-    datos_tabla = [['N° Factura', 'Fecha y Hora', 'Mesa', 'Cajero Responsable', 'Total']]
+    # ❌ SE QUITÓ "Mesa" DE LA CABECERA
+    datos_tabla = [['N° Factura', 'Fecha y Hora', 'Cajero Responsable', 'Total']]
     total_general = 0
 
     for fac in facturas:
         total_general += fac.total
         
-        # 🔥 SOLUCIÓN APLICADA: Validación segura para el generador PDF
-        mesa_asignada = "Sin Mesa"
-        if fac.id_pedido and fac.id_pedido.id_mesa:
-            mesa_asignada = f"Mesa {fac.id_pedido.id_mesa.numero}"
-
+        # ❌ SE QUITÓ LA VARIABLE DE MESA Y EL ELEMENTO DEL ARREGLO
         datos_tabla.append([
             fac.secuencial,
             fac.fecha_emision.strftime('%d/%m/%Y %H:%M'),
-            mesa_asignada, # <--- Aquí usamos la variable segura
             fac.id_cajero.get_full_name() or fac.id_cajero.username,
             f"${fac.total:.2f}"
         ])
 
-    datos_tabla.append(['', '', '', 'TOTAL GENERAL:', f"${total_general:.2f}"])
+    # ❌ SE QUITÓ UN ESPACIO EN BLANCO PARA ALINEAR EL TOTAL
+    datos_tabla.append(['', '', 'TOTAL GENERAL:', f"${total_general:.2f}"])
 
-    tabla = Table(datos_tabla, colWidths=[90, 110, 60, 175, 80])
+    # ❌ SE REDISTRIBUYERON LOS ANCHOS DE COLUMNA AL QUITAR LA DE LA MESA
+    tabla = Table(datos_tabla, colWidths=[100, 120, 205, 90])
+    
+    # ❌ SE AJUSTÓ LA UBICACIÓN DE LOS ESTILOS A LA NUEVA COLUMNA DE TOTALES (De la 4 a la 3)
     estilo_tabla = TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#c49a45')), 
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('ALIGN', (4, 1), (4, -1), 'RIGHT'), 
+        ('ALIGN', (3, 1), (3, -1), 'RIGHT'), 
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 11),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
         ('TOPPADDING', (0, 0), (-1, 0), 10),
         ('BACKGROUND', (0, 1), (-1, -2), colors.HexColor('#ffffff')),
         ('GRID', (0, 0), (-1, -2), 0.5, colors.HexColor('#e2e8f0')),
-        ('FONTNAME', (3, -1), (-1, -1), 'Helvetica-Bold'),
-        ('TEXTCOLOR', (4, -1), (4, -1), colors.HexColor('#c49a45')),
+        ('FONTNAME', (2, -1), (-1, -1), 'Helvetica-Bold'),
+        ('TEXTCOLOR', (3, -1), (3, -1), colors.HexColor('#c49a45')),
         ('TOPPADDING', (0, -1), (-1, -1), 12),
     ])
     tabla.setStyle(estilo_tabla)
