@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import ProtectedError
+from django.db.models import ProtectedError, RestrictedError
+from django.db import IntegrityError
 
 # 🛡️ IMPORTAMOS EL GUARDIÁN UNIVERSAL
 from apps.usuarios.views import requiere_permiso
@@ -100,7 +101,7 @@ def editar_mesa(request, pk):
         
     return render(request, 'mesas/editar_mesa.html', {'form': form, 'mesa': mesa})
 
-# --- ELIMINAR MESA ---
+# --- ELIMINAR MESA (CORREGIDO PARA EVITAR ERROR 500 EN RENDER) ---
 @login_required
 @requiere_permiso('modulo_mesas')  
 def eliminar_mesa(request, pk):
@@ -126,10 +127,19 @@ def eliminar_mesa(request, pk):
             )
             return redirect('estado_mesas')
             
-        except ProtectedError:
+        # 🛡️ Escudo para atrapar restricciones estrictas de PostgreSQL en producción
+        except (ProtectedError, RestrictedError, IntegrityError):
             messages.warning(
                 request, 
-                f'La Mesa {numero_mesa} está libre, pero no se puede borrar porque tiene pedidos o reservas vinculadas en el historial.'
+                f'La Mesa {numero_mesa} está libre, pero no se puede borrar porque tiene pedidos o reservas antiguas vinculadas en el historial.'
+            )
+            return redirect('estado_mesas')
+            
+        # 🛡️ Red de seguridad para cualquier otro fallo inesperado
+        except Exception as e:
+            messages.error(
+                request, 
+                f'Ocurrió un error inesperado al intentar borrar la mesa: {str(e)}'
             )
             return redirect('estado_mesas')
         
@@ -188,7 +198,6 @@ def asignar_mesero_mesa(request, pk):
         form = AsignarMeseroForm(instance=mesa)
         
         # 💡 TRUCO: Cambiamos las opciones del select para que muestre el Nombre Completo
-        # Sobrescribimos el método que Django usa para etiquetar cada opción del select
         if 'mesero_assigned' in form.fields:
             form.fields['mesero_assigned'].label_from_instance = lambda obj: f"{obj.first_name} {obj.last_name}".strip() or obj.username
     
