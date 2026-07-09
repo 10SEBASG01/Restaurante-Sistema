@@ -3,10 +3,7 @@ from django.conf import settings
 from apps.pedidos.models import GestionPedido
 
 class ConfiguracionFacturacion(models.Model):
-    """
-    🎯 Almacena de manera centralizada la información del establecimiento
-    y los parámetros impositivos editables por el administrador.
-    """
+    # ... (Tu código actual permanece igual)
     id = models.AutoField(primary_key=True)
     nombre_comercial = models.CharField(max_length=255, default="Sabor y Arte")
     razon_social = models.CharField(max_length=255, blank=True, null=True, verbose_name="Razón Social")
@@ -25,6 +22,7 @@ class ConfiguracionFacturacion(models.Model):
 
 
 class Factura(models.Model):
+    # ... (Tu código actual permanece igual)
     FORMAS_PAGO = [
         ('EFECTIVO', 'Efectivo'),
         ('TARJETA', 'Tarjeta de Crédito/Débito'),
@@ -34,21 +32,23 @@ class Factura(models.Model):
     id_factura = models.AutoField(primary_key=True)
     secuencial = models.CharField(max_length=20, unique=True, verbose_name="Número de Factura")
     
+    # 🎯 La factura se queda huérfana (SET_NULL) si se borra el pedido por error, manteniendo el registro fiscal
     id_pedido = models.OneToOneField(
         GestionPedido, 
-        on_delete=models.PROTECT, 
+        on_delete=models.SET_NULL, 
+        null=True,
+        blank=True,
         db_column='id_pedido',
         related_name='factura'
     )
     
     id_cajero = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
-        on_delete=models.RESTRICT, 
+        on_delete=models.RESTRICT, # El cajero no debería poder borrarse fácilmente
         db_column='id_cajero',
         related_name='facturas_emitidas'
     )
     
-    # Datos del cliente al momento de facturar
     cliente_nombre = models.CharField(max_length=150, default="Consumidor Final")
     cliente_identificacion = models.CharField(max_length=13, default="9999999999999", verbose_name="Cédula/RUC")
     cliente_correo = models.EmailField(blank=True, null=True, verbose_name="Correo Electrónico")
@@ -57,21 +57,17 @@ class Factura(models.Model):
     fecha_emision = models.DateTimeField(auto_now_add=True)
     forma_pago = models.CharField(max_length=20, choices=FORMAS_PAGO, default='EFECTIVO')
     
-    # 🎯 PERSISTENCIA FISCAL (Auditoría): Congela los datos de la cabecera del restaurante para el PDF
     emisor_nombre_comercial = models.CharField(max_length=255, blank=True, null=True)
     emisor_razon_social = models.CharField(max_length=255, blank=True, null=True)
     emisor_ruc = models.CharField(max_length=13, blank=True, null=True)
     emisor_direccion = models.CharField(max_length=255, blank=True, null=True)
     emisor_provincia = models.CharField(max_length=100, blank=True, null=True)
     
-    # 🎯 TASA APLICADA: Registra si la factura se procesó al 12%, 14%, 15%, etc.
     iva_porcentaje_aplicado = models.IntegerField(default=12, verbose_name="Porcentaje IVA Aplicado")
 
-    # Valores económicos persistidos estáticos
     subtotal_12 = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     subtotal_0 = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     
-    # 🎯 NUEVOS CAMPOS AÑADIDOS PARA INTEGRAR EL DESCUENTO DINÁMICO
     descuento_porcentaje = models.IntegerField(default=0, verbose_name="Porcentaje de Descuento")
     descuento = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Descuento")
     subtotal_neto = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Subtotal Neto Afectado")
@@ -97,9 +93,13 @@ class FacturaDetalle(models.Model):
         db_column='id_factura',
         related_name='detalles_factura'
     )
+    
+    # 🔥 SOLUCIÓN: Cambiamos RESTRICT por SET_NULL. Si se borra un platillo, la factura conserva el nombre y precio histórico.
     id_platillo = models.ForeignKey(
         'menu.GestionPlatillo', 
-        on_delete=models.RESTRICT, 
+        on_delete=models.SET_NULL, 
+        null=True,
+        blank=True,
         db_column='id_platillo'
     )
     
