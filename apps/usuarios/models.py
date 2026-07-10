@@ -37,13 +37,16 @@ class Usuario(AbstractUser):
     )
     email = models.EmailField(unique=True, verbose_name='Correo Electrónico')
     rol = models.CharField(max_length=20, choices=ROLES, default='cliente')
+    
+    # 🔥 NUEVO CAMPO: Permite ocultar visualmente al usuario sin destruir sus relaciones en la BD
+    es_anonimo = models.BooleanField(default=False, verbose_name='¿Está anonimizado?')
 
     objects = UsuarioManager()
 
     # PERMISOS DE MÓDULOS PERSONALIZADOS
     class Meta:
         permissions = [
-            ("modulo_usuarios", "Acceso al módulo de Usuarios"),  # 🔥 EL INTERRUPTOR QUE FALTABA
+            ("modulo_usuarios", "Acceso al módulo de Usuarios"),
             ("modulo_dashboard", "Acceso al módulo de Dashboard"),
             ("modulo_menu", "Acceso al módulo de Menú"),
             ("modulo_mesas", "Acceso al módulo de Mesas"),

@@ -89,7 +89,8 @@ def cerrar_sesion(request):
 @login_required
 @requiere_permiso('modulo_usuarios')
 def lista_usuarios(request):
-    usuarios = Usuario.objects.exclude(rol='cliente')
+    # 🔥 CORRECCIÓN: Filtramos para excluir clientes y registros marcados como anónimos/eliminados
+    usuarios = Usuario.objects.exclude(rol='cliente').exclude(es_anonimo=True)
     
     query = request.GET.get('q', '').strip()
     rol_filter = request.GET.get('rol', 'Todos')
@@ -179,45 +180,40 @@ def editar_usuario(request, pk):
     return render(request, 'usuarios/editar_usuario.html', {'form': form, 'usuario_editado': usuario})
 
 
-# --- ELIMINAR EMPLEADO (SOFT DELETE + ANONIMIZACIÓN BALANCEADA) ---
+# --- ELIMINAR EMPLEADO (SOFT DELETE DIRECTO Y LIBERACIÓN DE UNIQUE FIELDS) ---
 @login_required
 @requiere_permiso('modulo_usuarios')
 def eliminar_usuario(request, pk):
     usuario = get_object_or_404(Usuario, pk=pk)
     
     if request.method == 'POST':
+        username_original = usuario.username
+        
+        # 1. Deshabilitamos el inicio de sesión y contraseñas
         usuario.is_active = False
         usuario.set_unusable_password() 
         
-        # Guardamos datos para la auditoría antes de cambiarlos
-        username_original = usuario.username
-        fue_anonimizado = request.POST.get('anonimizar') == 'on'
+        # 2. Marcamos la bandera para ocultarlo visualmente de las consultas del panel
+        usuario.es_anonimo = True
         
-        if fue_anonimizado:
-            # Conservamos el alias original pero le añadimos una marca de inactivo.
-            usuario.username = f"{username_original}_anon_{usuario.id}"
-            
-            # Borramos los datos personales reales (PII) que sí son sensibles
-            usuario.email = f"anonimo_{usuario.id}@sistema.local"
-            usuario.first_name = "Historial"
-            usuario.last_name = f"({username_original})"
-            
+        # 3. Alteramos username y email para liberar los valores únicos reales en la base de datos
+        usuario.username = f"{username_original}_eliminado_{usuario.id}"
+        usuario.email = f"eliminado_{usuario.id}_{usuario.email}"
+        
         usuario.save()
         
-        # 🎯 AUDITORÍA: Eliminación / Desactivación
-        accion_auditoria = 'Usuario Anonimizado' if fue_anonimizado else 'Usuario Desactivado'
-        detalle_auditoria = f"Eliminó y anonimizó los datos de {username_original}." if fue_anonimizado else f"Desactivó el acceso al usuario: {username_original}."
-        
+        # 🎯 AUDITORÍA: Registro de la eliminación
         Auditoria.objects.create(
             id_usuario=request.user,
             modulo='usuarios',
-            accion=accion_auditoria,
-            detalle=detalle_auditoria
+            accion='Usuario Eliminado',
+            detalle=f"Eliminó del panel al empleado: {username_original}."
         )
         
         return redirect('lista_usuarios')
         
     return render(request, 'usuarios/eliminar_usuario.html', {'usuario_eliminado': usuario})
+
 
 # --- ASIGNACIÓN DE PERMISOS POR MÓDULOS ---
 @login_required
@@ -248,6 +244,7 @@ def asignar_permisos(request, pk):
         'usuario_permisos_ids': usuario_permisos_ids
     })
 
+
 @login_required
 @requiere_permiso('modulo_usuarios')
 def cambiar_password_admin(request, pk):
@@ -258,7 +255,6 @@ def cambiar_password_admin(request, pk):
     usuario_objetivo = get_object_or_404(Usuario, pk=pk)
     
     if request.method == 'POST':
-        # PasswordChangeForm añade y valida automáticamente el campo de "Contraseña actual"
         form = PasswordChangeForm(user=usuario_objetivo, data=request.POST)
         if form.is_valid():
             form.save()
