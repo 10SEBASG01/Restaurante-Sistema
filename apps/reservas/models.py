@@ -18,9 +18,9 @@ class Reserva(models.Model):
         blank=True
     )
 
-    cliente = models.CharField(
-        max_length=150
-    )
+    # 🎯 CAMBIO AQUÍ: Separamos el cliente
+    nombres = models.CharField(max_length=150)
+    apellidos = models.CharField(max_length=150)
 
     # Validadores para exigir exactamente 10 números
     cedula = models.CharField(
@@ -87,7 +87,8 @@ class Reserva(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.codigo} - {self.cliente}"
+        # 🎯 CAMBIO AQUÍ: Reflejar nombres y apellidos en el panel admin
+        return f"{self.codigo} - {self.nombres} {self.apellidos}"
 
     def clean(self):
 
@@ -149,4 +150,3 @@ class Reserva(models.Model):
             self.codigo = f"R-{numero:04d}"
 
         super().save(*args, **kwargs)
-        

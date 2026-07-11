@@ -50,8 +50,10 @@ def lista_reservas(request):
     reservas = Reserva.objects.all()
 
     if busqueda:
+        # 🎯 CAMBIO AQUÍ: Filtramos por nombres o apellidos
         reservas = reservas.filter(
-            Q(cliente__icontains=busqueda) |
+            Q(nombres__icontains=busqueda) |
+            Q(apellidos__icontains=busqueda) |
             Q(telefono__icontains=busqueda) |
             Q(codigo__icontains=busqueda)
         )
@@ -123,8 +125,9 @@ def crear_reserva(request):
                 # ==========================
                 # DATOS TEMPORALES DEL CLIENTE
                 # ==========================
-
-                mesa.cliente_nombre = reserva.cliente
+                
+                # 🎯 CAMBIO AQUÍ: Concatenamos para no romper el modelo Mesa
+                mesa.cliente_nombre = f"{reserva.nombres} {reserva.apellidos}"
                 mesa.cliente_cedula = reserva.cedula
                 mesa.cliente_correo = reserva.correo
                 mesa.cliente_direccion = reserva.direccion
@@ -139,7 +142,7 @@ def crear_reserva(request):
                 id_usuario=request.user,
                 modulo='reservas',
                 accion='Reserva Creada',
-                detalle=f"Reserva {reserva.codigo} a nombre de {reserva.cliente} para la {reserva.mesa} ({reserva.fecha} a las {reserva.hora})."
+                detalle=f"Reserva {reserva.codigo} a nombre de {reserva.nombres} {reserva.apellidos} para la {reserva.mesa} ({reserva.fecha} a las {reserva.hora})."
             )
 
             messages.success(
@@ -212,7 +215,8 @@ def editar_reserva(request, pk):
                     numero=numero_mesa
                 )
 
-                mesa.cliente_nombre = reserva_actualizada.cliente
+                # 🎯 CAMBIO AQUÍ: Concatenamos
+                mesa.cliente_nombre = f"{reserva_actualizada.nombres} {reserva_actualizada.apellidos}"
                 mesa.cliente_cedula = reserva_actualizada.cedula
                 mesa.cliente_correo = reserva_actualizada.correo
                 mesa.cliente_direccion = reserva_actualizada.direccion
@@ -223,7 +227,7 @@ def editar_reserva(request, pk):
                 pass
 
             # 🎯 AUDITORÍA: Edición de reserva
-            detalle_audit = f"Actualizó datos de la reserva {reserva_actualizada.codigo} de {reserva_actualizada.cliente}."
+            detalle_audit = f"Actualizó datos de la reserva {reserva_actualizada.codigo} de {reserva_actualizada.nombres} {reserva_actualizada.apellidos}."
             if estado_anterior != reserva_actualizada.get_estado_display():
                 detalle_audit += f" (Estado pasó a {reserva_actualizada.get_estado_display()})"
 
@@ -304,7 +308,8 @@ def eliminar_reserva(request, pk):
             
         # 🎯 Capturamos los datos antes de borrar la reserva para la auditoría
         codigo_reserva = reserva.codigo
-        cliente_reserva = reserva.cliente
+        # 🎯 CAMBIO AQUÍ
+        cliente_reserva = f"{reserva.nombres} {reserva.apellidos}"
 
         reserva.delete()
         

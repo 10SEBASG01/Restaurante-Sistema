@@ -41,8 +41,10 @@ class ReservaForm(forms.ModelForm):
 
         model = Reserva
 
+        # 🎯 CAMBIO AQUÍ: Agregamos nombres y apellidos, quitamos cliente
         fields = [
-            'cliente',
+            'nombres',
+            'apellidos',
             'cedula',
             'correo',
             'telefono',
@@ -56,12 +58,9 @@ class ReservaForm(forms.ModelForm):
         ]
 
         widgets = {
-
-            'cliente': forms.TextInput(
-                attrs={
-                    'class': 'form-control'
-                }
-            ),
+            # 🎯 CAMBIO AQUÍ: Widgets para los nuevos campos
+            'nombres': forms.TextInput(attrs={'class': 'form-control'}),
+            'apellidos': forms.TextInput(attrs={'class': 'form-control'}),
 
             'cedula': forms.TextInput(
                 attrs={

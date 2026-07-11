@@ -13,7 +13,7 @@
         padding: 45px;
         border: 1px solid #f5f5f5;
         animation: fadeIn 0.5s ease-out;
-        box-sizing: border-box; /* Asegura que el padding no desborde */
+        box-sizing: border-box; 
     }
 
     @keyframes fadeIn {
@@ -58,6 +58,7 @@
         border: 1px solid var(--gold-light, #dfcaa4);
         font-size: 14px;
     }
+    
     /* Grid para organizar a 2 columnas */
     .form-grid {
         display: grid;
@@ -273,7 +274,7 @@
         .form-grid { grid-template-columns: 1fr; }
         .full-width { grid-column: 1; }
         .reserva-container { padding: 30px 20px; }
-        .page-title { font-size: 2.5rem; } /* Título más pequeño para que no desborde */
+        .page-title { font-size: 2.5rem; }
         .mesas-selector { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
     }
 </style>
@@ -307,9 +308,15 @@
 
         <div class="form-grid">
             <div class="form-group">
-                <label for="{{ form.cliente.id_for_label }}"><i class="fa-regular fa-user"></i> Nombre Completo</label>
-                {{ form.cliente }}
-                {{ form.cliente.errors }}
+                <label for="{{ form.nombres.id_for_label }}"><i class="fa-regular fa-user"></i> Nombres</label>
+                {{ form.nombres }}
+                {{ form.nombres.errors }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.apellidos.id_for_label }}"><i class="fa-regular fa-user"></i> Apellidos</label>
+                {{ form.apellidos }}
+                {{ form.apellidos.errors }}
             </div>
 
             <div class="form-group">
@@ -324,17 +331,19 @@
                 {{ form.correo.errors }}
             </div>
 
+            <!-- Teléfono y Dirección adaptados al grid -->
             <div class="form-group">
-                <label for="{{ form.telefono.id_for_label }}"><i class="fa-solid fa-phone"></i> Teléfono móvil</label>
+                <label for="{{ form.telefono.id_for_label }}"><i class="fa-solid fa-phone"></i> Teléfono</label>
                 {{ form.telefono }}
                 {{ form.telefono.errors }}
             </div>
 
-            <div class="form-group full-width">
+            <div class="form-group">
                 <label for="{{ form.direccion.id_for_label }}"><i class="fa-solid fa-location-dot"></i> Dirección</label>
                 {{ form.direccion }}
                 {{ form.direccion.errors }}
             </div>
+            <!-- Fin de la corrección -->
 
             <div class="form-group">
                 <label for="{{ form.fecha.id_for_label }}"><i class="fa-regular fa-calendar"></i> Fecha</label>
