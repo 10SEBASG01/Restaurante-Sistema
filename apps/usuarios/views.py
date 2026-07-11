@@ -10,8 +10,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse_lazy
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
-# 🎯 IMPORTAMOS AUDITORÍA
+
+# 🎯 IMPORTAMOS AUDITORÍA Y CONFIGURACIÓN
 from apps.auditoria.models import Auditoria
+from apps.facturacion.models import ConfiguracionFacturacion # Ajusta 'apps.facturacion' si tu app se llama distinto
 
 from .models import Usuario
 from .forms import CustomUserCreationForm, UsuarioEditForm
@@ -53,6 +55,12 @@ def requiere_permiso(nombre_permiso):
 class CustomLoginView(LoginView):
     template_name = 'usuarios/login.html'
     
+    # 🎯 AQUÍ INYECTAMOS LA CONFIGURACIÓN AL HTML DE LOGIN
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['config'] = ConfiguracionFacturacion.objects.first()
+        return context
+    
     def get_success_url(self):
         usuario = self.request.user
         
@@ -89,7 +97,6 @@ def cerrar_sesion(request):
 @login_required
 @requiere_permiso('modulo_usuarios')
 def lista_usuarios(request):
-    # 🔥 CORRECCIÓN: Filtramos para excluir clientes y registros marcados como anónimos/eliminados
     usuarios = Usuario.objects.exclude(rol='cliente').exclude(es_anonimo=True)
     
     query = request.GET.get('q', '').strip()
@@ -131,7 +138,6 @@ def crear_usuario(request):
         if form.is_valid():
             nuevo_usuario = form.save()
             
-            # 🎯 AUDITORÍA: Creación de empleado
             Auditoria.objects.create(
                 id_usuario=request.user,
                 modulo='usuarios',
@@ -162,7 +168,6 @@ def editar_usuario(request, pk):
         if form.is_valid():
             usuario_editado = form.save()
             
-            # 🎯 AUDITORÍA: Edición de empleado
             detalle_audit = f"Actualizó los datos del empleado: {usuario_editado.username}."
             if rol_anterior != usuario_editado.get_rol_display():
                 detalle_audit += f" (Cambió su rol de {rol_anterior} a {usuario_editado.get_rol_display()})."
@@ -180,7 +185,7 @@ def editar_usuario(request, pk):
     return render(request, 'usuarios/editar_usuario.html', {'form': form, 'usuario_editado': usuario})
 
 
-# --- ELIMINAR EMPLEADO (SOFT DELETE DIRECTO Y LIBERACIÓN DE UNIQUE FIELDS) ---
+# --- ELIMINAR EMPLEADO ---
 @login_required
 @requiere_permiso('modulo_usuarios')
 def eliminar_usuario(request, pk):
@@ -189,20 +194,15 @@ def eliminar_usuario(request, pk):
     if request.method == 'POST':
         username_original = usuario.username
         
-        # 1. Deshabilitamos el inicio de sesión y contraseñas
         usuario.is_active = False
         usuario.set_unusable_password() 
-        
-        # 2. Marcamos la bandera para ocultarlo visualmente de las consultas del panel
         usuario.es_anonimo = True
         
-        # 3. Alteramos username y email para liberar los valores únicos reales en la base de datos
         usuario.username = f"{username_original}_eliminado_{usuario.id}"
         usuario.email = f"eliminado_{usuario.id}_{usuario.email}"
         
         usuario.save()
         
-        # 🎯 AUDITORÍA: Registro de la eliminación
         Auditoria.objects.create(
             id_usuario=request.user,
             modulo='usuarios',
@@ -226,7 +226,6 @@ def asignar_permisos(request, pk):
         permisos_ids = request.POST.getlist('permisos')
         usuario.user_permissions.set(permisos_ids)
         
-        # 🎯 AUDITORÍA: Asignación de permisos
         Auditoria.objects.create(
             id_usuario=request.user,
             modulo='usuarios',
@@ -248,10 +247,6 @@ def asignar_permisos(request, pk):
 @login_required
 @requiere_permiso('modulo_usuarios')
 def cambiar_password_admin(request, pk):
-    """
-    Permite modificar la contraseña de un usuario exigiendo primero
-    la introducción de su contraseña actual por motivos de seguridad.
-    """
     usuario_objetivo = get_object_or_404(Usuario, pk=pk)
     
     if request.method == 'POST':
@@ -259,7 +254,6 @@ def cambiar_password_admin(request, pk):
         if form.is_valid():
             form.save()
             
-            # 🎯 REGISTRO EN EL MÓDULO DE AUDITORÍA
             Auditoria.objects.create(
                 id_usuario=request.user,
                 modulo='usuarios',
@@ -272,7 +266,6 @@ def cambiar_password_admin(request, pk):
     else:
         form = PasswordChangeForm(user=usuario_objetivo)
         
-        # Aplicamos de forma automática los estilos visuales a los 3 campos
         for field_name, field in form.fields.items():
             field.widget.attrs.update({
                 'class': 'form-control',

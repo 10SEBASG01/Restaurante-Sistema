@@ -269,40 +269,42 @@ def configuracion_facturacion(request):
         from apps.auditoria.models import Auditoria
         
         if 'action_emisor' in request.POST:
+            # ... (Tu código actual del emisor) ...
             tab_activa = 'empresa'
             config.nombre_comercial = request.POST.get('nombre_comercial')
-            config.razon_social = request.POST.get('razon_social')
-            config.ruc = request.POST.get('ruc')
-            config.provincia = request.POST.get('ciudad_provincia')
-            config.direccion = request.POST.get('direccion')
-            config.telefono = request.POST.get('telefono')
+            # ... (resto de campos)
             config.save()
-            
-            # 🎯 REGISTRO EN AUDITORÍA: Cambios del emisor
-            Auditoria.objects.create(
-                id_usuario=request.user,
-                modulo='facturacion',
-                accion='Configuración Empresa',
-                detalle=f"Actualizó datos del emisor comercial: {config.nombre_comercial}"
-            )
-            messages.success(request, "Datos de la cabecera comercial del emisor actualizados.")
+            # ... (Auditoría y messages) ...
             
         elif 'action_iva' in request.POST:
+            # ... (Tu código actual del IVA) ...
             tab_activa = 'impuestos'
             try:
                 config.iva_porcentaje = int(request.POST.get('iva_comercial', 12))
                 config.save()
-                
-                # 🎯 REGISTRO EN AUDITORÍA: Cambios en la tasa impositiva
-                Auditoria.objects.create(
-                    id_usuario=request.user,
-                    modulo='facturacion',
-                    accion='Configuración IVA',
-                    detalle=f"Actualizó tasa de IVA vigente al {config.iva_porcentaje}%"
-                )
-                messages.success(request, "Tasa impositiva del IVA actualizada correctamente.")
+                # ... (Auditoría y messages) ...
             except ValueError:
                 messages.error(request, "Porcentaje de IVA inválido.")
+                
+        # 🎯 NUEVO BLOQUE: PROCESAMIENTO DE MARCA Y LOGO
+        elif 'action_marca' in request.POST:
+            tab_activa = 'marca'
+            
+            # Si viene una imagen en la petición, la guardamos
+            # Es vital usar request.FILES para archivos multimedia
+            if 'logo_restaurante' in request.FILES:
+                config.logo_restaurante = request.FILES['logo_restaurante']
+                
+            config.save()
+            
+            # Registro en el log de auditoría
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='facturacion',
+                accion='Configuración de Marca',
+                detalle="Actualizó el logo del sistema."
+            )
+            messages.success(request, "Logo actualizado correctamente.")
                 
         return redirect(f"{request.path}?tab={tab_activa}")
 
@@ -312,7 +314,6 @@ def configuracion_facturacion(request):
         'config': config,
         'tab_solicitada': tab_solicitada
     })
-
 
 @login_required
 def configuracion_sistema(request):

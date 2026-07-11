@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sabor & Arte RESTAURANTE</title>
+    <title>{% if config and config.nombre_comercial %}{{ config.nombre_comercial }}{% else %}Sabor & Arte{% endif %} - Restaurante</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
             --gold-light: #dfcaa4;
             --bg-color: #faf9f7;
             --text-dark: #2c2c2c;
-            --text-gray: #7a7a7a;
+            --text-gray: #666666;
         }
 
         * {
@@ -32,245 +32,260 @@
             justify-content: center;
             min-height: 100vh;
             position: relative;
-            overflow: hidden;
+            padding: 20px;
+            overflow-x: hidden;
         }
 
-        /* Tenedores de fondo (Decoración) */
-        .bg-decoration {
+        /* Fondo Decorativo de Acuarela */
+        body::before {
+            content: "";
             position: absolute;
-            width: 300px;
-            opacity: 0.15;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(223,202,164,0.15) 0%, rgba(250,249,247,0) 70%);
+            top: -150px;
+            right: -150px;
             z-index: 1;
             pointer-events: none;
         }
-        
-        .bg-decoration svg {
-            width: 100%;
-            height: auto;
-            stroke: var(--gold-primary);
-            fill: none;
-            stroke-width: 1;
-        }
 
-        .bg-left {
-            left: -50px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .bg-right {
-            right: -50px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        /* Tarjeta Principal */
-        .card {
-            background: #ffffff;
-            width: 90%;
-            max-width: 420px;
-            padding: 50px 40px;
-            border-radius: 8px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.06);
-            text-align: center;
-            z-index: 2;
-            margin-bottom: 60px;
-        }
-
-        /* Logo y Títulos */
-        .logo-icon {
-            width: 45px;
-            height: 45px;
-            margin: 0 auto 10px;
-            color: var(--gold-primary);
-        }
-
-        h1.brand-name {
-            font-family: 'Great Vibes', cursive;
-            font-size: 3.5rem;
-            color: var(--gold-primary);
-            font-weight: 400;
-            margin-bottom: 5px;
-            line-height: 1;
-        }
-
-        h2.brand-subtitle {
-            font-size: 1rem;
-            color: var(--text-dark);
-            letter-spacing: 2px;
-            font-weight: 500;
-            margin-bottom: 15px;
-        }
-
-        /* Separador con el punto */
-        .divider {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 25px; /* Reducido un poco para dar espacio al texto */
-            width: 60%;
-        }
-
-        .divider::before,
-        .divider::after {
+        body::after {
             content: "";
-            height: 1px;
-            flex-grow: 1;
-            background-color: var(--gold-light);
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(188,142,54,0.1) 0%, rgba(250,249,247,0) 70%);
+            bottom: -150px;
+            left: -150px;
+            z-index: 1;
+            pointer-events: none;
         }
 
-        .divider .dot {
-            width: 5px;
-            height: 5px;
-            background-color: var(--gold-primary);
-            border-radius: 50%;
-            margin: 0 10px;
+        .container {
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(8px);
+            padding: 40px 30px;
+            border-radius: 24px;
+            border: 1px solid rgba(223, 202, 164, 0.3);
+            box-shadow: 0 15px 35px rgba(188, 142, 54, 0.04);
         }
 
-        /* 🎯 Estilos de la nueva sección de contacto */
-        .card-contact-info {
-            margin-bottom: 25px; /* Da espacio antes de los botones */
-            font-size: 0.85rem;
-            color: var(--text-gray);
+        /* 🎯 CONTENEDOR LOGO GRÁFICO */
+        .brand-logo-container {
             display: flex;
-            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .brand-logo-container img {
+            max-width: 260px;
+            max-height: 160px;
+            object-fit: contain;
+            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.05));
+        }
+
+        /* Estilos para Logo Tipográfico (cuando no hay imagen) */
+        .brand-title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 64px;
+            color: var(--text-dark);
+            margin-bottom: 5px;
+            line-height: 1.1;
+            background: linear-gradient(135deg, #2c2c2c 0%, #614614 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-subtitle {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            color: var(--gold-primary);
+            margin-bottom: 25px;
+            font-weight: 600;
+            padding-left: 5px;
+        }
+
+        /* 🎯 MENSAJE DE CONTACTO (CALL TO ACTION) */
+        .contact-message {
+            font-size: 13px;
+            color: var(--text-gray);
+            line-height: 1.6;
+            margin-bottom: 30px;
+            padding: 0 15px;
+        }
+        
+        .contact-message .phone-highlight {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            line-height: 1.4;
-            padding: 0 10px;
-        }
-
-        .contact-number-wrapper {
-            display: flex;
-            align-items: center;
             gap: 8px;
-            color: var(--text-dark);
+            margin-top: 8px;
+            font-size: 16px;
             font-weight: 600;
-            font-size: 1.05rem;
+            color: var(--text-dark);
         }
 
-        .contact-number-wrapper svg {
+        .contact-message svg {
             width: 18px;
             height: 18px;
-            fill: none;
             stroke: var(--gold-primary);
             stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
+            fill: none;
         }
 
-        /* Botones */
+        /* Botones del Menú Principal */
         .btn {
             display: flex;
             align-items: center;
             justify-content: center;
             width: 100%;
-            background-color: var(--gold-primary);
-            color: #ffffff;
+            padding: 18px 30px;
+            margin-bottom: 16px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 600;
             text-decoration: none;
-            padding: 16px 20px;
-            border-radius: 6px;
-            font-size: 1.1rem;
-            font-weight: 500;
-            margin-bottom: 15px;
-            transition: background-color 0.3s ease, transform 0.1s ease;
-        }
-
-        .btn:last-child {
-            margin-bottom: 0;
-        }
-
-        .btn:hover {
-            background-color: #a87b2c;
-        }
-        
-        .btn:active {
-            transform: scale(0.98);
+            letter-spacing: 1px;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
         }
 
         .btn svg {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             margin-right: 12px;
             fill: none;
-            stroke: currentColor;
             stroke-width: 2;
             stroke-linecap: round;
             stroke-linejoin: round;
+            transition: transform 0.3s ease;
         }
 
-        /* Footer */
-        footer {
-            position: absolute;
-            bottom: 25px;
-            width: 90%;
-            max-width: 800px;
-            text-align: center;
-            border-top: 1px solid #e5e5e5;
-            padding-top: 15px;
-            font-size: 0.75rem;
-            color: var(--text-gray);
-            z-index: 2;
+        #btn-menu-1 {
+            background-color: var(--text-dark);
+            color: #ffffff;
+            box-shadow: 0 10px 20px rgba(44, 44, 44, 0.15);
         }
 
-        /* --- RESPONSIVIDAD PARA MÓVILES --- */
+        #btn-menu-1 svg { stroke: #ffffff; }
+
+        #btn-menu-1:hover {
+            background-color: #1a1a1a;
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px rgba(44, 44, 44, 0.25);
+        }
+
+        #btn-reserve-2 {
+            background-color: #ffffff;
+            color: var(--text-dark);
+            border: 1px solid rgba(188, 142, 54, 0.4);
+            box-shadow: 0 8px 15px rgba(188, 142, 54, 0.05);
+        }
+
+        #btn-reserve-2 svg { stroke: var(--gold-primary); }
+
+        #btn-reserve-2:hover {
+            background-color: #fffcf7;
+            border-color: var(--gold-primary);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 22px rgba(188, 142, 54, 0.12);
+        }
+
+        .btn:hover svg {
+            transform: scale(1.15);
+        }
+
+        /* Información de Contacto Inferior */
+        .info-box {
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 1px dashed var(--gold-light);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888888;
+            font-size: 13px;
+            gap: 8px;
+            max-width: 90%;
+        }
+
+        .info-item svg {
+            width: 15px;
+            height: 15px;
+            stroke: var(--gold-primary);
+            stroke-width: 2;
+            fill: none;
+            flex-shrink: 0;
+        }
+
+        /* Footer pequeño */
+        .footer-text {
+            margin-top: 30px;
+            font-size: 10px;
+            color: #b0b0b0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Ajustes de Responsividad */
         @media (max-width: 480px) {
-            .card {
-                padding: 35px 25px;
+            .container {
+                padding: 30px 20px;
             }
-            h1.brand-name {
-                font-size: 2.8rem;
-            }
-            .bg-decoration {
-                display: none;
-            }
+            .brand-title { font-size: 52px; }
+            .btn { padding: 16px 20px; font-size: 14px; }
+            .contact-message { font-size: 12px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="bg-decoration bg-left" id="bg-dec-1">
-        <svg viewBox="0 0 100 100">
-            <path d="M30,70 L70,30 M35,25 L35,40 L70,30 M65,75 L65,60 L30,70" stroke-width="2"/>
-            <line x1="20" y1="80" x2="80" y2="20" stroke-width="2"/>
-            <line x1="20" y1="20" x2="80" y2="80" stroke-width="2"/>
-        </svg>
-    </div>
-
-    <div class="bg-decoration bg-right" id="bg-dec-2">
-        <svg viewBox="0 0 100 100">
-            <path d="M30,70 L70,30 M35,25 L35,40 L70,30 M65,75 L65,60 L30,70" stroke-width="2"/>
-            <line x1="20" y1="80" x2="80" y2="20" stroke-width="2"/>
-            <line x1="20" y1="20" x2="80" y2="80" stroke-width="2"/>
-        </svg>
-    </div>
-
-    <div class="card" id="main-card-1">
+    <div class="container">
         
-        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="6" y1="18" x2="18" y2="6"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-            <path d="M7,5 L9,7 L11,5"></path>
-            <path d="M13,19 L15,17 L17,19"></path>
-        </svg>
+        {% if config and config.logo_restaurante %}
+            <div class="brand-logo-container">
+                <img src="{{ config.logo_restaurante.url }}" alt="Logo de {% if config.nombre_comercial %}{{ config.nombre_comercial }}{% else %}Nuestro Restaurante{% endif %}">
+            </div>
+        {% else %}
+            <h1 class="brand-title">
+                {% if config and config.nombre_comercial %}
+                    {{ config.nombre_comercial }}
+                {% else %}
+                    Sabor & Arte
+                {% endif %}
+            </h1>
+            <div class="brand-subtitle">
+                {% if config and config.lema_restaurante %}
+                    {{ config.lema_restaurante }}
+                {% else %}
+                    RESTAURANTE
+                {% endif %}
+            </div>
+        {% endif %}
 
-        <h1 class="brand-name" id="title-1">Sabor & Arte</h1>
-        <h2 class="brand-subtitle" id="subtitle-1">RESTAURANTE</h2>
-        
-        <div class="divider" id="divider-1">
-            <div class="dot"></div>
-        </div>
-
-        <!-- 🎯 SECCIÓN MODIFICADA: Texto explicativo arriba de los botones -->
         {% if config and config.telefono %}
-        <div class="card-contact-info">
-            <span>Para consultar o registrar sus reservaciones, contáctenos por llamada o WhatsApp al:</span>
-            <div class="contact-number-wrapper">
+        <div class="contact-message">
+            Para consultar o registrar sus reservaciones,<br>contáctenos por llamada o WhatsApp al:
+            <br>
+            <div class="phone-highlight">
                 <svg viewBox="0 0 24 24">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                 </svg>
-                <span>{{ config.telefono }}</span>
+                {{ config.telefono }}
             </div>
         </div>
         {% endif %}
@@ -279,10 +294,8 @@
             <svg viewBox="0 0 24 24">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                <line x1="9" y1="7" x2="15" y2="7"></line>
-                <line x1="9" y1="11" x2="15" y2="11"></line>
             </svg>
-            Ver menú
+            <span>Ver Nuestro Menú</span>
         </a>
 
         <a href="{% url 'publico:reserva_publica' %}" class="btn" id="btn-reserve-2">
@@ -291,16 +304,31 @@
                 <line x1="16" y1="2" x2="16" y2="6"></line>
                 <line x1="8" y1="2" x2="8" y2="6"></line>
                 <line x1="3" y1="10" x2="21" y2="10"></line>
-                <circle cx="12" cy="15" r="1.5" fill="currentColor"></circle>
             </svg>
-            Reservar
+            <span>Reservar una Mesa</span>
         </a>
 
-    </div>
+        <div class="info-box">
+            {% if config and config.direccion %}
+            <div class="info-item">
+                <svg viewBox="0 0 24 24">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <span>{{ config.direccion }}{% if config.provincia %}, {{ config.provincia }}{% endif %}</span>
+            </div>
+            {% endif %}
+        </div>
 
-    <footer id="footer-1">
-        © 2026 Sabor & Arte RESTAURANTE. Todos los derechos reservados. | Soporte Técnico
-    </footer>
+        <div class="footer-text">
+            &copy; {% now "Y" %} 
+            {% if config and config.nombre_comercial %}
+                {{ config.nombre_comercial }}
+            {% else %}
+                Sabor & Arte
+            {% endif %}
+        </div>
+    </div>
 
 </body>
 </html>

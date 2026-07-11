@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sabor & Arte</title>
+    <title>Login - {% if config and config.nombre_comercial %}{{ config.nombre_comercial }}{% else %}Sabor & Arte{% endif %}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -25,15 +25,38 @@
             background: #ffffff;
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            padding: 40px;
+            padding: 45px 40px; /* Un poco más de padding superior */
             width: 100%;
             max-width: 380px;
             text-align: center;
             box-sizing: border-box;
         }
 
-        /* Logo y Tipografía */
-        .logo-icon { color: #c49a45; font-size: 28px; margin-bottom: 5px; }
+        /* 🎯 CONTENEDOR DEL LOGO MEJORADO */
+        .logo-img {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px; /* Espacio exacto antes del título */
+            min-height: 100px; /* Mantiene la estructura */
+        }
+        
+        .logo-img img {
+            max-width: 220px; /* Lo hacemos más grande y presente */
+            max-height: 130px;
+            object-fit: contain;
+            /* Si tu logo tiene fondo transparente, esto le dará un toque muy elegante: */
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.04)); 
+            transition: transform 0.3s ease;
+        }
+
+        .logo-img img:hover {
+            transform: scale(1.02); /* Pequeño efecto al pasar el mouse */
+        }
+
+        /* Logo Icono por defecto (si no hay imagen) */
+        .logo-icon { color: #c49a45; font-size: 32px; margin-bottom: 10px; }
+
         .brand-title { 
             font-family: 'Playfair Display', serif; 
             color: #c49a45; 
@@ -52,7 +75,7 @@
         }
 
         h2 { margin: 0; color: #111; font-size: 22px; font-weight: 600; line-height: 1.3; }
-        p.subtitle { color: #666; font-size: 14px; margin-top: 8px; margin-bottom: 25px; }
+        p.subtitle { color: #666; font-size: 14px; margin-top: 10px; margin-bottom: 25px; }
 
         /* Mensaje de Error de Validación */
         .error-alert {
@@ -77,7 +100,7 @@
         /* Inputs con Iconos */
         .input-group {
             position: relative;
-            margin-bottom: 15px;
+            margin-bottom: 16px;
             text-align: left;
         }
         .input-group i.left-icon {
@@ -129,19 +152,21 @@
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s, opacity 0.3s;
+            transition: background 0.3s, opacity 0.3s, transform 0.1s;
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 10px;
             font-family: 'Inter', sans-serif;
+            margin-top: 5px;
         }
         .btn-gold:hover { background-color: #b0883b; }
+        .btn-gold:active { transform: scale(0.98); }
 
-        /* NUEVO: Estado de carga para el botón */
+        /* Estado de carga para el botón */
         .btn-gold.is-loading {
-            pointer-events: none; /* Previene el doble clic bloqueando los eventos del ratón */
-            opacity: 0.7; /* Da un efecto visual de estar deshabilitado */
+            pointer-events: none; 
+            opacity: 0.7; 
         }
 
         /* Footer */
@@ -153,8 +178,8 @@
             text-align: center;
             width: 100%;
         }
-        .footer a { color: #6b7280; text-decoration: none; }
-        .footer a:hover { color: #374151; }
+        .footer a { color: #6b7280; text-decoration: none; font-weight: 500; }
+        .footer a:hover { color: #c49a45; }
 
         input[type="password"]::-ms-reveal,
         input[type="password"]::-ms-clear {
@@ -165,9 +190,32 @@
 <body>
 
     <div class="login-card">
-        <div class="logo-icon"><i class="fa-solid fa-utensils"></i></div>
-        <h1 class="brand-title">Sabor & Arte</h1>
-        <div class="brand-subtitle">RESTAURANTE</div>
+        
+        <!-- 🎯 LOGO CON MEJOR PRESENCIA -->
+        {% if config and config.logo_restaurante %}
+            <div class="logo-img">
+                <img src="{{ config.logo_restaurante.url }}" alt="Logo del Restaurante">
+            </div>
+        {% else %}
+            <!-- Si no hay imagen, mostramos el icono y los textos por defecto -->
+            <div class="logo-icon"><i class="fa-solid fa-utensils"></i></div>
+            
+            <h1 class="brand-title">
+                {% if config and config.nombre_comercial %}
+                    {{ config.nombre_comercial }}
+                {% else %}
+                    Sabor & Arte
+                {% endif %}
+            </h1>
+            
+            <div class="brand-subtitle">
+                {% if config and config.lema_restaurante %}
+                    {{ config.lema_restaurante|upper }}
+                {% else %}
+                    RESTAURANTE
+                {% endif %}
+            </div>
+        {% endif %}
         
         <h2>Bienvenido al Sistema de<br>Gestión Centralizado</h2>
         <p class="subtitle">Inicia sesión en tu cuenta</p>
@@ -200,11 +248,15 @@
     </div>
 
     <div class="footer">
-        &copy; 2026 Sabor & Arte RESTAURANTE. Todos los derechos reservados. | <a href="#">Soporte Técnico</a>
+        &copy; {% now "Y" %} 
+        {% if config and config.nombre_comercial %}
+            {{ config.nombre_comercial }}
+        {% else %}
+            Sabor & Arte
+        {% endif %}. Todos los derechos reservados. | <a href="#">Soporte Técnico</a>
     </div>
 
     <script>
-        // Lógica de mostrar/ocultar contraseña
         const togglePassword = document.querySelector('#togglePassword');
         const password = document.querySelector('#pwdInput');
 
@@ -215,15 +267,11 @@
             this.classList.toggle('fa-eye-slash');
         });
 
-        // NUEVO: Lógica para prevenir el doble clic y mostrar estado de carga
         const loginForm = document.querySelector('#loginForm');
         const submitBtn = document.querySelector('#submitBtn');
 
         loginForm.addEventListener('submit', function () {
-            // 1. Añadimos la clase que aplica el pointer-events: none (evita doble clic)
             submitBtn.classList.add('is-loading');
-            
-            // 2. Cambiamos el icono estático por el spinner animado de FontAwesome y actualizamos el texto
             submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Cargando...';
         });
     </script>

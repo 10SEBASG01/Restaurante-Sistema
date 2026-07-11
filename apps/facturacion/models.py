@@ -2,8 +2,12 @@ from django.db import models
 from django.conf import settings
 from apps.pedidos.models import GestionPedido
 
+# apps/facturacion/models.py
+from django.db import models
+from django.conf import settings
+from apps.pedidos.models import GestionPedido
+
 class ConfiguracionFacturacion(models.Model):
-    # ... (Tu código actual permanece igual)
     id = models.AutoField(primary_key=True)
     nombre_comercial = models.CharField(max_length=255, default="Sabor y Arte")
     razon_social = models.CharField(max_length=255, blank=True, null=True, verbose_name="Razón Social")
@@ -12,6 +16,7 @@ class ConfiguracionFacturacion(models.Model):
     direccion = models.CharField(max_length=255, default="Av. Gastronomía 455, Miraflores", verbose_name="Dirección Matriz")
     telefono = models.CharField(max_length=10, blank=True, null=True, verbose_name="Teléfono Principal")
     iva_porcentaje = models.IntegerField(default=12, verbose_name="Tasa de IVA Vigente (%)")
+    logo_restaurante = models.ImageField(upload_to='logos_marca/', blank=True, null=True, verbose_name="Logo del Restaurante")
 
     class Meta:
         db_table = 'configuracion_facturacion'
