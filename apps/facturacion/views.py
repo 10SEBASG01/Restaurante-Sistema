@@ -272,9 +272,20 @@ def configuracion_facturacion(request):
             # ... (Tu código actual del emisor) ...
             tab_activa = 'empresa'
             config.nombre_comercial = request.POST.get('nombre_comercial')
-            # ... (resto de campos)
+            config.razon_social = request.POST.get('razon_social')
+            config.ruc = request.POST.get('ruc')
+            config.provincia = request.POST.get('ciudad_provincia')
+            config.direccion = request.POST.get('direccion')
+            config.telefono = request.POST.get('telefono')
             config.save()
-            # ... (Auditoría y messages) ...
+            
+            Auditoria.objects.create(
+                id_usuario=request.user,
+                modulo='facturacion',
+                accion='Configuración de Emisor',
+                detalle="Actualizó los datos del emisor."
+            )
+            messages.success(request, "Datos del emisor actualizados correctamente.")
             
         elif 'action_iva' in request.POST:
             # ... (Tu código actual del IVA) ...
@@ -282,7 +293,14 @@ def configuracion_facturacion(request):
             try:
                 config.iva_porcentaje = int(request.POST.get('iva_comercial', 12))
                 config.save()
-                # ... (Auditoría y messages) ...
+                
+                Auditoria.objects.create(
+                    id_usuario=request.user,
+                    modulo='facturacion',
+                    accion='Configuración de Impuestos',
+                    detalle=f"Actualizó la tasa de IVA a {config.iva_porcentaje}%."
+                )
+                messages.success(request, "Configuración de impuestos guardada.")
             except ValueError:
                 messages.error(request, "Porcentaje de IVA inválido.")
                 
@@ -290,21 +308,35 @@ def configuracion_facturacion(request):
         elif 'action_marca' in request.POST:
             tab_activa = 'marca'
             
-            # Si viene una imagen en la petición, la guardamos
-            # Es vital usar request.FILES para archivos multimedia
-            if 'logo_restaurante' in request.FILES:
-                config.logo_restaurante = request.FILES['logo_restaurante']
+            # Verificamos si se presionó el botón de eliminar
+            if request.POST.get('eliminar_logo') == '1':
+                if config.logo_restaurante:
+                    config.logo_restaurante.delete(save=False) # Elimina el archivo físico
+                    config.logo_restaurante = None
                 
-            config.save()
-            
-            # Registro en el log de auditoría
-            Auditoria.objects.create(
-                id_usuario=request.user,
-                modulo='facturacion',
-                accion='Configuración de Marca',
-                detalle="Actualizó el logo del sistema."
-            )
-            messages.success(request, "Logo actualizado correctamente.")
+                config.save()
+                
+                Auditoria.objects.create(
+                    id_usuario=request.user,
+                    modulo='facturacion',
+                    accion='Configuración de Marca',
+                    detalle="Eliminó el logo del sistema."
+                )
+                messages.success(request, "Logo eliminado correctamente.")
+            else:
+                # Si viene una imagen en la petición, la guardamos
+                if 'logo_restaurante' in request.FILES:
+                    config.logo_restaurante = request.FILES['logo_restaurante']
+                    
+                config.save()
+                
+                Auditoria.objects.create(
+                    id_usuario=request.user,
+                    modulo='facturacion',
+                    accion='Configuración de Marca',
+                    detalle="Actualizó el logo del sistema."
+                )
+                messages.success(request, "Logo actualizado correctamente.")
                 
         return redirect(f"{request.path}?tab={tab_activa}")
 

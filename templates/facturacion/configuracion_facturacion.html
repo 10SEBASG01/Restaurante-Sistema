@@ -317,11 +317,16 @@
                         <label>Logo del Restaurante</label>
                         <input type="file" class="form-control" name="logo_restaurante" accept="image/*" style="padding: 7px 14px;">
                         
-                        <!-- Vista previa del logo si ya hay uno guardado -->
+                        <!-- Vista previa del logo si ya hay uno guardado con botón de eliminar -->
                         {% if config.logo_restaurante %}
-                            <div style="margin-top: 15px; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; display: inline-block; background-color: #f9fafb;">
+                            <div style="margin-top: 15px; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; display: inline-block; background-color: #f9fafb; position: relative;">
                                 <p style="font-size: 12px; color: #6b7280; margin-bottom: 8px; margin-top: 0; font-weight: 600;">Logo actual:</p>
                                 <img src="{{ config.logo_restaurante.url }}" alt="Logo actual" style="max-height: 80px; max-width: 200px; object-fit: contain;">
+                                
+                                <!-- Botón de eliminar con la 'X' -->
+                                <button type="submit" name="eliminar_logo" value="1" style="position: absolute; top: -10px; right: -10px; background-color: #ef4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Quitar logo">
+                                    <i class="fa-solid fa-xmark" style="font-size: 12px;"></i>
+                                </button>
                             </div>
                         {% endif %}
                     </div>
