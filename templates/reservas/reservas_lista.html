@@ -58,12 +58,17 @@
         box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
 
-    .search-box input, .filter-box select {
+    .search-box input, .filter-box select, .filter-box input[type="date"] {
         border: none;
         outline: none;
         font-size: 13px;
         background: transparent;
         color: #333;
+        font-family: inherit;
+    }
+    
+    .filter-box input[type="date"] {
+        cursor: pointer;
     }
 
     .search-box input {
@@ -287,6 +292,16 @@
         </div>
 
         <div class="filter-box">
+            <input 
+                type="date" 
+                name="fecha" 
+                value="{{ fecha_actual }}" 
+                onchange="this.form.submit()"
+                title="Filtrar por fecha"
+            >
+        </div>
+
+        <div class="filter-box">
             <select name="estado" onchange="this.form.submit()">
                 <option value="">Todos</option>
                 <option value="CONFIRMADA" {% if estado_actual == 'CONFIRMADA' %}selected{% endif %}>Confirmadas</option>
@@ -335,7 +350,7 @@
                 <td class="codigo">{{ reserva.codigo }}</td>
                 <td>
                     <div class="client-info">
-                        <span class="client-name">{{ reserva.cliente }}</span>
+                        <span class="client-name">{{ reserva.nombres }} {{ reserva.apellidos }}</span>
                         <span class="client-phone">
                             <i class="fa-solid fa-phone" style="font-size: 10px; margin-right: 4px;"></i>
                             {{ reserva.telefono }}

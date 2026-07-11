@@ -46,6 +46,7 @@ def lista_reservas(request):
 
     busqueda = request.GET.get('q', '')
     estado = request.GET.get('estado', '')
+    fecha = request.GET.get('fecha', '') # 🎯 NUEVO: Obtenemos el filtro de fecha
 
     reservas = Reserva.objects.all()
 
@@ -61,6 +62,11 @@ def lista_reservas(request):
     if estado:
         reservas = reservas.filter(
             estado=estado
+        )
+        
+    if fecha: # 🎯 NUEVO: Aplicamos el filtro de fecha
+        reservas = reservas.filter(
+            fecha=fecha
         )
 
     context = {
@@ -79,7 +85,8 @@ def lista_reservas(request):
         ).count(),
 
         'busqueda': busqueda,
-        'estado_actual': estado
+        'estado_actual': estado,
+        'fecha_actual': fecha # 🎯 NUEVO: Enviamos la fecha seleccionada al template
     }
 
     return render(
