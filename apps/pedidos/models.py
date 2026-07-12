@@ -2,6 +2,10 @@ from django.db import models
 from django.conf import settings
 
 class GestionPedido(models.Model):
+    """
+    Representa el encabezado del pedido. Centraliza la relación entre 
+    el cliente, el empleado que atiende y la mesa asignada.
+    """
     ESTADOS_PEDIDO = [
         ('en_preparacion', 'En Preparación'),
         ('entregado', 'Entregado'),
@@ -9,17 +13,13 @@ class GestionPedido(models.Model):
     ]
 
     id_pedido = models.AutoField(primary_key=True)
+    # SET_NULL: El cliente puede ser opcional (null=True)
     id_cliente = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, db_column='id_cliente', related_name='pedidos_cliente')
+    # RESTRICT: Un empleado no puede borrarse si ha atendido pedidos (protege la auditoría)
     id_empleado = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.RESTRICT, db_column='id_empleado', related_name='pedidos_atendidos')
     
-    # 🔥 SOLUCIÓN: Cambiamos RESTRICT por SET_NULL. Si se borra la mesa, este campo quedará vacío (null).
-    id_mesa = models.ForeignKey(
-        'mesas.Mesa', 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True, 
-        db_column='id_mesa'
-    )
+    # SET_NULL: Si la mesa se elimina, el pedido persiste para el histórico financiero
+    id_mesa = models.ForeignKey('mesas.Mesa', on_delete=models.SET_NULL, null=True, blank=True, db_column='id_mesa')
     
     fecha_pedido = models.DateTimeField(auto_now_add=True)
     estado_pedido = models.CharField(max_length=20, choices=ESTADOS_PEDIDO, default='en_preparacion')
@@ -31,16 +31,20 @@ class GestionPedido(models.Model):
         verbose_name_plural = 'Pedidos'
 
     def __str__(self):
-        # Manejamos el caso donde la mesa ya no exista
+        # Valida existencia de mesa para evitar errores si fue eliminada
         mesa_str = f"Mesa {self.id_mesa.numero}" if self.id_mesa else "Mesa Eliminada"
         return f"Pedido #{self.id_pedido} - {mesa_str}"
 
 
 class DetallePedido(models.Model):
+    """
+    Representa el cuerpo o contenido del pedido (líneas de producto).
+    """
     id_detalle = models.AutoField(primary_key=True)
+    # CASCADE: Si el pedido padre desaparece, sus detalles pierden sentido
     id_pedido = models.ForeignKey(GestionPedido, on_delete=models.CASCADE, related_name='detalles', db_column='id_pedido')
     
-    # Te recomiendo dejar el platillo en RESTRICT o SET_NULL, si borras un platillo, arruinas facturas pasadas. SET_NULL es más seguro si quieres permitir borrar platillos.
+    # SET_NULL: Si el platillo se borra del menú, el histórico de ventas no se corrompe
     id_platillo = models.ForeignKey('menu.GestionPlatillo', on_delete=models.SET_NULL, null=True, blank=True, db_column='id_platillo')
     
     cantidad = models.PositiveIntegerField()
@@ -53,6 +57,7 @@ class DetallePedido(models.Model):
 
     @property
     def subtotal(self):
+        # Cálculo dinámico en memoria, no requiere almacenamiento en BD
         return self.cantidad * self.precio_unitario
 
     def __str__(self):
@@ -60,12 +65,16 @@ class DetallePedido(models.Model):
 
 
 class Comanda(models.Model):
+    """
+    Orden de producción para cocina vinculada a un pedido específico.
+    """
     ESTADOS_COMANDA = [
         ('pendiente', 'Pendiente'),
         ('lista', 'Lista'),
     ]
 
     id_comanda = models.AutoField(primary_key=True)
+    # CASCADE: La comanda depende totalmente del ciclo de vida del pedido
     id_pedido = models.ForeignKey(GestionPedido, on_delete=models.CASCADE, db_column='id_pedido')
     fecha_emision = models.DateTimeField(auto_now_add=True)
     estado_comanda = models.CharField(max_length=20, choices=ESTADOS_COMANDA, default='pendiente')

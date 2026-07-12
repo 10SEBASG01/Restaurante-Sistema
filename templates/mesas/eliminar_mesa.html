@@ -2,8 +2,16 @@
 
 {% block content %}
 <style>
+    /* ==========================================
+       BLOQUE 1: CSS - INTERFAZ DE ADVERTENCIA 
+       ========================================== */
+
     .delete-container { display: flex; justify-content: center; align-items: center; height: 70vh; }
+    
+    /* LÍNEA CLAVE: Indicador cromático de peligro. El borde superior rojo le avisa al 
+       usuario de manera implícita que está en una zona de acción destructiva. */
     .delete-card { background: white; border-radius: 16px; padding: 40px; max-width: 450px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; border-top: 5px solid #ef4444; }
+    
     .delete-icon { width: 70px; height: 70px; background-color: #fef2f2; color: #ef4444; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; margin: 0 auto 20px auto; }
     .delete-title { font-size: 24px; color: #1e293b; margin: 0 0 10px 0; font-weight: 700; }
     .delete-text { color: #64748b; font-size: 15px; margin-bottom: 30px; line-height: 1.5; }
@@ -13,7 +21,6 @@
     .btn-danger { background-color: #ef4444; color: white; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.3s; }
     .btn-danger:hover { background-color: #dc2626; }
     
-    /* Caja roja interna para el error de bloqueo */
     .alert-box { background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; border-radius: 4px; text-align: left; margin-bottom: 25px; }
     .alert-box strong { color: #b91c1c; display: block; margin-bottom: 5px; }
     .alert-box p { color: #991b1b; font-size: 13px; margin: 0; line-height: 1.4; }
@@ -22,7 +29,7 @@
 <div class="delete-container">
     <div class="delete-card">
         
-        {# 🔍 CORREGIDO: Comparamos contra 'libre' en minúsculas #}
+        {# LÍNEA CLAVE: Bloqueo de seguridad en el cliente. Si la mesa está ocupada o reservada, impide renderizar el formulario de borrado. Protege la consistencia de las comandas activas en la BD #}
         {% if mesa.estado != 'libre' %}
             <div class="delete-icon" style="background-color: #fffbeb; color: #d97706;">
                 <i class="fa-solid fa-shield-halved"></i>
@@ -51,7 +58,9 @@
             <h2 class="delete-title">¿Eliminar Mesa {{ mesa.numero }}?</h2>
             <p class="delete-text">Estás a punto de eliminar permanentemente la información de esta mesa de tu restaurante. Esta acción no se puede deshacer.</p>
             
+            {# LÍNEA CLAVE: Método POST obligatorio. Toda acción destructiva (CRUD - Delete) debe viajar ocultando los parámetros en el cuerpo de la petición para evitar ejecuciones accidentales vía URL (GET) #}
             <form method="POST" class="actions">
+                {# LÍNEA CLAVE: Token de protección contra ataques CSRF. Django exige este campo oculto para validar que la petición de borrado provenga legítimamente de este formulario de administración #}
                 {% csrf_token %}
                 <a href="{% url 'estado_mesas' %}" class="btn-cancel">Cancelar</a>
                 <button type="submit" class="btn-danger">Sí, Eliminar Mesa</button>

@@ -3,12 +3,15 @@
 {% block content %}
 
 <style>
-    /* Variables de colores basadas en el diseño original */
+    /* ====================================================================
+       BLOQUE 1: CSS - VARIABLES GLOBALES Y MAQUETACIÓN DE LA LISTA
+       ==================================================================== */
     :root {
         --primary-yellow: #c49a45;
         --bg-white: #ffffff;
         --border-color: #f0f0f0;
         
+        /* Sistema de colores de estados para alertas informativas o errores */
         --status-green-bg: #e8f7ec;
         --status-green-text: #27a857;
         --status-orange-bg: #fdf5e6;
@@ -17,7 +20,7 @@
         --status-red-text: #e03b3b;
     }
 
-    /* Alertas (Mensajes de Django) */
+    /* Alertas y Notificaciones (Mensajes flash de Django) */
     .alert-container { margin-bottom: 20px; }
     .alert { 
         padding: 15px; border-radius: 8px; margin-bottom: 10px; 
@@ -26,7 +29,7 @@
     .alert-error { background-color: var(--status-red-bg); color: var(--status-red-text); border: 1px solid #fad4d4; }
     .alert-success { background-color: var(--status-green-bg); color: var(--status-green-text); border: 1px solid #cceadd; }
 
-    /* Estructura del Header y Acciones */
+    /* Distribución de la Cabecera de la sección (Título + Acciones del módulo) */
     .header-top {
         display: flex;
         justify-content: space-between;
@@ -54,7 +57,7 @@
         margin: 0;
     }
 
-    /* Botones */
+    /* Botones de Control de la Barra de Herramientas */
     .btn-primary {
         background-color: var(--primary-yellow);
         color: white;
@@ -92,7 +95,7 @@
         background-color: #e2e8f0;
     }
 
-    /* Tabla */
+    /* Diseño Avanzado de la Tabla de Datos */
     .table-container {
         background: var(--bg-white);
         border-radius: 12px;
@@ -132,6 +135,7 @@
         background-color: #fafafa;
     }
 
+    /* Formato de identificación de registros */
     .codigo {
         color: var(--primary-yellow);
         font-weight: 600;
@@ -143,7 +147,7 @@
         font-weight: 500;
     }
 
-    /* Acciones de Edición/Eliminación */
+    /* Columna de Acciones Operativas (Edición/Eliminación) */
     .actions {
         display: flex;
         gap: 15px;
@@ -162,6 +166,7 @@
     .delete-btn { color: var(--status-red-text); }
     .action-btn:hover { opacity: 0.6; transform: scale(1.1); }
 
+    /* Estado Vacío (Cuando la base de datos no contiene filas) */
     .empty-state {
         text-align: center;
         padding: 60px;

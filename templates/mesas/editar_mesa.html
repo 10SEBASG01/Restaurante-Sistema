@@ -2,6 +2,10 @@
 
 {% block content %}
 <style>
+    /* ==========================================
+       BLOQUE 1: CSS - DISEÑO Y VALIDACIÓN VISUAL 
+       ========================================== */
+
     /* Cabecera de la página con icono */
     .header-wrapper { display: flex; align-items: center; gap: 20px; margin-bottom: 30px; }
     .header-icon {
@@ -62,7 +66,8 @@
         box-shadow: 0 0 0 3px rgba(196, 154, 69, 0.1);
     }
 
-    /* Input con borde de error */
+    /* LÍNEA CLAVE: Feedback visual instantáneo de error. Cambia el color de fondo y borde 
+       cuando JavaScript o Django detectan un valor corrupto en el input */
     .form-group input.is-invalid {
         border-color: #ef4444 !important;
         box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
@@ -122,12 +127,14 @@
 </div>
 
 <div class="form-card">
+    {# LÍNEA CLAVE: Atributo 'novalidate'. Le dice al navegador que no use sus alertas nativas de HTML5, permitiendo que nuestra lógica personalizada de JavaScript maneje las validaciones estéticas sin conflictos #}
     <form id="editarMesaForm" method="POST" novalidate>
         {% csrf_token %}
         
         <div class="form-grid">
             
             <div class="form-group">
+                {# LÍNEA CLAVE: Vinculación semántica de labels mediante la API de formularios de Django (.id_for_label), garantizando accesibilidad y clics directos al input renderizado #}
                 <label for="{{ form.numero.id_for_label }}"><i class="fa-solid fa-hashtag"></i> Número de Mesa</label>
                 {{ form.numero }}
                 
@@ -136,6 +143,7 @@
                     <span>El valor debe ser un entero a partir de 1. No se admite 0.</span>
                 </div>
 
+                {# LÍNEA CLAVE: Renderizador de excepciones de Backend. Si la validación de JS es burlada, Django captura los errores de integridad desde el servidor (ej: número duplicado) y los dibuja aquí #}
                 {% if form.numero.errors %}
                     <div class="custom-error-alert">
                         <i class="fas fa-exclamation-circle"></i>
@@ -216,18 +224,24 @@
 </div>
 
 <script>
+    /* ====================================================================
+       BLOQUE 4: JAVASCRIPT - MUTACIÓN DOM Y CONTROL DE KEYDOWN EN ENTRADAS
+       ==================================================================== */
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('editarMesaForm');
+        
+        // Captura de elementos generados dinámicamente por la API de Django Forms (usa sus IDs estándar)
         const numeroInput = document.getElementById('id_numero');
         const capacidadInput = document.getElementById('id_capacidad');
 
+        // FUNCIÓN CLAVE 1: Evaluador de rango numérico. Valida el casteo del string a base 10 
+        // e interactúa de inmediato alternando visibilidad de avisos y clases CSS de error.
         function validarEnteroPositivo(input, errorId) {
             if (!input) return true;
             
             const errorAlert = document.getElementById(errorId);
             const valor = parseInt(input.value, 10);
             
-            // Validar que el valor exista, sea numérico y mayor a 0 (1 en adelante)
             if (input.value !== '' && (isNaN(valor) || valor < 1)) {
                 if (errorAlert) errorAlert.style.display = 'flex';
                 input.classList.add('is-invalid');
@@ -239,25 +253,28 @@
             }
         }
 
+        // Configuración para el Input de Número de Mesa
         if (numeroInput) {
+            // LÍNEA CLAVE: Inyección dinámica de atributos HTML5. Django por defecto puede renderizar un tipo 'text'; modificamos los atributos directo en el DOM para forzar teclados numéricos en dispositivos móviles.
             numeroInput.setAttribute('type', 'number');
             numeroInput.setAttribute('min', '1');
             numeroInput.setAttribute('step', '1');
             
             numeroInput.addEventListener('input', () => validarEnteroPositivo(numeroInput, 'error_numero_js'));
             
-            // Prevenir ingreso de decimales, negativos o "e"
+            // LÍNEA CLAVE: Filtro por código de tecla (Keydown Sanitization). Bloquea la entrada de caracteres científicos 'e', signos de puntuación, decimales y restas antes de que se pinten en pantalla.
             numeroInput.addEventListener('keydown', function(e) {
                 if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '.' || e.key === ',') {
                     e.preventDefault();
                 }
-                // Prevenir 0 como primer dígito
+                // Previene ceros a la izquierda iniciales (ej: 05 mesas)
                 if (e.key === '0' && this.value === '') {
                     e.preventDefault();
                 }
             });
         }
 
+        // Configuración para el Input de Capacidad
         if (capacidadInput) {
             capacidadInput.setAttribute('type', 'number');
             capacidadInput.setAttribute('min', '1');
@@ -275,12 +292,16 @@
             });
         }
 
+        /* ====================================================================
+           BLOQUE 5: JAVASCRIPT - INTERCEPCIÓN PRE-SUBMIT Y ENFOQUE REACTIVO
+           ==================================================================== */
         form.addEventListener('submit', function(e) {
             const isNumeroValid = numeroInput ? validarEnteroPositivo(numeroInput, 'error_numero_js') : true;
             const isCapacidadValid = capacidadInput ? validarEnteroPositivo(capacidadInput, 'error_capacidad_js') : true;
 
+            // LÍNEA CLAVE: Cortocircuito de envío. Si alguna de las banderas lógicas de los inputs es falsa, congela la petición POST con 'preventDefault' y mueve el foco al campo erróneo para que el usuario corrija.
             if (!isNumeroValid || !isCapacidadValid) {
-                e.preventDefault();
+                e.preventDefault(); 
                 if (!isNumeroValid) {
                     numeroInput.focus();
                 } else if (!isCapacidadValid) {

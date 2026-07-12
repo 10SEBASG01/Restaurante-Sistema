@@ -2,7 +2,10 @@
 
 {% block content %}
 <style>
-    /* --- CONTENEDOR PRINCIPAL --- */
+    /* ==========================================
+       BLOQUE 1: CSS - DISEÑO Y RESPONSIVIDAD 
+       ========================================== */
+
     .mesas-wrapper { 
         display: flex; 
         flex-direction: column; 
@@ -10,7 +13,6 @@
         font-family: 'Inter', sans-serif; 
     }
 
-    /* --- CABECERA Y ESTADÍSTICAS --- */
     .mesas-header { 
         display: flex; 
         justify-content: space-between; 
@@ -58,7 +60,6 @@
     .text-ocupada { color: #ef4444; }
     .text-reservada { color: #c49a45; }
 
-    /* --- BARRA DE ACCIONES (Filtros y Botón) --- */
     .actions-row { 
         display: flex; 
         gap: 15px; 
@@ -100,7 +101,6 @@
     .filter-link:hover { background-color: #f8fafc; color: #1e293b; }
     .filter-link.active { background-color: #c49a45; color: white; }
 
-    /* 🔥 Botón para ir a gestionar zonas */
     .btn-manage-zonas {
         background: none;
         border: none;
@@ -119,7 +119,6 @@
         color: #b0883b;
     }
     
-    /* Selector desplegable de zonas */
     .select-zona {
         border: none;
         background: transparent;
@@ -150,7 +149,6 @@
     }
     .btn-nueva:hover { background-color: #b0883b; }
 
-    /* --- GRID DE MESAS Y CONTENIDO --- */
     .content-layout { 
         display: flex; 
         gap: 25px; 
@@ -175,6 +173,8 @@
         font-weight: 600; 
     }
     
+    /* LÍNEA CLAVE: Grid fluido dinámico. 'auto-fill' calcula cuántas tarjetas caben por fila 
+       según el ancho de pantalla del cliente, sin usar media-queries rígidos. */
     .mesas-grid { 
         display: grid; 
         grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
@@ -210,6 +210,8 @@
     .mesa-status { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
     .mesa-capacity { font-size: 12px; color: #64748b; }
 
+    /* LÍNEA CLAVE: Acoplamiento cromático semántico. Las clases mapean uno a uno los 
+       posibles valores del string de estado del backend para cambiar el color visual. */
     .card-libre { background-color: #f0fdf4; }
     .card-libre .mesa-icon { background-color: #dcfce7; color: #22c55e; }
     
@@ -219,13 +221,14 @@
     .card-reservada { background-color: #fefce8; }
     .card-reservada .mesa-icon { background-color: #fef9c3; color: #c49a45; }
 
+    /* LÍNEA CLAVE: Estado activo. Modifica el contorno e incrementa el sombreado para
+       darle feedback al usuario de qué elemento se encuentra seleccionado. */
     .mesa-card.selected { 
         background-color: #ffffff; 
         border-color: #c49a45; 
         box-shadow: 0 10px 25px rgba(196, 154, 69, 0.15); 
     }
 
-    /* --- PANEL DE DETALLES LATERAL --- */
     .mesa-sidebar { 
         width: 300px; 
         background: white; 
@@ -325,6 +328,7 @@
         <div class="actions-row">
             <div class="filters-group">
                 <div class="filter-label"><i class="fa-solid fa-bell-concierge"></i> Estado</div>
+                {# LÍNEA CLAVE: Persistencia de filtros cruzados. Se concatena 'filtro_ubicacion' en cada enlace de estado para no perder la zona seleccionada al cambiar de pestaña #}
                 <a href="?estado=todas&ubicacion={{ filtro_ubicacion }}" class="filter-link {% if filtro_actual == 'todas' %}active{% endif %}">Todas</a>
                 <a href="?estado=libres&ubicacion={{ filtro_ubicacion }}" class="filter-link {% if filtro_actual == 'libres' %}active{% endif %}">Libres</a>
                 <a href="?estado=ocupadas&ubicacion={{ filtro_ubicacion }}" class="filter-link {% if filtro_actual == 'ocupadas' %}active{% endif %}">Ocupadas</a>
@@ -340,6 +344,7 @@
                     <select id="zonaSelect" class="select-zona">
                         <option value="todas" {% if filtro_ubicacion == 'todas' %}selected{% endif %}>Todas las Zonas</option>
                         {% for zona in ubicaciones %}
+                            {# LÍNEA CLAVE: Casteo de tipos. request.GET entra como string, id_zona es un entero en BD. 'stringformat' unifica el tipo para que la comparación '==' funcione #}
                             <option value="{{ zona.id_zona }}" {% if filtro_ubicacion == zona.id_zona|stringformat:'s' %}selected{% endif %}>
                                 {{ zona.nombre_zona }}
                             </option>
@@ -365,6 +370,7 @@
             
             <div class="mesas-grid">
                 {% for mesa in mesas %}
+                    {# LÍNEA CLAVE: Estrategia de caché en DOM. Guardamos todos los datos del backend en atributos 'data-*' de HTML5. Esto le permite a JS leer la data instantáneamente al dar clic, sin consultar al servidor por AJAX #}
                     <div class="mesa-card card-{{ mesa.estado }}" 
                          data-id="{{ mesa.id }}"
                          data-numero="{{ mesa.numero }}"
@@ -381,6 +387,7 @@
                         <div class="mesa-capacity">{{ mesa.capacidad }} personas</div>
                     </div>
                 {% empty %}
+                    {# LÍNEA CLAVE: Excepción visual controlada. Si la combinación de filtros no arroja registros, Django usa este bloque para evitar renderizar una pantalla vacía o rota #}
                     <div style="grid-column: span 5; text-align: center; color: #94a3b8; padding: 40px; width: 100%;">
                         <i class="fa-solid fa-inbox" style="font-size: 32px; margin-bottom: 10px; color: #cbd5e1;"></i>
                         <p style="margin: 0; font-size: 15px;">No hay mesas registradas con este criterio.</p>
@@ -390,6 +397,7 @@
         </div>
 
         <aside class="mesa-sidebar">
+            {# LÍNEA CLAVE: Los IDs actúan como marcadores vacíos (placeholders) que no renderizan datos iniciales por Django, sino que esperan ser rellenados dinámicamente por JavaScript #}
             <h2 class="sidebar-title" id="side-mesa-title">Selecciona una mesa</h2>
             
             <div class="detail-group">
@@ -431,19 +439,23 @@
 </div>
 
 <script>
+    /* ====================================================================
+       BLOQUE 5: JAVASCRIPT - INTERACCIÓN REACTIVA Y ENRUTAMIENTO DINÁMICO
+       ==================================================================== */
     document.addEventListener("DOMContentLoaded", function() {
         
-        // 🔥 NUEVO SCRIPT: Envía el filtro automáticamente al cambiar de Zona en el select
+        // INTERACCIÓN 1: Comportamiento de Auto-Submit al cambiar la zona en el select
         const zonaSelect = document.getElementById('zonaSelect');
         if (zonaSelect) {
             zonaSelect.addEventListener('change', function() {
                 const ubicacion = this.value;
-                const estadoActual = '{{ filtro_actual }}'; // Mantiene el filtro de estado actual
+                const estadoActual = '{{ filtro_actual }}'; 
+                // LÍNEA CLAVE: Redirección inmediata inyectando la zona y sosteniendo el filtro de estado actual
                 window.location.href = `?estado=${estadoActual}&ubicacion=${ubicacion}`;
             });
         }
 
-        // --- Lógica del panel lateral ---
+        // Mapeo inicial de placeholders del DOM
         const sideTitle = document.getElementById('side-mesa-title');
         const sideCapacidad = document.getElementById('side-capacidad');
         const sideUbicacion = document.getElementById('side-ubicacion');
@@ -455,6 +467,8 @@
         const btnEditar = document.getElementById('btn-editar-mesa');
         const btnEliminar = document.getElementById('btn-eliminar-mesa');
 
+        // FUNCIÓN CLAVE 1: Limpieza del panel. Remueve las clases activas y resetea los 
+        // enlaces de acciones a '#' para bloquear ejecuciones accidentales en el backend.
         function clearSelection() {
             document.querySelectorAll('.mesa-card.selected').forEach(card => {
                 card.classList.remove('selected');
@@ -472,19 +486,24 @@
             btnEliminar.href = "#";
         }
 
+        // INTERACCIÓN 2: Escuchador global mediante el patrón "Delegación de Eventos" (Event Delegation). 
+        // En vez de añadir un listener a cada mesa, escuchamos el document y rastreamos el origen del clic.
         document.addEventListener('click', function(event) {
+            // LÍNEA CLAVE: '.closest()' busca hacia arriba en el DOM para verificar si el elemento clickeado es una tarjeta o está dentro de ella
             const clickedCard = event.target.closest('.mesa-card');
 
             if (clickedCard) {
                 clearSelection();
-                clickedCard.classList.add('selected');
+                clickedCard.classList.add('selected'); // Activa el estilo CSS seleccionado
 
+                // Relleno de datos leyendo el dataset guardado en caché HTML5
                 sideTitle.innerText = "Detalles de Mesa " + clickedCard.dataset.numero;
                 sideCapacidad.innerText = clickedCard.dataset.capacidad;
                 sideUbicacion.innerText = clickedCard.dataset.ubicacion;
                 sideCliente.innerText = clickedCard.dataset.cliente;
                 sideMesero.innerText = clickedCard.dataset.mesero;
                 
+                // LÍNEA CLAVE: Reescritura dinámica de rutas RESTful de Django usando los IDs de la caché local del elemento
                 const mesaId = clickedCard.dataset.id;
                 btnCambiarEstado.href = `/mesas/cambiar-estado/${mesaId}/`;
                 btnAsignarMesero.href = `/mesas/asignar-mesero/${mesaId}/`;
@@ -492,17 +511,18 @@
                 btnEliminar.href = `/mesas/eliminar/${mesaId}/`;
 
             } else {
+                // Validación de clics externos para limpiar la selección
                 const clickedInsideSidebar = event.target.closest('.mesa-sidebar');
                 const clickedInsideHeader = event.target.closest('.mesas-header');
 
-                // Si hacen clic fuera de las tarjetas, panel lateral o cabecera, se limpia la selección
                 if (!clickedInsideSidebar && !clickedInsideHeader) {
                     clearSelection();
                 }
             }
         });
 
-        // Selecciona la primera mesa por defecto si existen
+        // INTERACCIÓN 3: Control de arranque. Fuerza un clic virtual en la primera mesa 
+        // encontrada para que el panel lateral no inicie vacío o feo con guiones.
         const cards = document.querySelectorAll('.mesa-card');
         if(cards.length > 0) {
             cards[0].click();

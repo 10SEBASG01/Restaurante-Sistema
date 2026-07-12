@@ -2,7 +2,9 @@
 
 {% block content %}
 <style>
-    /* --- CONTENEDOR PRINCIPAL --- */
+    /* =========================================================================
+       BLOQUE 1: ESTRUCTURA PRINCIPAL Y CABECERA
+       ========================================================================= */
     .mesas-wrapper {
         display: flex;
         flex-direction: column;
@@ -10,7 +12,6 @@
         font-family: 'Inter', sans-serif;
     }
 
-    /* --- CABECERA Y ESTADÍSTICAS --- */
     .mesas-header {
         display: flex;
         justify-content: space-between;
@@ -47,7 +48,7 @@
         display: inline-block;
     }
 
-    /* Colores de Estado */
+    /* --- SISTEMA DE COLORES POR ESTADO --- */
     .bg-libre { background-color: #22c55e; }
     .bg-ocupada { background-color: #ef4444; }
     .bg-reservada { background-color: #c49a45; }
@@ -56,7 +57,9 @@
     .text-ocupada { color: #ef4444; }
     .text-reservada { color: #c49a45; }
 
-    /* --- BARRA DE ACCIONES (Filtros y Botón) --- */
+    /* =========================================================================
+       BLOQUE 2: BARRA DE ACCIONES Y FILTROS
+       ========================================================================= */
     .actions-row {
         display: flex;
         gap: 15px;
@@ -85,7 +88,6 @@
     .filter-btn:last-child { border-right: none; }
     .filter-btn:hover { background-color: #f8fafc; color: #1e293b; }
     
-    /* Filtro Activo */
     .filter-btn.active {
         background-color: #c49a45;
         color: white;
@@ -108,14 +110,15 @@
     }
     .btn-nueva:hover { background-color: #b0883b; }
 
-    /* --- ÁREA DE CONTENIDO (Grid + Sidebar) --- */
+    /* =========================================================================
+        BLOQUE 3: ÁREA DE CONTENIDO (GRILLA Y TARJETAS)
+       ========================================================================= */
     .content-layout {
         display: flex;
         gap: 25px;
         align-items: flex-start;
     }
 
-    /* Zona Izquierda: Grid de Mesas */
     .mesas-grid-container {
         flex: 1;
         background: white;
@@ -134,13 +137,13 @@
         font-weight: 600;
     }
 
+    /* LÍNEA IMPORTANTE: Grid responsivo que se adapta automáticamente al ancho */
     .mesas-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
         gap: 15px;
     }
 
-    /* Tarjetas de Mesa */
     .mesa-card {
         border-radius: 14px;
         padding: 20px 15px;
@@ -179,7 +182,7 @@
     
     .mesa-capacity { font-size: 12px; color: #64748b; }
 
-    /* Variaciones por Estado */
+    /* Variaciones de estilo para las tarjetas según el estado de la mesa */
     .card-libre { background-color: #f0fdf4; }
     .card-libre .mesa-icon { background-color: #dcfce7; color: #22c55e; }
     
@@ -189,14 +192,16 @@
     .card-reservada { background-color: #fefce8; }
     .card-reservada .mesa-icon { background-color: #fef9c3; color: #c49a45; }
 
-    /* Estado Seleccionado (Borde rojo en tu diseño) */
+    /* Interfaz activa: Resalta la mesa clickeada */
     .mesa-card.selected {
         background-color: white;
         border-color: #ef4444;
         box-shadow: 0 10px 25px rgba(239, 68, 68, 0.15);
     }
 
-    /* Zona Derecha: Panel de Detalles */
+    /* =========================================================================
+       BLOQUE 4: PANEL LATERAL DE DETALLES (SIDEBAR)
+       ========================================================================= */
     .mesa-sidebar {
         width: 300px;
         background: white;
@@ -205,6 +210,7 @@
         box-shadow: 0 4px 6px rgba(0,0,0,0.02);
         border: 1px solid #f1f5f9;
         flex-shrink: 0;
+        /* LÍNEA IMPORTANTE: Sticky mantiene el panel visible al hacer scroll en la grilla */
         position: sticky;
         top: 25px;
     }
@@ -291,7 +297,7 @@
     <div class="content-layout">
         
         <div class="mesas-grid-container">
-            <div class="grid-subtitle">PLANTA DEL RESTAURANTE</div>
+            <div class="grid-subtitle">PLANO DEL RESTAURANTE</div>
             
             <div class="mesas-grid">
                 <div class="mesa-card card-libre">
