@@ -2,11 +2,9 @@ from django.db import models
 from django.conf import settings
 from apps.pedidos.models import GestionPedido
 
-# apps/facturacion/models.py
-from django.db import models
-from django.conf import settings
-from apps.pedidos.models import GestionPedido
-
+# =========================================================================
+# BLOQUE 1: CONFIGURACIÓN GLOBAL DEL ESTABLECIMIENTO Y DATOS FISCALES
+# =========================================================================
 class ConfiguracionFacturacion(models.Model):
     id = models.AutoField(primary_key=True)
     nombre_comercial = models.CharField(max_length=255, default="Sabor y Arte")
@@ -15,6 +13,8 @@ class ConfiguracionFacturacion(models.Model):
     provincia = models.CharField(max_length=100, default="Manta, Manabí", verbose_name="Ciudad / Provincia")
     direccion = models.CharField(max_length=255, default="Av. Gastronomía 455, Miraflores", verbose_name="Dirección Matriz")
     telefono = models.CharField(max_length=10, blank=True, null=True, verbose_name="Teléfono Principal")
+    
+    # LINEA IMPORTANTE: Almacena el IVA vigente que utilizará el sistema para los nuevos cálculos
     iva_porcentaje = models.IntegerField(default=12, verbose_name="Tasa de IVA Vigente (%)")
     logo_restaurante = models.ImageField(upload_to='logos_marca/', blank=True, null=True, verbose_name="Logo del Restaurante")
 
@@ -27,8 +27,10 @@ class ConfiguracionFacturacion(models.Model):
         return f"Configuración Activa - IVA: {self.iva_porcentaje}%"
 
 
+# =========================================================================
+# BLOQUE 2: CABECERA DE LA FACTURA (COMPROBANTE FISCAL)
+# =========================================================================
 class Factura(models.Model):
-    # ... (Tu código actual permanece igual)
     FORMAS_PAGO = [
         ('EFECTIVO', 'Efectivo'),
         ('TARJETA', 'Tarjeta de Crédito/Débito'),
@@ -38,7 +40,7 @@ class Factura(models.Model):
     id_factura = models.AutoField(primary_key=True)
     secuencial = models.CharField(max_length=20, unique=True, verbose_name="Número de Factura")
     
-    # 🎯 La factura se queda huérfana (SET_NULL) si se borra el pedido por error, manteniendo el registro fiscal
+    # LINEA IMPORTANTE: SET_NULL evita que la eliminación accidental de un pedido borre el registro legal de la factura
     id_pedido = models.OneToOneField(
         GestionPedido, 
         on_delete=models.SET_NULL, 
@@ -48,13 +50,15 @@ class Factura(models.Model):
         related_name='factura'
     )
     
+    # LINEA IMPORTANTE: RESTRICT bloquea la eliminación de un usuario cajero si este ya ha emitido facturas
     id_cajero = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
-        on_delete=models.RESTRICT, # El cajero no debería poder borrarse fácilmente
+        on_delete=models.RESTRICT, 
         db_column='id_cajero',
         related_name='facturas_emitidas'
     )
     
+    # Datos del Cliente al momento de la compra
     cliente_nombre = models.CharField(max_length=150, default="Consumidor Final")
     cliente_identificacion = models.CharField(max_length=13, default="9999999999999", verbose_name="Cédula/RUC")
     cliente_correo = models.EmailField(blank=True, null=True, verbose_name="Correo Electrónico")
@@ -63,6 +67,7 @@ class Factura(models.Model):
     fecha_emision = models.DateTimeField(auto_now_add=True)
     forma_pago = models.CharField(max_length=20, choices=FORMAS_PAGO, default='EFECTIVO')
     
+    # LINEA IMPORTANTE: Copia de respaldo (Snapshot) de los datos del emisor para auditorías históricas inmutables
     emisor_nombre_comercial = models.CharField(max_length=255, blank=True, null=True)
     emisor_razon_social = models.CharField(max_length=255, blank=True, null=True)
     emisor_ruc = models.CharField(max_length=13, blank=True, null=True)
@@ -71,6 +76,7 @@ class Factura(models.Model):
     
     iva_porcentaje_aplicado = models.IntegerField(default=12, verbose_name="Porcentaje IVA Aplicado")
 
+    # BLOQUE DE TRASFONDO MONETARIO: Subtotales, descuentos e impuestos finales
     subtotal_12 = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     subtotal_0 = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     
@@ -91,8 +97,13 @@ class Factura(models.Model):
         return f"Factura {self.secuencial} - Total: ${self.total}"
 
 
+# =========================================================================
+# BLOQUE 3: DESGLOSE O DETALLE INDIVIDUAL DE LA FACTURA
+# =========================================================================
 class FacturaDetalle(models.Model):
     id_factura_detalle = models.AutoField(primary_key=True)
+    
+    # LINEA IMPORTANTE: CASCADE asegura que si se elimina la cabecera, se limpien todos sus renglones de la BD
     id_factura = models.ForeignKey(
         Factura, 
         on_delete=models.CASCADE, 
@@ -100,7 +111,7 @@ class FacturaDetalle(models.Model):
         related_name='detalles_factura'
     )
     
-    # 🔥 SOLUCIÓN: Cambiamos RESTRICT por SET_NULL. Si se borra un platillo, la factura conserva el nombre y precio histórico.
+    # LINEA IMPORTANTE: Si un platillo se borra del menú de gestión, la factura conserva el desglose físico intacto
     id_platillo = models.ForeignKey(
         'menu.GestionPlatillo', 
         on_delete=models.SET_NULL, 
@@ -109,6 +120,7 @@ class FacturaDetalle(models.Model):
         db_column='id_platillo'
     )
     
+    # LINEA IMPORTANTE: Resguarda el nombre y precio exacto del ítem vendidos, previniendo alteraciones futuras en el menú
     nombre_historico = models.CharField(max_length=150)
     cantidad = models.PositiveIntegerField()
     precio_unitario_historico = models.DecimalField(max_digits=10, decimal_places=2)
@@ -118,6 +130,7 @@ class FacturaDetalle(models.Model):
         verbose_name = 'Detalle de Factura'
         verbose_name_plural = 'Detalles de Facturas'
 
+    # FUNCIÓN: Propiedad calculada de lectura rápida para extraer el valor bruto por fila
     @property
     def subtotal_linea(self):
         return self.cantidad * self.precio_unitario_historico

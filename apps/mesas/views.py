@@ -2,33 +2,36 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
-# 🛡️ IMPORTAMOS EL GUARDIÁN UNIVERSAL
+# Seguridad y Control de Cambios
 from apps.usuarios.views import requiere_permiso
-
-# 🎯 IMPORTAMOS AUDITORÍA
 from apps.auditoria.models import Auditoria
 
 from .models import Mesa, ZonaMesa
 from .forms import CambiarEstadoMesaForm, AsignarMeseroForm, MesaForm, ZonaMesaForm
 
-# --- VISTA PRINCIPAL: ESTADO DE MESAS ---
+
+# =========================================================================
+# --- BLOQUE 1: VISTA PRINCIPAL Y MONITOREO (DASHBOARD) ---
+# =========================================================================
 @login_required
 @requiere_permiso('modulo_mesas')  
 def lista_mesas(request):
     filtro = request.GET.get('estado', 'todas')
     filtro_ubicacion = request.GET.get('ubicacion', 'todas') 
     
-    # 🔥 FILTRO BASE: Solo mesas vivas en el plano del restaurante
+    # LÍNEA IMPORTANTE: Filtro base para excluir del mapa cualquier mesa dada de baja (Soft Delete)
     mesas_base = Mesa.objects.filter(is_active=True)
     
+    # LÍNEA IMPORTANTE: select_related evita el problema de consultas N+1 al traer las zonas de golpe
     mesas = mesas_base.select_related('ubicacion')
     zonas = ZonaMesa.objects.all() 
 
-    # Contadores inteligentes basados únicamente en el conjunto activo
+    # Métricas calculadas en tiempo real sobre el conjunto de mesas activas
     total_libres = mesas_base.filter(estado='libre').count()
     total_ocupadas = mesas_base.filter(estado='ocupada').count()
     total_reservadas = mesas_base.filter(estado='reservada').count()
 
+    # Evaluación y aplicación de filtros dinámicos por URL
     if filtro == 'libres':
         mesas = mesas.filter(estado='libre')
     elif filtro == 'ocupadas':
@@ -50,7 +53,10 @@ def lista_mesas(request):
     }
     return render(request, 'mesas/estado_mesas.html', context)
 
-# --- CREAR MESA ---
+
+# =========================================================================
+# --- BLOQUE 2: FORMULARIOS DE PERSISTENCIA (CREAR Y EDITAR) ---
+# =========================================================================
 @login_required
 @requiere_permiso('modulo_mesas')  
 def crear_mesa(request):
@@ -59,7 +65,7 @@ def crear_mesa(request):
         if form.is_valid():
             mesa = form.save()
             
-            # 🎯 Auditoría
+            # LÍNEA IMPORTANTE: Registro obligatorio en bitácora de auditoría
             Auditoria.objects.create(
                 id_usuario=request.user,
                 modulo='mesas',
@@ -70,22 +76,22 @@ def crear_mesa(request):
     else:
         form = MesaForm()
         if 'mesero_assigned' in form.fields:
+            # Formateo dinámico para desplegar nombre completo en el combo selector
             form.fields['mesero_assigned'].label_from_instance = lambda obj: f"{obj.first_name} {obj.last_name}".strip() or obj.username
             
     return render(request, 'mesas/crear_mesa.html', {'form': form})
 
-# --- EDITAR MESA ---
+
 @login_required
 @requiere_permiso('modulo_mesas')  
 def editar_mesa(request, pk):
-    # 🔒 Seguridad: Aseguramos que no se puedan editar mesas inactivas externamente
+    # LÍNEA IMPORTANTE: Garantiza que no se manipulen configuraciones de mesas inactivas
     mesa = get_object_or_404(Mesa, pk=pk, is_active=True)
     if request.method == 'POST':
         form = MesaForm(request.POST, instance=mesa)
         if form.is_valid():
             mesa_editada = form.save()
             
-            # 🎯 Auditoría
             Auditoria.objects.create(
                 id_usuario=request.user,
                 modulo='mesas',
@@ -100,13 +106,17 @@ def editar_mesa(request, pk):
         
     return render(request, 'mesas/editar_mesa.html', {'form': form, 'mesa': mesa})
 
-# --- ELIMINAR MESA (SISTEMA DE SEGURIDAD MEDIANTE DESACTIVACIÓN LÓGICA) ---
+
+# =========================================================================
+# --- BLOQUE 3: CONTROL DE SEGURIDAD (BAJA LÓGICA / SOFT DELETE) ---
+# =========================================================================
 @login_required
 @requiere_permiso('modulo_mesas')  
 def eliminar_mesa(request, pk):
     mesa = get_object_or_404(Mesa, pk=pk, is_active=True)
     
     if request.method == 'POST':
+        # Validación de negocio: impide eliminar recursos con flujos activos en el restaurante
         if mesa.estado != 'libre':
             messages.error(request, f"No se puede eliminar la Mesa {mesa.numero} porque no está libre.")
             return redirect('estado_mesas')
@@ -114,7 +124,7 @@ def eliminar_mesa(request, pk):
         numero_mesa = mesa.numero
         
         try:
-            # 🔥 IMPLEMENTACIÓN SOFT DELETE: Salvaguarda Facturación y Reportes
+            # CRÍTICO: Borrado lógico para proteger el historial financiero y reportes antiguos
             mesa.is_active = False
             mesa.estado = 'libre'
             mesa.mesero_assigned = None
@@ -124,7 +134,6 @@ def eliminar_mesa(request, pk):
             mesa.cliente_direccion = None
             mesa.save()
             
-            # 🎯 Auditoría
             Auditoria.objects.create(
                 id_usuario=request.user,
                 modulo='mesas',
@@ -135,15 +144,15 @@ def eliminar_mesa(request, pk):
             return redirect('estado_mesas')
             
         except Exception as e:
-            messages.error(
-                request, 
-                f'Ocurrió un error inesperado al intentar dar de baja la mesa: {str(e)}'
-            )
+            messages.error(request, f'Ocurrió un error inesperado al intentar dar de baja la mesa: {str(e)}')
             return redirect('estado_mesas')
         
     return render(request, 'mesas/eliminar_mesa.html', {'mesa': mesa})
 
-# --- ACCIONES RÁPIDAS DEL PANEL LATERAL ---
+
+# =========================================================================
+# --- BLOQUE 4: ACCIONES RÁPIDAS (PANEL LATERAL INTERACTIVO) ---
+# =========================================================================
 @login_required
 @requiere_permiso('modulo_mesas')  
 def cambiar_estado_mesa(request, pk):
@@ -155,7 +164,6 @@ def cambiar_estado_mesa(request, pk):
         if form.is_valid():
             mesa_actualizada = form.save()
             
-            # 🎯 Auditoría
             Auditoria.objects.create(
                 id_usuario=request.user,
                 modulo='mesas',
@@ -172,6 +180,7 @@ def cambiar_estado_mesa(request, pk):
         'subtitulo': 'Actualiza la disponibilidad de la mesa en tiempo real.'
     })
 
+
 @login_required
 @requiere_permiso('modulo_mesas')  
 def asignar_mesero_mesa(request, pk):
@@ -184,7 +193,6 @@ def asignar_mesero_mesa(request, pk):
             mesero = mesa_actualizada.mesero_assigned.get_full_name() if mesa_actualizada.mesero_assigned else "Ninguno"
             cliente = mesa_actualizada.cliente_nombre if mesa_actualizada.cliente_nombre else "No especificado"
             
-            # 🎯 Auditoría
             Auditoria.objects.create(
                 id_usuario=request.user,
                 modulo='mesas',
@@ -204,14 +212,15 @@ def asignar_mesero_mesa(request, pk):
     })
 
 
-# =======================================================
-# 🔥 CRUD DE ZONAS (SE MANTIENE IGUAL)
-# =======================================================
+# =========================================================================
+# --- BLOQUE 5: CRUD COMPLEMENTARIO DE ZONAS (CONFIGURACIÓN) ---
+# =========================================================================
 @login_required
 @requiere_permiso('modulo_mesas')
 def listar_zonas(request):
     zonas = ZonaMesa.objects.all()
     return render(request, 'mesas/zonas/lista_zonas.html', {'zonas': zonas})
+
 
 @login_required
 @requiere_permiso('modulo_mesas')
@@ -221,7 +230,6 @@ def crear_zona(request):
         if form.is_valid():
             zona = form.save()
             
-            # 🎯 Auditoría
             Auditoria.objects.create(
                 id_usuario=request.user,
                 modulo='mesas',
@@ -233,6 +241,7 @@ def crear_zona(request):
         form = ZonaMesaForm()
     return render(request, 'mesas/zonas/crear_zona.html', {'form': form})
 
+
 @login_required
 @requiere_permiso('modulo_mesas')
 def eliminar_zona(request, pk):
@@ -242,7 +251,6 @@ def eliminar_zona(request, pk):
         try:
             zona.delete()
             
-            # 🎯 Auditoría
             Auditoria.objects.create(
                 id_usuario=request.user,
                 modulo='mesas',
@@ -250,7 +258,8 @@ def eliminar_zona(request, pk):
                 detalle=f"Eliminó la zona: {nombre_zona}."
             )
             return redirect('listar_zonas')
-        except Exception: # Captura ProtectedError genérico
+        except Exception: 
+            # LÍNEA IMPORTANTE: Atrapa fallos de integridad si existen relaciones con modelos ForeignKey PROTECT
             messages.error(request, f"No se puede eliminar la zona '{zona.nombre_zona}' porque hay mesas asignadas a ella. Reasigna las mesas primero.")
             return redirect('listar_zonas')
             

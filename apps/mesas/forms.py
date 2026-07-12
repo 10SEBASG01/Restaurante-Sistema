@@ -1,7 +1,9 @@
 from django import forms
 from .models import Mesa, ZonaMesa, Usuario
 
-# --- 🔥 GESTIÓN DE ZONAS ---
+# =========================================================================
+# --- GESTIÓN DE ZONAS ---
+# =========================================================================
 class ZonaMesaForm(forms.ModelForm):
     class Meta:
         model = ZonaMesa
@@ -17,7 +19,10 @@ class ZonaMesaForm(forms.ModelForm):
             })
         }
 
+
+# =========================================================================
 # --- FORMULARIO 1: CREAR/EDITAR MESA ---
+# =========================================================================
 class MesaForm(forms.ModelForm):
     class Meta:
         model = Mesa
@@ -33,22 +38,24 @@ class MesaForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # LINEA IMPORTANTE: Filtra el selector para mostrar únicamente meseros activos
         self.fields['mesero_assigned'].queryset = Usuario.objects.filter(rol='mesero', is_active=True)
         
+        # Bucle masivo para inyectar estilos de interfaz unificados a los campos
         for field_name, field in self.fields.items():
             self.fields[field_name].widget.attrs.update({
                 'class': 'form-control',
                 'style': 'width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 15px;'
             })
 
-    # 🔥 VALIDACIÓN DE CONTROL: Asegura limpieza visual si hay choques de números duplicados
+    # VALIDACIÓN DE CONTROL: Previene el choque visual de números de mesa duplicados
     def clean_numero(self):
         numero = self.cleaned_data.get('numero')
         
-        # Validamos si ya existe otra mesa activa con el mismo número
+        # Busca si ya existe otra mesa activa con el mismo número
         queryset = Mesa.objects.filter(numero=numero, is_active=True)
         
-        # Si estamos editando una mesa existente, excluimos su propio ID de la verificación
+        # Si se está editando, excluye el ID de la mesa actual de la verificación
         if self.instance.pk:
             queryset = queryset.exclude(pk=self.instance.pk)
             
@@ -57,7 +64,10 @@ class MesaForm(forms.ModelForm):
             
         return numero
 
+
+# =========================================================================
 # --- FORMULARIO 2: CAMBIAR ESTADO DESDE PANEL LATERAL ---
+# =========================================================================
 class CambiarEstadoMesaForm(forms.ModelForm):
     class Meta:
         model = Mesa
@@ -70,7 +80,10 @@ class CambiarEstadoMesaForm(forms.ModelForm):
             })
         }
 
+
+# =========================================================================
 # --- FORMULARIO 3: ASIGNAR MESERO DESDE PANEL LATERAL ---
+# =========================================================================
 class AsignarMeseroForm(forms.ModelForm):
     class Meta:
         model = Mesa
@@ -93,4 +106,5 @@ class AsignarMeseroForm(forms.ModelForm):
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # LINEA IMPORTANTE: Filtra el selector rápido del panel para listar solo meseros activos
         self.fields['mesero_assigned'].queryset = Usuario.objects.filter(rol='mesero', is_active=True)

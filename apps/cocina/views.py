@@ -6,32 +6,44 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 
-# Importamos los modelos de pedidos
+# Importación del modelo central de la cocina
 from apps.pedidos.models import Comanda
 
-# --- LÓGICA DE ACCESO ---
+# =========================================================================
+# BLOQUE 1: CONTROL DE ACCESO Y SEGURIDAD
+# =========================================================================
 def acceso_cocina(request):
+    """
+    Centraliza las reglas de negocio para permitir la entrada al módulo.
+    Evalúa jerárquicamente: Superusuario -> Roles explícitos -> Permiso específico.
+    """
     usuario = request.user
 
+    # 1. Los superusuarios se saltan cualquier restricción
     if usuario.is_superuser:
         return True
 
-    if hasattr(usuario, 'rol') and usuario.rol in [
-        'administrador',
-        'cocinero' 
-    ]:
+    # 2. Control por rol asignado en el perfil del usuario
+    if hasattr(usuario, 'rol') and usuario.rol in ['administrador', 'cocinero']:
         return True
 
+    # 3. Control granular por sistema de permisos nativo de Django
     tiene_permiso = usuario.user_permissions.filter(
         codename='modulo_cocina'
     ).exists()
 
     return tiene_permiso
-# ------------------------
 
 
+# =========================================================================
+# BLOQUE 2: RENDERIZADO DEL TABLERO (VISTA PRINCIPAL)
+# =========================================================================
 @login_required
 def tablero_cocina(request):
+    """
+    Carga la interfaz gráfica base del tablero de cocina.
+    Sirve como contenedor para que luego el JavaScript consuma la API.
+    """
     if not acceso_cocina(request):
         return render(
             request,
@@ -41,12 +53,20 @@ def tablero_cocina(request):
     return render(request, 'cocina/tablero_cocina.html')
 
 
+# =========================================================================
+# BLOQUE 3: API - CONSULTA DE COMANDAS ACTIVAS (GET)
+# =========================================================================
 @login_required
 def api_comandas_activas(request):
+    """
+    Endpoint que retorna las comandas en curso en formato JSON.
+    Agrupa los platos dentro de sus respectivas cabeceras de comanda.
+    """
     if not acceso_cocina(request):
         return JsonResponse({"error": "Acceso denegado"}, status=403)
 
     try:
+        # OPTIMIZACIÓN: select_related evita consultas repetitivas al traer mesa y pedido de un solo golpe
         comandas = Comanda.objects.filter(
             estado_comanda__in=['pendiente', 'en_preparacion', 'lista']
         ).select_related('id_pedido__id_mesa').order_by('fecha_emision')
@@ -55,16 +75,15 @@ def api_comandas_activas(request):
 
         for comanda in comandas:
             raw_id = comanda.id_comanda
-            id_comanda = f"#{raw_id:03d}"
+            id_comanda = f"#{raw_id:03d}" # Formatea el ID visualmente (Ej: #005)
             
             pedido = comanda.id_pedido
             numero_mesa = pedido.id_mesa.numero if (pedido and pedido.id_mesa) else "N/A"
             texto_mesa = f"Mesa {numero_mesa}"
             estado_db = comanda.estado_comanda
-            
-            # Capturamos la nota o comentario general de la comanda
             nota_general = comanda.nota_cocina or ""
             
+            # Conversión de fechas a milisegundos para compatibilidad nativa con JavaScript (new Date())
             if comanda.fecha_emision:
                 try:
                     created_at = int(comanda.fecha_emision.timestamp() * 1000)
@@ -73,12 +92,14 @@ def api_comandas_activas(request):
             else:
                 created_at = int(timezone.now().timestamp() * 1000)
 
+            # Homologación de estados con el CSS/Frontend
             estado_frontend = 'pendiente'
-            if estado_db == 'en_preparacion' or estado_db == 'preparing':
+            if estado_db in ['en_preparacion', 'preparing']:
                 estado_frontend = 'en_preparacion'
-            elif estado_db == 'lista' or estado_db == 'ready':
+            elif estado_db in ['lista', 'ready']:
                 estado_frontend = 'lista'
 
+            # Estructuración del JSON de la comanda (Cabecera)
             if raw_id not in comandas_dict:
                 comandas_dict[raw_id] = {
                     "id": id_comanda,
@@ -92,11 +113,11 @@ def api_comandas_activas(request):
                     "estado": estado_db,
                     "createdAt": created_at,
                     "fecha_emision": created_at,
-                    # Dejamos la observación limpia a nivel de cabecera de la orden
                     "observaciones": nota_general.strip(),
-                    "items": []
+                    "items": [] # Lista donde se inyectarán los platos abajo
                 }
 
+            # Extracción y anexado de los platos (Detalle del Pedido)
             if pedido:
                 detalles = pedido.detalles.all().select_related('id_platillo')
                 for detalle in detalles:
@@ -110,15 +131,24 @@ def api_comandas_activas(request):
                             "cantidad": detalle.cantidad
                         })
 
+        # safe=False permite enviar una lista directamente en lugar de un objeto JSON forzado
         return JsonResponse(list(comandas_dict.values()), safe=False)
         
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-@ensure_csrf_cookie
-@require_POST
+
+# =========================================================================
+# BLOQUE 4: API - MÁQUINA DE ESTADOS Y AVANCE DE COMANDA (POST)
+# =========================================================================
+@ensure_csrf_cookie # Asegura que el cliente reciba el token CSRF para peticiones seguras
+@require_POST       # Restringe el endpoint para que solo acepte peticiones POST
 @login_required
 def api_avanzar_comanda(request):
+    """
+    Flujo secuencial de estados de la cocina. 
+    Actualiza tanto la comanda de cocina como el estado global del pedido de la mesa.
+    """
     if not acceso_cocina(request):
         return JsonResponse({"error": "Acceso denegado"}, status=403)
 
@@ -130,6 +160,7 @@ def api_avanzar_comanda(request):
         estado_actual = comanda.estado_comanda
         nuevo_estado = None
         
+        # MÁQUINA DE ESTADOS: Define estrictamente el siguiente paso del ciclo de vida
         if estado_actual == 'pendiente':
             nuevo_estado = 'en_preparacion'
         elif estado_actual == 'en_preparacion':
@@ -138,9 +169,11 @@ def api_avanzar_comanda(request):
             nuevo_estado = 'entregado' 
             
         if nuevo_estado:
+            # 1. Actualizar comanda de cocina
             comanda.estado_comanda = nuevo_estado
             comanda.save()
             
+            # 2. Sincronizar el estado del pedido general para el mesero/caja
             if comanda.id_pedido:
                 pedido = comanda.id_pedido
                 if nuevo_estado == 'en_preparacion':
@@ -151,7 +184,7 @@ def api_avanzar_comanda(request):
                     pedido.estado_pedido = 'entregado'
                 pedido.save()
             
-            # 🎯 CONEXIÓN A AUDITORÍA: Solo registramos cuando el ciclo se completa
+            # 3. Registro en Auditoría: Solo se ejecuta al cerrar con éxito el ciclo ('entregado')
             if nuevo_estado == 'entregado':
                 from apps.auditoria.models import Auditoria
                 Auditoria.objects.create(

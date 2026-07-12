@@ -3,27 +3,27 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.contrib import messages
 from django.utils import timezone
-from decimal import Decimal, ROUND_HALF_UP  # 🎯 Importación de ROUND_HALF_UP añadida
+from decimal import Decimal, ROUND_HALF_UP  
 from django.db.models import Q
 
 # Importaciones de tus aplicaciones locales
 from apps.pedidos.models import GestionPedido
 from apps.mesas.models import Mesa
-from .models import Factura, FacturaDetalle, ConfiguracionFacturacion  # 🎯 Importación añadida
+from .models import Factura, FacturaDetalle, ConfiguracionFacturacion  
 from .forms import FacturaForm
 
 
-# --- FUNCIÓN AUXILIAR DE REDONDEO (MÉTODO ESTRICTO) ---
+# =========================================================================
+# BLOQUE 1: FUNCIONES AUXILIARES Y CONTROL DE PERMISOS
+# =========================================================================
+
 def interpolar_dos_decimales(valor):
-    """
-    Fuerza dos decimales exactos utilizando el redondeo matemático estándar
-    (ROUND_HALF_UP), imitando el comportamiento de Math.round() en JavaScript.
-    """
+    # LINEA IMPORTANTE: Redondeo matemático estricto a 2 decimales para evitar discrepancias con JS
     return Decimal(str(valor)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
-# --- LÓGICA DE ACCESO Y PERMISOS ---
 def acceso_facturacion(request):
+    # Control de seguridad: Filtra accesos por superusuario, roles asignados o permisos explícitos
     usuario = request.user
     if usuario.is_superuser:
         return True
@@ -32,16 +32,24 @@ def acceso_facturacion(request):
     return usuario.user_permissions.filter(codename='modulo_facturacion').exists()
 
 
-# --- CONSOLA DE CAJA: LISTADO DE PENDIENTES ---
+# =========================================================================
+# BLOQUE 2: CONSOLA DE CAJA (LISTADO DE PENDIENTES)
+# =========================================================================
+
 @login_required
 def listar_pedidos_por_facturar(request):
     if not acceso_facturacion(request):
         return render(request, 'errors/acceso_denegado.html', status=403)
+        
+    # LINEA IMPORTANTE: select_related evita consultas repetitivas (N+1) al traer la mesa asociada
     pedidos = GestionPedido.objects.filter(factura__isnull=True).select_related('id_mesa')
     return render(request, 'facturacion/listar_pedidos.html', {'pedidos': pedidos})
 
 
-# --- PROCESAMIENTO GENERAL DE FACTURACIÓN (CHECKOUT) ---
+# =========================================================================
+# BLOQUE 3: PROCESAMIENTO GENERAL DE FACTURACIÓN (CHECKOUT)
+# =========================================================================
+
 @login_required
 def crear_factura(request, id_pedido=None):
     if not acceso_facturacion(request):
@@ -51,11 +59,13 @@ def crear_factura(request, id_pedido=None):
     detalles_pedido = None
     mesas_disponibles = []
 
+    # Carga base de consumos aptos para liquidar
     pedidos_pendientes = GestionPedido.objects.filter(
         estado_pedido__in=['listo', 'entregado'], 
         factura__isnull=True
     )
 
+    # SUB-BLOQUE: Enrutamiento de Flujo (Manual vs Directo por Mesa)
     if id_pedido is None:
         mesas_disponibles = list({p.id_mesa for p in pedidos_pendientes if p.id_mesa})
         mesa_id = request.GET.get('mesa_id')
@@ -66,6 +76,7 @@ def crear_factura(request, id_pedido=None):
     else:
         pedido = get_object_or_404(GestionPedido, id_pedido=id_pedido)
 
+    # SUB-BLOQUE: Validaciones previas del estado del pedido
     if pedido:
         if Factura.objects.filter(id_pedido=pedido).exists():
             messages.error(request, f"El pedido #{pedido.id_pedido} ya fue facturado anteriormente.")
@@ -80,13 +91,13 @@ def crear_factura(request, id_pedido=None):
             messages.error(request, "El pedido no contiene platillos para facturar.")
             return redirect('listar_pedidos_por_facturar')
 
-        # 🎯 Redondeamos el subtotal acumulado inicial para evitar arrastrar decimales basura
+        # LINEA IMPORTANTE: Pre-calcula y limpia decimales del subtotal acumulado inicial
         subtotal_acumulado = sum(Decimal(str(d.cantidad)) * Decimal(str(d.precio_unitario)) for d in detalles_pedido)
         subtotal_acumulado = interpolar_dos_decimales(subtotal_acumulado)
     else:
         subtotal_acumulado = Decimal('0.00')
 
-    # 🎯 1. OBTENCIÓN DINÁMICA DE LA CONFIGURACIÓN IMPOSITIVA ACTIVA
+    # Obtención dinámica de impuestos comerciales
     config_emisor = ConfiguracionFacturacion.objects.first()
     porcentaje_iva = config_emisor.iva_porcentaje if config_emisor else 12
     factor_iva = Decimal(str(porcentaje_iva)) / Decimal('100.00')
@@ -96,6 +107,7 @@ def crear_factura(request, id_pedido=None):
     iva_valor = interpolar_dos_decimales(subtotal_12 * factor_iva)
     total_general = interpolar_dos_decimales(subtotal_12 + iva_valor)
 
+    # SUB-BLOQUE: Procesamiento de Guardado de la Venta
     if request.method == 'POST':
         if not pedido:
             messages.error(request, "Operación inválida. Debe seleccionar una mesa con consumos válidos.")
@@ -104,12 +116,13 @@ def crear_factura(request, id_pedido=None):
         form = FacturaForm(request.POST)
         if form.is_valid():
             try:
+                # LINEA IMPORTANTE: atomic() garantiza que si falla un detalle, no se guarde la cabecera (Rollback)
                 with transaction.atomic():
                     factura = form.save(commit=False)
                     factura.id_pedido = pedido
                     factura.id_cajero = request.user
                     
-                    # 🎯 2. PERSISTENCIA HISTÓRICA INMUTABLE DEL EMISOR EN LA FACTURA
+                    # LINEA IMPORTANTE: Resguardo estático de datos fiscales (Inmutabilidad histórica frente a cambios en config)
                     if config_emisor:
                         factura.emisor_nombre_comercial = config_emisor.nombre_comercial
                         factura.emisor_razon_social = config_emisor.razon_social
@@ -128,31 +141,27 @@ def crear_factura(request, id_pedido=None):
                     except (ValueError, TypeError):
                         porcentaje_descuento = 0
                     
-                    # 🎯 REDONDEO ESTRICTO DE LOS VALORES ECONÓMICOS INTERMEDIOS (Sincronización con JS)
+                    # Cálculos económicos intermedios con redondeo estándar
                     descuento_en_dinero = interpolar_dos_decimales((subtotal_12 * Decimal(str(porcentaje_descuento))) / Decimal('100.00'))
                     nuevo_subtotal_afectado = interpolar_dos_decimales(subtotal_12 - descuento_en_dinero)
-                    
-                    # 🎯 3. RECALCULO DE IVA BASADO EN LA TASA DINÁMICA
                     iva_recalculado = interpolar_dos_decimales(nuevo_subtotal_afectado * factor_iva)
                     
                     factura.subtotal_12 = subtotal_12
                     factura.subtotal_0 = subtotal_0
                     factura.descuento = descuento_en_dinero  
-                    
-                    # ===== 🛠️ ASIGNACIÓN DE PORCENTAJE Y NETO PARA GUARDAR EN BD =====
                     factura.descuento_porcentaje = porcentaje_descuento  
                     factura.subtotal_neto = nuevo_subtotal_afectado      
-                    # =================================================================
-                    
                     factura.iva_valor = iva_recalculado 
                     factura.total = interpolar_dos_decimales(nuevo_subtotal_afectado + iva_recalculado)
                     
+                    # LINEA IMPORTANTE: Generación automática y secuencial del número de factura fiscal (FAC-XXXXXXXX)
                     ultimo_registro = Factura.objects.order_by('-id_factura').first()
                     num_secuencial = (ultimo_registro.id_factura + 1) if (ultimo_registro and ultimo_registro.id_factura) else 1
                     factura.secuencial = f"FAC-{num_secuencial:08d}"
                     
                     factura.save()
 
+                    # LINEA IMPORTANTE: Copia los platillos actuales al histórico de la factura para congelar precios y nombres
                     for item in detalles_pedido:
                         FacturaDetalle.objects.create(
                             id_factura=factura,
@@ -162,6 +171,7 @@ def crear_factura(request, id_pedido=None):
                             precio_unitario_historico=item.precio_unitario
                         )
 
+                    # LINEA IMPORTANTE: Libera y blanquea la mesa en el salón físico para que pueda recibir nuevos clientes
                     mesa_afectada = pedido.id_mesa
                     mesa_afectada.estado = 'libre'
                     mesa_afectada.cliente_nombre = None
@@ -171,6 +181,7 @@ def crear_factura(request, id_pedido=None):
                     mesa_afectada.mesero_assigned = None
                     mesa_afectada.save()
                     
+                    # Log de auditoría del sistema
                     from apps.auditoria.models import Auditoria
                     Auditoria.objects.create(
                         id_usuario=request.user,
@@ -185,9 +196,9 @@ def crear_factura(request, id_pedido=None):
             except Exception as e:
                 messages.error(request, f"Error crítico al guardar la factura: {str(e)}")
         else:
-            print("❌ Errores de validación del formulario:", form.errors)
             messages.error(request, "Por favor, verifique que los datos del cliente estén completos y correctos.")
 
+    # SUB-BLOQUE: Renderizado Inicial (GET) con carga de estados iniciales
     else:
         if pedido:
             mesa = pedido.id_mesa
@@ -207,7 +218,7 @@ def crear_factura(request, id_pedido=None):
         'mesas_disponibles': mesas_disponibles,
         'subtotal_12': subtotal_12,
         'iva_valor': iva_valor,
-        'iva_porcentaje': porcentaje_iva, # 🎯 Enviado para pintar "IVA (15%)" dinámico
+        'iva_porcentaje': porcentaje_iva, 
         'total_general': total_general,
         'fecha_actual': timezone.localtime(timezone.now()),
         'hora_actual': timezone.localtime(timezone.now()).strftime('%H:%M'),
@@ -215,7 +226,10 @@ def crear_factura(request, id_pedido=None):
     })
 
 
-# --- VISUALIZACIÓN / AUDITORÍA DE FACTURAS EMITIDAS ---
+# =========================================================================
+# BLOQUE 4: VISUALIZACIÓN, BÚSQUEDA Y HISTORIAL DE AUDITORÍA
+# =========================================================================
+
 @login_required
 def ver_detalle_factura(request, id_factura):
     if not acceso_facturacion(request):
@@ -224,7 +238,7 @@ def ver_detalle_factura(request, id_factura):
     factura = get_object_or_404(Factura, id_factura=id_factura)
     return render(request, 'facturacion/detalle_factura.html', {
         'factura':       factura,
-        'detalles':      factura.detalles_factura.all()  # Retorna el set relacionado de detalles
+        'detalles':      factura.detalles_factura.all()  
     })
 
 
@@ -234,11 +248,10 @@ def historial_facturas(request):
 
     search_query = request.GET.get('search', '').strip()
     fecha_query = request.GET.get('fecha', '').strip()
-    
     facturas = Factura.objects.all()
 
+    # LINEA IMPORTANTE: Uso del operador Q para realizar búsquedas avanzadas y cruzadas con los datos del cajero
     if search_query:
-        # Se agregaron los campos id_cajero__first_name, last_name y username al filtro Q
         facturas = facturas.filter(
             Q(cliente_nombre__icontains=search_query) |
             Q(cliente_identificacion__icontains=search_query) |
@@ -258,18 +271,20 @@ def historial_facturas(request):
     })
 
 
-# --- GESTIÓN DE CONFIGURACIÓN DEL EMISOR E IVA ---
+# =========================================================================
+# BLOQUE 5: GESTIÓN DE CONFIGURACIÓN DINÁMICA DE FACTURACIÓN (TABS)
+# =========================================================================
+
 @login_required
 def configuracion_facturacion(request):
     config, created = ConfiguracionFacturacion.objects.get_or_create(id=1)
     tab_activa = 'empresa'
 
     if request.method == 'POST':
-        # Importación local segura del modelo de Auditoría
         from apps.auditoria.models import Auditoria
         
+        # SUB-BLOQUE POST: Modificación de Datos del Emisor
         if 'action_emisor' in request.POST:
-            # ... (Tu código actual del emisor) ...
             tab_activa = 'empresa'
             config.nombre_comercial = request.POST.get('nombre_comercial')
             config.razon_social = request.POST.get('razon_social')
@@ -279,63 +294,40 @@ def configuracion_facturacion(request):
             config.telefono = request.POST.get('telefono')
             config.save()
             
-            Auditoria.objects.create(
-                id_usuario=request.user,
-                modulo='facturacion',
-                accion='Configuración de Emisor',
-                detalle="Actualizó los datos del emisor."
-            )
+            Auditoria.objects.create(id_usuario=request.user, modulo='facturacion', accion='Configuración de Emisor', detalle="Actualizó los datos del emisor.")
             messages.success(request, "Datos del emisor actualizados correctamente.")
             
+        # SUB-BLOQUE POST: Modificación de Tasa de Impuestos
         elif 'action_iva' in request.POST:
-            # ... (Tu código actual del IVA) ...
             tab_activa = 'impuestos'
             try:
                 config.iva_porcentaje = int(request.POST.get('iva_comercial', 12))
                 config.save()
                 
-                Auditoria.objects.create(
-                    id_usuario=request.user,
-                    modulo='facturacion',
-                    accion='Configuración de Impuestos',
-                    detalle=f"Actualizó la tasa de IVA a {config.iva_porcentaje}%."
-                )
+                Auditoria.objects.create(id_usuario=request.user, modulo='facturacion', accion='Configuración de Impuestos', detalle=f"Actualizó la tasa de IVA a {config.iva_porcentaje}%.")
                 messages.success(request, "Configuración de impuestos guardada.")
             except ValueError:
                 messages.error(request, "Porcentaje de IVA inválido.")
                 
-        # 🎯 NUEVO BLOQUE: PROCESAMIENTO DE MARCA Y LOGO
+        # SUB-BLOQUE POST: Modificación de Archivos de Marca (Logo)
         elif 'action_marca' in request.POST:
             tab_activa = 'marca'
             
-            # Verificamos si se presionó el botón de eliminar
+            # LINEA IMPORTANTE: Remueve físicamente el logo del servidor si se solicita explícitamente su eliminación
             if request.POST.get('eliminar_logo') == '1':
                 if config.logo_restaurante:
-                    config.logo_restaurante.delete(save=False) # Elimina el archivo físico
+                    config.logo_restaurante.delete(save=False) 
                     config.logo_restaurante = None
-                
                 config.save()
                 
-                Auditoria.objects.create(
-                    id_usuario=request.user,
-                    modulo='facturacion',
-                    accion='Configuración de Marca',
-                    detalle="Eliminó el logo del sistema."
-                )
+                Auditoria.objects.create(id_usuario=request.user, modulo='facturacion', accion='Configuración de Marca', detalle="Eliminó el logo del sistema.")
                 messages.success(request, "Logo eliminado correctamente.")
             else:
-                # Si viene una imagen en la petición, la guardamos
                 if 'logo_restaurante' in request.FILES:
                     config.logo_restaurante = request.FILES['logo_restaurante']
-                    
                 config.save()
                 
-                Auditoria.objects.create(
-                    id_usuario=request.user,
-                    modulo='facturacion',
-                    accion='Configuración de Marca',
-                    detalle="Actualizó el logo del sistema."
-                )
+                Auditoria.objects.create(id_usuario=request.user, modulo='facturacion', accion='Configuración de Marca', detalle="Actualizó el logo del sistema.")
                 messages.success(request, "Logo actualizado correctamente.")
                 
         return redirect(f"{request.path}?tab={tab_activa}")
@@ -349,5 +341,5 @@ def configuracion_facturacion(request):
 
 @login_required
 def configuracion_sistema(request):
-    """Mantiene compatibilidad de enrutamiento hacia el mismo módulo central de configuración."""
+    # Enrutador de compatibilidad para evitar enlaces rotos hacia el panel de configuraciones
     return redirect('configuracion_facturacion')

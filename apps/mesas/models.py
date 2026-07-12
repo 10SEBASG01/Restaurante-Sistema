@@ -2,14 +2,15 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from apps.usuarios.models import Usuario
 
-# 🔥 MODELO: Para manejar de forma dinámica las zonas desde tu base de datos
+# =========================================================================
+# --- ESTRUCTURA Y DINÁMICA DE ZONAS ---
+# =========================================================================
 class ZonaMesa(models.Model):
+    """
+    Modelo para la gestión e identificación de las áreas físicas del restaurante.
+    """
     id_zona = models.AutoField(primary_key=True)
-    nombre_zona = models.CharField(
-        max_length=100, 
-        unique=True, 
-        verbose_name="Nombre de la Zona"
-    )
+    nombre_zona = models.CharField(max_length=100, unique=True, verbose_name="Nombre de la Zona")
 
     class Meta:
         db_table = 'zonas_mesa'
@@ -21,30 +22,25 @@ class ZonaMesa(models.Model):
         return self.nombre_zona
 
 
+# =========================================================================
+# --- ENTIDAD PRINCIPAL: CONTROL DE MESAS ---
+# =========================================================================
 class Mesa(models.Model):
+    """
+    Modelo operativo para el control de estados, asignaciones y consumo de clientes.
+    """
     ESTADOS = (
         ('libre', 'Libre'),
         ('ocupada', 'Ocupada'),
         ('reservada', 'Reservada'),
     )
 
-    # 💡 Se removió unique=True y se configuró para que solo acepte enteros positivos >= 1
-    numero = models.PositiveIntegerField(
-        validators=[MinValueValidator(1)],
-        verbose_name="Número de Mesa"
-    )
+    # Validaciones numéricas para impedir valores cero o negativos
+    numero = models.PositiveIntegerField(validators=[MinValueValidator(1)], verbose_name="Número de Mesa")
+    capacidad = models.PositiveIntegerField(validators=[MinValueValidator(1)], verbose_name="Capacidad (Personas)")
+    estado = models.CharField(max_length=15, choices=ESTADOS, default='libre')
 
-    capacidad = models.PositiveIntegerField(
-        validators=[MinValueValidator(1)],
-        verbose_name="Capacidad (Personas)"
-    )
-
-    estado = models.CharField(
-        max_length=15,
-        choices=ESTADOS,
-        default='libre'
-    )
-
+    # LINEA IMPORTANTE: PROTECT impide borrar una zona si tiene mesas activas vinculadas
     ubicacion = models.ForeignKey(
         ZonaMesa,
         on_delete=models.PROTECT, 
@@ -55,58 +51,32 @@ class Mesa(models.Model):
         verbose_name="Ubicación / Zona"
     )
 
-    # ==========================
-    # INFORMACIÓN DEL CLIENTE
-    # ==========================
-    cliente_nombre = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-        verbose_name="Cliente / Grupo"
-    )
+    # --- BLOQUE: METADATOS COMPLEMENTARIOS DEL CLIENTE ---
+    cliente_nombre = models.CharField(max_length=100, blank=True, null=True, verbose_name="Cliente / Grupo")
+    cliente_cedula = models.CharField(max_length=13, blank=True, null=True, verbose_name="Cédula del Cliente")
+    cliente_correo = models.EmailField(blank=True, null=True, verbose_name="Correo del Cliente")
+    cliente_direccion = models.CharField(max_length=255, blank=True, null=True, verbose_name="Dirección del Cliente")
 
-    cliente_cedula = models.CharField(
-        max_length=13,
-        blank=True,
-        null=True,
-        verbose_name="Cédula del Cliente"
-    )
-
-    cliente_correo = models.EmailField(
-        blank=True,
-        null=True,
-        verbose_name="Correo del Cliente"
-    )
-
-    cliente_direccion = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        verbose_name="Dirección del Cliente"
-    )
-
+    # LINEA IMPORTANTE: SET_NULL mantiene la mesa intacta si el mesero asignado es dado de baja
     mesero_assigned = models.ForeignKey(
         Usuario,
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        limit_choices_to={'rol': 'mesero'},
+        limit_choices_to={'rol': 'mesero'},  # Filtro directo a nivel de base de datos
         verbose_name="Mesero Asignado"
     )
 
-    # 🔥 INTERRUPTOR CRÍTICO: Borrado Lógico
-    is_active = models.BooleanField(
-        default=True,
-        verbose_name="Mesa Activa"
-    )
+    # Interruptor crítico para el borrado lógico del sistema (Soft Delete)
+    is_active = models.BooleanField(default=True, verbose_name="Mesa Activa")
 
     class Meta:
         ordering = ['numero']
         verbose_name = "Mesa"
         verbose_name_plural = "Mesas"
         
-        # 🔥 PODER DE POSTGRESQL: La unicidad del número solo aplica a mesas activas.
-        # Las mesas inactivas (históricas) no bloquearán la creación de nuevas mesas.
+        # REGLA DE UNICIDAD CONDICIONAL (PostgreSQL):
+        # Valida duplicados numéricos únicamente sobre los registros que sigan activos en el tablero.
         constraints = [
             models.UniqueConstraint(
                 fields=['numero'],

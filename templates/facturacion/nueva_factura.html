@@ -2,6 +2,7 @@
 
 {% block content %}
 <style>
+    /* --- CONTENEDOR GRID TRIDIMENSIONAL (Columna 1: Info | Columna 2: Detalles | Columna 3: Controles) --- */
     .pasarela-container {
         display: grid;
         grid-template-columns: 1fr 1.2fr 340px;
@@ -9,6 +10,8 @@
         padding: 30px 0;
         align-items: start;
     }
+    
+    /* --- ENCABEZADO SUPERIOR DE CHECKOUT --- */
     .header-top {
         padding: 30px 0 10px 0;
     }
@@ -22,6 +25,8 @@
         color: #8a8a8e;
         font-size: 13px;
     }
+    
+    /* --- COMPONENTE CONTENEDOR (TARJETAS MODULARES) --- */
     .factura-card {
         background: #ffffff;
         border: 1px solid #f0f0f0;
@@ -35,6 +40,8 @@
         color: #18181b;
         margin-bottom: 20px;
     }
+    
+    /* --- FILAS INFORMATIVAS DE CONTROL --- */
     .info-row {
         display: flex;
         justify-content: space-between;
@@ -57,7 +64,7 @@
         font-weight: 600;
     }
     
-    /* Recuadro de Empresa Dinámico y Limpio */
+    /* --- RECUADRO FISCAL DEL EMISOR (ESTILO EMBEDDED RUC) --- */
     .empresa-box {
         background-color: #fdf5e6;
         border: 1px solid #fbe2b5;
@@ -82,6 +89,7 @@
         margin-bottom: 2px;
     }
 
+    /* --- TABLA DE DESGLOSE DE CONSUMO (PLATILLOS) --- */
     .table-detalles {
         width: 100%;
         border-collapse: collapse;
@@ -100,6 +108,8 @@
         color: #444;
         border-bottom: 1px solid #f0f0f0;
     }
+    
+    /* --- COMPONENTES DE FORMULARIOS DINÁMICOS --- */
     .form-group {
         margin-bottom: 16px;
     }
@@ -130,6 +140,7 @@
         box-shadow: 0 0 0 2px rgba(223, 168, 17, 0.1);
     }
     
+    /* --- PANEL DE TOTALES FINALES --- */
     .total-label-final {
         font-size: 14px;
         font-weight: 700;
@@ -140,6 +151,8 @@
         font-weight: 700;
         color: #dfa811;
     }
+    
+    /* --- BOTONERA DE CONTROL TRANSACCIONAL --- */
     .btn-submit-invoice {
         background-color: #dfa811;
         color: white;
@@ -179,6 +192,7 @@
         background-color: #f9fafb;
     }
 
+    /* --- OVERRIDE ESTILIZADO DE DJANGO PARA EL INPUT DE DESCUENTOS --- */
     #id_descuento {
         font-weight: 600;
         color: #26dc44;
@@ -197,9 +211,7 @@
         Checkout de Facturación Modular
     {% endif %}
     </p>
-</div>
-
-{% if pedido %}
+</div> {% if pedido %}
     <form method="POST" action="{% url 'crear_factura' pedido.id_pedido %}" class="pasarela-container">
 {% else %}
     <form method="POST" action="{% url 'crear_factura_vacia' %}" class="pasarela-container">
@@ -255,10 +267,7 @@
                 <strong>RUC:</strong> 20456789012<br>
                 Av. Gastronomía 455, Miraflores
             {% endif %}
-        </div>
-    </div>
-
-    <div class="factura-card">
+        </div> </div> <div class="factura-card">
         <div class="card-title">Detalle del Pedido</div>
         <table class="table-detalles">
             <thead>
@@ -288,9 +297,7 @@
                 {% endfor %}
             </tbody>
         </table>
-    </div>
-
-    <div style="display: flex; flex-direction: column; gap: 20px;">
+    </div> <div style="display: flex; flex-direction: column; gap: 20px;">
         
         <div class="factura-card" style="padding: 20px;">
             <div class="card-title" style="margin-bottom: 12px;">Resumen</div>
@@ -326,9 +333,7 @@
                 <span class="total-label-final">Total a pagar</span>
                 <span class="total-price-final">$<span id="lbl_total_general">{{ total_general|floatformat:2 }}</span></span>
             </div>
-        </div>
-
-        <div class="factura-card" style="padding: 20px;">
+        </div> <div class="factura-card" style="padding: 20px;">
             <div class="card-title" style="margin-bottom: 12px;">Datos del Cliente</div>
             <div class="form-group">
                 <label>Nombre / Razón Social</label>
@@ -346,9 +351,7 @@
                 <label>Dirección (Opcional)</label>
                 {{ form.cliente_direccion }}
             </div>
-        </div>
-
-        <div class="factura-card" style="padding: 20px;">
+        </div> <div class="factura-card" style="padding: 20px;">
             <div class="card-title" style="margin-bottom: 12px;">Método de Pago</div>
             <div class="form-group">
                 {{ form.forma_pago }}
@@ -367,11 +370,7 @@
             <a href="{% url 'listar_pedidos_por_facturar' %}" class="btn-cancel-invoice">
                 Cancelar
             </a>
-        </div>
-    </div>
-</form>
-
-<script>
+        </div> </div> </form> <script>
     document.addEventListener('DOMContentLoaded', function() {
         const inputDescuento = document.getElementById('id_descuento');
         const lblSubtotal = document.getElementById('lbl_subtotal');
@@ -382,6 +381,7 @@
         const lblTotalGeneral = document.getElementById('lbl_total_general');
         const lblTasaIvaText = document.getElementById('lbl_tasa_iva_text');
 
+        // Parseo de tipos numéricos locales sanitizando el separador decimal
         const subtotalOriginal = parseFloat(lblSubtotal.textContent.replace(',', '.'));
         const tasaIva = parseFloat(lblTasaIvaText.textContent.trim()) || 15.00; 
 
@@ -406,6 +406,7 @@
                 this.value = 100;
             }
 
+            // Flujo lógico de la ecuación fiscal
             let dineroDescuento = redondearDosDecimales(subtotalOriginal * (porcentajeDescuento / 100));
             let nuevoSubtotalNeto = redondearDosDecimales(subtotalOriginal - dineroDescuento);
             let nuevoIva = redondearDosDecimales(nuevoSubtotalNeto * (tasaIva / 100));
@@ -415,6 +416,7 @@
                 totalConDescuento = 0.00;
             }
 
+            // Inyección limpia al árbol DOM
             lblDescuentoPorcentajeTxt.textContent = porcentajeDescuento;
             lblDescuentoDinero.textContent = formatoMonedaLocal(dineroDescuento);
             lblSubtotalNeto.textContent = formatoMonedaLocal(nuevoSubtotalNeto);
@@ -422,6 +424,7 @@
             lblTotalGeneral.textContent = formatoMonedaLocal(totalConDescuento);
         }
 
+        // Suscripción de oyentes a eventos en caliente del teclado y ratón
         if (inputDescuento) {
             inputDescuento.addEventListener('input', calcularDescuentoPorcentaje);
             inputDescuento.addEventListener('change', calcularDescuentoPorcentaje);

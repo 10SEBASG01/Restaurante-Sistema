@@ -4,14 +4,19 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
+    /* LINEA IMPORTANTE: Ajusta el alto máximo dinámicamente para congelar la pantalla y evitar el scroll del navegador */
     .kds-container { display: flex; flex-direction: column; height: calc(100vh - 110px); }
+    
+    /* Diseño del contenedor de la cabecera superior */
     .kds-header { background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0; }
     .kds-header h1 { font-size: 22px; font-weight: 700; color: #1f2937; margin: 0; }
     .kds-header p { font-size: 13px; color: #6b7280; margin-top: 2px; margin-bottom: 0; }
     
+    /* Botón manual de refresco */
     .btn-refresh { background: #ffffff; border: 1px solid #d1d5db; border-radius: 8px; padding: 0 16px; height: 40px; font-size: 13px; font-weight: 500; color: #4b5563; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
     .btn-refresh:hover { background: #f9fafb; border-color: #9ca3af; }
 
+    /* Estructura Grid: Divide el espacio horizontal de forma idéntica para las 3 fases del Kanban */
     .kanban-grid { 
         display: grid; 
         grid-template-columns: repeat(3, 1fr); 
@@ -22,6 +27,7 @@
         padding-bottom: 20px;
     }
     
+    /* Distribución vertical de cada columna */
     .kanban-col { 
         display: flex; 
         flex-direction: column; 
@@ -30,6 +36,7 @@
         min-height: 0;
     }
     
+    /* LINEA IMPORTANTE: Habilita el scroll individual para las comandas excedentes dentro de una sola columna */
     .cards-scroll-box { 
         display: flex; 
         flex-direction: column; 
@@ -40,9 +47,11 @@
         padding-right: 8px; 
     }
 
+    /* Cabeceras de columnas y sus respectivas burbujas contadoras */
     .col-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 12px; font-size: 14px; font-weight: 700; color: #1c1c1e; flex-shrink: 0; }
     .col-count { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; font-weight: 700; }
 
+    /* Estructura visual de las tarjetas contenedoras de las comandas */
     .order-card { 
         background-color: #ffffff; 
         border-radius: 12px; 
@@ -59,12 +68,15 @@
     }
     .order-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
     
+    /* Componentes pequeños internos de las tarjetas */
     .card-badge-mesa { background-color: #fdf6e3; color: #c59b27; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
     .item-qty-box { width: 20px; height: 20px; background-color: #f3f4f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #1c1c1e; flex-shrink: 0; margin-top: 2px; }
 
+    /* Botones reactivos para alternar los estados del pedido */
     .btn-action-kds { width: 100%; border: none; padding: 8px 0; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s; }
     .btn-action-kds:hover { opacity: 0.9; }
 </style>
+
 
 <div class="kds-container">
     <input type="hidden" id="csrf_token_value" value="{{ csrf_token }}">
@@ -116,20 +128,31 @@
     </div>
 </div>
 
+
 <script>
+    // LINEA IMPORTANTE: Mantiene el registro de los intervalos para destruirlos y evitar consumos masivos de RAM
     let timersActivos = [];
 
+    /**
+     * FUNCIÓN: cargarComandas
+     * Consulta las comandas activas al servidor vía fetch, limpia las columnas y renderiza cada tarjeta.
+     */
     async function cargarComandas() {
         try {
+            // Petición asíncrona al endpoint de la API de Django
             const response = await fetch("{% url 'cocina:api_comandas' %}");
             const comandas = await response.json();
             
+            // Vacía el contenido visual previo del tablero antes de reordenar
             document.getElementById('col-pendiente').innerHTML = '';
             document.getElementById('col-en_preparacion').innerHTML = '';
             document.getElementById('col-lista').innerHTML = '';
+            
+            // Detiene y elimina los hilos de los relojes anteriores para que no queden duplicados en segundo plano
             timersActivos.forEach(t => clearInterval(t));
             timersActivos = [];
 
+            // Objeto acumulador para los contadores de las cabeceras
             let contadores = { pendiente: 0, en_preparacion: 0, lista: 0 };
 
             comandas.forEach(order => {
@@ -137,6 +160,7 @@
                     contadores[order.status]++;
                 }
 
+                // Generación de la plantilla HTML de la comanda mediante Template Literals
                 const cardHtml = `
                     <div class="order-card" id="card-${order.raw_id}">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -184,10 +208,14 @@
                     </div>
                 `;
 
+                // LINEA IMPORTANTE: Agrega la tarjeta en su respectiva columna usando la clave de su estado
                 document.getElementById(`col-${order.status}`).insertAdjacentHTML('beforeend', cardHtml);
+                
+                // Inicializa el contador de tiempo de forma individual para este registro
                 inicializarReloj(order.raw_id, order.createdAt);
             });
 
+            // Actualización de contadores numéricos en el árbol del DOM
             document.getElementById('count-pendiente').textContent = contadores.pendiente;
             document.getElementById('count-en_preparacion').textContent = contadores.en_preparacion;
             document.getElementById('count-lista').textContent = contadores.lista;
@@ -200,6 +228,10 @@
         }
     }
 
+    /**
+     * FUNCIÓN: inicializarReloj
+     * Calcula los minutos transcurridos y evalúa el semáforo de retrasos (> 10 mins cambia a alerta roja).
+     */
     function inicializarReloj(id, createdAt) {
         function actualizar() {
             const transcurrido = Date.now() - createdAt;
@@ -215,6 +247,7 @@
             if (campoTexto && contenedorReloj) {
                 campoTexto.textContent = textoTiempo;
                 
+                // SEMÁFORO VISUAL: Si la preparación toma 10 minutos o más, el color muta a un fondo de alerta crítico
                 if (mins >= 10) {
                     contenedorReloj.style.backgroundColor = '#FEF2F2';
                     campoTexto.style.color = '#EF4444';
@@ -228,10 +261,15 @@
         }
         actualizar();
         const interval = setInterval(actualizar, 1000);
-        timersActivos.push(interval);
+        timersActivos.push(interval); // Guarda la instancia del intervalo en el array global de control
     }
 
+    /**
+     * FUNCIÓN: avanzarComanda
+     * Realiza un envío POST seguro al backend para cambiar el estado de la comanda seleccionada.
+     */
     async function avanzarComanda(id) {
+        // LINEA IMPORTANTE: Recupera el token CSRF que guardamos en el input oculto del HTML
         const csrftoken = document.getElementById('csrf_token_value').value;
         
         try {
@@ -245,7 +283,7 @@
             });
             const resultado = await response.json();
             if (resultado.success) {
-                cargarComandas();
+                cargarComandas(); // Refresca todo el tablero para mover la tarjeta de columna
             } else {
                 console.error("Error del servidor:", resultado);
             }
@@ -254,7 +292,11 @@
         }
     }
 
+    // DISPARADORES AUTOMÁTICOS DE INICIALIZACIÓN
+    // Carga los elementos iniciales de la cocina en cuanto el DOM está listo
     document.addEventListener("DOMContentLoaded", cargarComandas);
+    
+    // CONTROL DE POLLING: Actualiza y sondea nuevos pedidos de los meseros de forma automática cada 30 segundos
     setInterval(cargarComandas, 30000);
 </script>
 {% endblock %}

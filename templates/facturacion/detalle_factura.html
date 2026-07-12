@@ -2,6 +2,9 @@
 
 {% block content %}
 <style>
+    /* =========================================================================
+       1. ESTILOS PARA INTERFAZ EN PANTALLA (WEB)
+       ========================================================================= */
     .no-print-status {
         background-color: #def7ec; 
         color: #03543f; 
@@ -16,7 +19,6 @@
         gap: 8px;
     }
     
-    /* Variación por si ocurre un error inesperado */
     .no-print-status.alert-error {
         background-color: #fef2f2;
         color: #991b1b;
@@ -27,8 +29,24 @@
         display: none;
     }
 
+    /* =========================================================================
+       2. DEFINICIÓN DE FORMATOS DE PÁGINA (FUERA DE CLASES PARA EVITAR ERRORES)
+       ========================================================================= */
+    @page formato_factura_a4 {
+        size: A4 portrait;
+        margin: 10mm 15mm 10mm 15mm;
+    }
+
+    @page formato_ticket_80mm {
+        size: 80mm auto;
+        margin: 5mm auto;
+    }
+
+    /* =========================================================================
+       3. REGLAS DE IMPRESIÓN ELECTRÓNICA
+       ========================================================================= */
     @media print {
-        /* AQUÍ ESTÁ LA CORRECCIÓN: Se añadieron .alert-container y .alert */
+        /* Ocultamiento de la UI interactiva */
         #sidebar, .sidebar, .navbar, .main-header, 
         .no-print-status, .control-card,
         .alert-container, .alert {
@@ -40,6 +58,13 @@
             padding: 0 !important;
             margin: 0 !important;
             min-height: auto !important;
+        }
+
+        /* ---------------------------------------------------------------------
+           MODO: REPORTE / FACTURA ESTRUCTURADA (A4)
+           --------------------------------------------------------------------- */
+        body.modo-impresion-factura {
+            page: formato_factura_a4; /* Asignación limpia del layout A4 */
         }
 
         body.modo-impresion-factura #ticket-impresion {
@@ -60,9 +85,11 @@
             display: block !important;
         }
 
-        body.modo-impresion-factura @page {
-            size: A4 portrait;
-            margin: 10mm 15mm 10mm 15mm;
+        /* ---------------------------------------------------------------------
+           MODO: TICKET TERMAL CONTINUO (80MM)
+           --------------------------------------------------------------------- */
+        body.modo-impresion-ticket {
+            page: formato_ticket_80mm; /* Asignación del rollo continuo */
         }
 
         body.modo-impresion-ticket .grid-principal,
@@ -83,11 +110,7 @@
             color: #000000;
         }
 
-        body.modo-impresion-ticket @page {
-            size: 80mm auto;
-            margin: 5mm auto;
-        }
-
+        /* Estilos estructurales del ticket de caja */
         .ticket-header { text-align: center; margin-bottom: 10px; }
         .ticket-header h2 { font-size: 15px; font-weight: bold; margin: 0 0 4px 0; }
         .ticket-header p { margin: 2px 0; font-size: 11px; }
@@ -105,8 +128,12 @@
     }
 </style>
 
+<!-- =========================================================================
+     ESTRUCTURA VISUAL EN PANTALLA / COMPONENTE DE FACTURA A4
+     ========================================================================= -->
 <main class="main-wrapper" style="background-color: #f4f5f8; min-height: 100vh; padding: 32px;">
     
+    <!-- LINEA IMPORTANTE: Evita mostrar banner de éxito si la petición proviene del historial de navegación o contiene alertas -->
     {% if "historial" not in request.META.HTTP_REFERER and not messages %}
         <div class="no-print-status">
             <span>🎉 ¡Factura emitida y registrada con éxito! La mesa asociada ha sido liberada.</span>
@@ -115,8 +142,10 @@
 
     <div class="grid-principal" style="display: grid; grid-template-columns: 1.8fr 1fr; gap: 24px; align-items: start;">
         
+        <!-- SUB-BLOQUE: Cuerpo de Comprobante Oficial (Representación A4 en Pantalla) -->
         <div class="card factura-documento" style="background-color: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
             
+            <!-- Encabezado: Identificación Corporativa y Datos del Emisor -->
             <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #e5e7eb; padding-bottom: 24px; margin-bottom: 24px;">
                 <div>
                     <h2 style="color: #cd9f2a; font-weight: 700; font-size: 24px; margin-bottom: 6px;">{{ factura.emisor_nombre_comercial|default:"Sabor y Arte" }}</h2>
@@ -132,10 +161,12 @@
                 <div style="text-align: right;">
                     <span style="background-color: #fdf9ee; color: #b5881a; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700;">FACTURA ELECTRÓNICA</span>
                     <h4 style="font-size: 18px; font-weight: 700; color: #1f2937; margin-top: 8px;">{{ factura.secuencial }}</h4>
+                    <!-- LINEA IMPORTANTE: Formateo de fecha de emisión nativa del backend -->
                     <p style="font-size: 11px; color: #9ca3af; margin-top: 4px;">Fecha Autorización: {{ factura.fecha_emision|date:"d/m/Y H:i" }}</p>
                 </div>
             </div>
 
+            <!-- Información del Adquirente / Datos del Cliente receptor -->
             <div style="margin-bottom: 24px;">
                 <h4 style="font-size: 14px; font-weight: 600; color: #1f2937; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Información del Adquirente</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px; color: #4b5563;">
@@ -147,6 +178,7 @@
                 </div>
             </div>
 
+            <!-- Tabla de Detalles (Filas de Platillos / Consumos indexados en BBDD) -->
             <table style="width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 24px; font-size: 13px;">
                 <thead>
                     <tr style="border-bottom: 2px solid #e5e7eb; color: #6b7280;">
@@ -159,6 +191,7 @@
                 <tbody>
                     {% for detalle in detalles %}
                     <tr style="border-bottom: 1px solid #f3f4f6; color: #1f2937;">
+                        <!-- LINEA IMPORTANTE: Se renderizan los campos históricos para evitar alteración si el menú cambia de precio a futuro -->
                         <td style="padding: 12px 0; font-weight: 500;">{{ detalle.nombre_historico }}</td>
                         <td style="text-align: center; padding: 12px 0;">{{ detalle.cantidad }}</td>
                         <td style="text-align: right; padding: 12px 0;">${{ detalle.precio_unitario_historico }}</td>
@@ -168,6 +201,7 @@
                 </tbody>
             </table>
 
+            <!-- Bloque de Cierre: Resumen de Totales y Liquidación Impositiva -->
             <div style="display: flex; justify-content: flex-end;">
                 <div style="width: 280px; font-size: 13px; color: #4b5563; display: flex; flex-direction: column; gap: 8px;">
                     <div style="display: flex; justify-content: space-between;">
@@ -194,6 +228,7 @@
             </div>
         </div>
 
+        <!-- SUB-BLOQUE: Panel de Control de Operación (Interacciones y Retornos de Flujo) -->
         <div class="card control-card" style="background-color: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 24px; display: flex; flex-direction: column; gap: 16px;">
             <h3 style="font-size: 15px; font-weight: 600; color: #1f2937; margin-bottom: 8px;">Control de Operación</h3>
             
@@ -205,6 +240,7 @@
                 🖨️ Imprimir Ticket (80mm)
             </button>
             
+            <!-- Enrutamiento inteligente según el origen del usuario en el sistema -->
             {% if "historial" in request.META.HTTP_REFERER %}
                 <a href="{% url 'historial_facturas' %}" class="btn" style="border: 1px solid #e5e7eb; background-color: white; color: #1f2937; font-weight: 500; text-align: center; text-decoration: none; padding: 12px; border-radius: 8px; font-size: 13px; display: block;">
                      Volver al Historial
@@ -219,6 +255,9 @@
     </div>
 </main>
 
+<!-- =========================================================================
+     ESTRUCTURA EXCLUSIVA PARA TICKET CONTINUO (COMPONENTE OCULTO EN PANTALLA)
+     ========================================================================= -->
 <div id="ticket-impresion">
     <div class="ticket-header">
         <h2>{{ factura.emisor_nombre_comercial|upper|default:"SABOR Y ARTE" }}</h2>
@@ -295,6 +334,7 @@
         </table>
     </div>
     
+    <!-- Bloqueador de flotaciones para evitar desbordes en el motor CSS de la impresora -->
     <div style="clear: both;"></div>
 
     <div class="ticket-separador"></div>
@@ -304,13 +344,24 @@
     </div>
 </div>
 
+<!-- =========================================================================
+     DINÁMICA EN EL CLIENTE Y DISPARADORES DE EVENTO DE IMPRESIÓN (JAVASCRIPT)
+     ========================================================================= -->
 <script>
+    /**
+     * Alterna las clases en el body del documento para activar las directivas 
+     * @media print asociadas al formato de hoja completa A4.
+     */
     function imprimirComoFactura() {
         document.body.classList.remove('modo-impresion-ticket');
         document.body.classList.add('modo-impresion-factura');
         window.print();
     }
 
+    /**
+     * Alterna las clases en el body del documento para activar las directivas 
+     * @media print del formato de ticket térmico continuo (80mm).
+     */
     function imprimirComoTicket() {
         document.body.classList.remove('modo-impresion-factura');
         document.body.classList.add('modo-impresion-ticket');

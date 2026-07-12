@@ -2,7 +2,7 @@
 
 {% block content %}
 <style>
-    /* --- CABECERA --- */
+    /* --- ESTRUCTURA DE CABECERA --- */
     .header-wrapper { display: flex; align-items: center; gap: 20px; margin-bottom: 30px; padding-top: 10px; }
     .header-icon {
         width: 50px; height: 50px; border-radius: 50%;
@@ -12,7 +12,7 @@
     .page-title { font-size: 28px; color: #1e293b; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
     .page-subtitle { color: #64748b; font-size: 14px; margin-top: 6px; }
 
-    /* --- FILTROS CONTENEDOR --- */
+    /* --- CONTENEDOR DE FILTROS METRICOS --- */
     .filter-card {
         background: rgba(255, 255, 255, 0.98);
         border-radius: 16px;
@@ -33,7 +33,9 @@
         font-size: 13px; color: #1e293b; outline: none; transition: 0.3s; background: #ffffff;
     }
     .filter-input:focus { border-color: #c49a45; box-shadow: 0 0 0 2px rgba(196, 154, 69, 0.1); }
-    .filter-input-search { width: 330px; } /* Ajuste de ancho para el placeholder largo */
+    
+    /* LINEA IMPORTANTE: Espaciado extendido para admitir placeholders extensos de búsqueda multitabla */
+    .filter-input-search { width: 330px; } 
     
     .btn-search {
         background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 18px;
@@ -42,7 +44,7 @@
     }
     .btn-search:hover { background: #e2e8f0; color: #1e293b; }
 
-    /* --- TABLA DE HISTORIAL --- */
+    /* --- CONTENEDOR DE TABLA DE DATOS --- */
     .table-card {
         background: #ffffff;
         border-radius: 16px;
@@ -50,7 +52,9 @@
         border: 1px solid #f1f5f9;
         overflow: hidden;
     }
+    /* LINEA IMPORTANTE: Control de desbordamiento horizontal para dispositivos móviles */
     .table-responsive { overflow-x: auto; width: 100%; }
+    
     .audit-table { width: 100%; border-collapse: collapse; text-align: left; }
     .audit-table th {
         background: #f8fafc; padding: 16px 20px; font-size: 12px;
@@ -63,7 +67,7 @@
     }
     .audit-table tbody tr:hover { background-color: #f8fafc; }
 
-    /* Estilos de Cliente e Identificadores */
+    /* Estilos de información de clientes (Avatares dinámicos) */
     .user-info { display: flex; align-items: center; gap: 10px; font-weight: 600; color: #1e293b; }
     .user-avatar {
         width: 32px; height: 32px; border-radius: 50%; background: #fffbeb;
@@ -71,22 +75,12 @@
         border: 1px solid #fef08a;
     }
 
-    /* Texto limpio para el Cajero (Sin ícono) */
-    .staff-text {
-        color: #475569;
-        font-weight: 500;
-        font-size: 13.5px;
-    }
-
-    /* Método de Pago */
-    .text-pago {
-        color: #475569;
-        font-weight: 500;
-        font-size: 13.5px;
-    }
-    
+    /* Limpieza tipográfica para componentes de staff y transacciones */
+    .staff-text { color: #475569; font-weight: 500; font-size: 13.5px; }
+    .text-pago { color: #475569; font-weight: 500; font-size: 13.5px; }
     .date-text { font-size: 13px; font-weight: 500; color: #64748b; }
     
+    /* Botón de acción e inspección profunda */
     .btn-view-detail {
         color: #64748b; background: #f1f5f9; border: none; width: 34px; height: 34px;
         border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;

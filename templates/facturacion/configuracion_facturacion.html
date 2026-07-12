@@ -6,7 +6,7 @@
         padding: 30px 0;
     }
     
-    /* Contenedor flexible para alinear título a la izquierda y botón a la derecha */
+    /* LINEA IMPORTANTE: Distribución elástica para cabeceras asimétricas */
     .header-section {
         display: flex;
         justify-content: space-between;
@@ -46,7 +46,6 @@
         margin-bottom: 0;
     }
     
-    /* Enlace Volver a Facturación alineado a la derecha */
     .btn-back-billing {
         display: inline-flex;
         align-items: center;
@@ -62,6 +61,7 @@
         color: #111827;
     }
 
+    /* LINEA IMPORTANTE: Grid asimétrico nativo para dividir la navegación del contenido */
     .config-layout {
         display: grid;
         grid-template-columns: 280px 1fr;
@@ -98,6 +98,7 @@
         color: #111827;
     }
     
+    /* Marcador visual imperativo para la pestaña en foco */
     .menu-item.active {
         background-color: #fffbeb;
         color: #c49a45;
@@ -113,6 +114,8 @@
     .config-content {
         padding: 30px 40px;
     }
+    
+    /* LINEA IMPORTANTE: Ocultamiento base de paneles no activos gestionado por CSS */
     .tab-panel {
         display: none;
     }
@@ -205,6 +208,7 @@
 </style>
 
 <div class="config-container">
+    
     <div class="header-section">
         <div class="title-with-icon">
             <div class="title-icon-container">
@@ -215,13 +219,13 @@
                 <p>Establece los parámetros fiscales, datos comerciales e impuestos vigentes para la emisión de comprobantes.</p>
             </div>
         </div>
-        
         <a href="{% url 'listar_pedidos_por_facturar' %}" class="btn-back-billing">
             <i class="fa-solid fa-arrow-left"></i> Volver a Facturación
         </a>
     </div>
 
     <div class="config-layout">
+        
         <div class="config-sidebar">
             <div class="menu-item {% if tab_solicitada == 'empresa' or not tab_solicitada %}active{% endif %}" data-tab="empresa">
                 <i class="fa-solid fa-id-card"></i> Datos del Emisor
@@ -229,7 +233,6 @@
             <div class="menu-item {% if tab_solicitada == 'impuestos' %}active{% endif %}" data-tab="impuestos">
                 <i class="fa-solid fa-percent"></i> IVA y Tasas
             </div>
-            <!-- 🎯 NUEVO ÍTEM: MARCA Y LOGO -->
             <div class="menu-item {% if tab_solicitada == 'marca' %}active{% endif %}" data-tab="marca">
                 <i class="fa-solid fa-image"></i> Marca y Logo
             </div>
@@ -265,7 +268,6 @@
                         </div>
                     </div>
 
-                    <!-- AQUÍ SE AÑADIÓ EL TELÉFONO JUNTO A LA DIRECCIÓN -->
                     <div class="form-row">
                         <div class="form-group">
                             <label>Dirección Matriz</label>
@@ -305,31 +307,29 @@
                 </form>
             </div>
 
-            <!-- 🎯 NUEVO PANEL: MARCA Y LOGO -->
             <div class="tab-panel {% if tab_solicitada == 'marca' %}active{% endif %}" id="marca">
                 <div class="panel-title">Identidad Visual del Sistema</div>
                 
-                <!-- IMPORTANTE: enctype="multipart/form-data" es obligatorio para subir imágenes -->
                 <form method="POST" enctype="multipart/form-data">
                     {% csrf_token %}
                     <input type="hidden" name="action_marca" value="1">
+                    
                     <div class="form-group">
                         <label>Logo del Restaurante</label>
                         <input type="file" class="form-control" name="logo_restaurante" accept="image/*" style="padding: 7px 14px;">
                         
-                        <!-- Vista previa del logo si ya hay uno guardado con botón de eliminar -->
                         {% if config.logo_restaurante %}
                             <div style="margin-top: 15px; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; display: inline-block; background-color: #f9fafb; position: relative;">
                                 <p style="font-size: 12px; color: #6b7280; margin-bottom: 8px; margin-top: 0; font-weight: 600;">Logo actual:</p>
                                 <img src="{{ config.logo_restaurante.url }}" alt="Logo actual" style="max-height: 80px; max-width: 200px; object-fit: contain;">
                                 
-                                <!-- Botón de eliminar con la 'X' -->
                                 <button type="submit" name="eliminar_logo" value="1" style="position: absolute; top: -10px; right: -10px; background-color: #ef4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Quitar logo">
                                     <i class="fa-solid fa-xmark" style="font-size: 12px;"></i>
                                 </button>
                             </div>
                         {% endif %}
                     </div>
+                    
                     <div class="form-actions">
                         <button type="submit" class="btn-save">Guardar Identidad Visual</button>
                         <a href="{% url 'listar_pedidos_por_facturar' %}" class="btn-cancel">Cancelar</a>
@@ -342,6 +342,7 @@
 </div>
 
 <script>
+    // Conmutador de pestañas local basado en modificadores de clases CSS activas
     document.querySelectorAll('.menu-item').forEach(item => {
         item.addEventListener('click', function() {
             document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
@@ -353,6 +354,7 @@
         });
     });
 
+    // LINEA IMPORTANTE: Sincroniza y fuerza la pestaña visible tras un refresco de página originado por POST de Django
     const urlParams = new URLSearchParams(window.location.search);
     const activeTab = urlParams.get('tab');
     if (activeTab) {

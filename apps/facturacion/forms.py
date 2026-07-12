@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from .models import Factura
 
 class FacturaForm(forms.ModelForm):
-    # Definimos los campos opcionales explícitamente
+    # BLOQUE: Definición de campos explícitos con estilos personalizados
     cliente_correo = forms.EmailField(
         required=False,
         widget=forms.EmailInput(attrs={
@@ -30,11 +30,13 @@ class FacturaForm(forms.ModelForm):
             'min': '0',
             'max': '100',
             'style': 'width: 110px; text-align: right;',
+            # LINEA IMPORTANTE: Filtra por JS en el navegador para admitir solo números (0-9)
             'onkeypress': 'return event.charCode >= 48 && event.charCode <= 57;'
         }),
         label="Descuento (%)"
     )
 
+    # BLOQUE: Configuración de Metadatos y enlace al Modelo
     class Meta:
         model = Factura
         fields = [
@@ -59,12 +61,15 @@ class FacturaForm(forms.ModelForm):
             }),
         }
 
+    # FUNCIÓN: Validación específica para el campo de identificación (Cédula/RUC)
     def clean_cliente_identificacion(self):
         identificacion = self.cleaned_data.get('cliente_identificacion', '').strip()
         
+        # Otorga paso directo si coincide con el comodín de Consumidor Final
         if identificacion in ["9999999999", "9999999999999"]:
             return identificacion
 
+        # LINEA IMPORTANTE: Reglas estrictas de longitud (10 o 13) y caracteres numéricos
         if len(identificacion) not in [10, 13]:
             raise ValidationError("La identificación debe tener 10 dígitos (Cédula) o 13 dígitos (RUC).")
             
@@ -73,23 +78,23 @@ class FacturaForm(forms.ModelForm):
             
         return identificacion
 
+    # FUNCIÓN: Validación e interpolación global de múltiples campos
     def clean(self):
         cleaned_data = super().clean()
         nombre = cleaned_data.get('cliente_nombre')
         identificacion = cleaned_data.get('cliente_identificacion')
         direccion = cleaned_data.get('cliente_direccion')
-        correo = cleaned_data.get('cliente_correo')
+        correo = cleaned_data.get('correo')
 
-        # Coherencia automática para Consumidor Final
+        # LINEA IMPORTANTE: Si es Consumidor Final, autocompleta los datos obligatorios vacíos
         if identificacion in ["9999999999", "9999999999999"]:
             if not nombre or nombre.lower() in ["", "consumidor final"]:
                 cleaned_data['cliente_nombre'] = "Consumidor Final"
             
-            # Si no hay dirección, asignamos un valor por defecto
             if not direccion:
                 cleaned_data['cliente_direccion'] = "N/A"
             
-            # Si no hay correo, lo dejamos como None para evitar errores de validación de EmailField
+            # Convierte el correo vacío en None para que no falle la regla estructural de Django
             if not correo:
                 cleaned_data['cliente_correo'] = None 
         
