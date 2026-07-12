@@ -4,16 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sabor y Arte - Admin Panel</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        /* ===================================================================== */
+        /* 🎨 2. SISTEMA DE DISEÑO (DESIGN SYSTEM) Y VARIABLES GLOBALES          */
+        /* ===================================================================== */
         :root {
+            /* Colores corporativos de la marca Sabor & Arte */
             --primary-yellow: #c49a45;
             --bg-white: #ffffff;
             --border-color: #f0f0f0;
             
-            /* Colores de estados / Alertas */
+            /* Paleta semántica para estados (Alertas, Éxito, Error) */
             --status-green-bg: #e8f7ec;
             --status-green-text: #27a857;
             --status-orange-bg: #fdf5e6;
@@ -22,32 +28,40 @@
             --status-red-text: #e03b3b;
         }
 
+        /* ===================================================================== */
+        /* 📐 3. ESTRUCTURA BASE Y ANIMACIONES                                   */
+        /* ===================================================================== */
         body {
             margin: 0;
             padding: 0;
             font-family: 'Inter', sans-serif;
             background-color: #f4f6f9;
+            /* Layout tipo Dashboard: Ocupa el 100% de la pantalla sin scroll general */
             display: flex;
             height: 100vh;
-            overflow: hidden;
+            overflow: hidden; 
         }
 
+        /* Animación suave al cargar el contenido principal de cualquier vista */
         @keyframes fadeInContent {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* --- SIDEBAR OSCURO (SIEMPRE FIJO) --- */
+        /* ===================================================================== */
+        /* 🗂️ 4. BARRA LATERAL DE NAVEGACIÓN (SIDEBAR)                          */
+        /* ===================================================================== */
         .sidebar {
             width: 260px;
-            background-color: #18181b;
+            background-color: #18181b; /* Tono oscuro profesional */
             color: #a1a1aa;
             display: flex;
             flex-direction: column;
             border-right: 1px solid #27272a;
-            flex-shrink: 0;
+            flex-shrink: 0; /* Evita que la barra se aplaste en pantallas pequeñas */
         }
 
+        /* --- Encabezado del Sidebar (Logo y Marca) --- */
         .sidebar-header {
             padding: 30px 24px;
             display: flex;
@@ -73,20 +87,22 @@
         .brand-name { color: #c49a45; font-weight: 600; font-size: 18px; letter-spacing: 0.5px; }
         .brand-type { color: #71717a; font-size: 11px; letter-spacing: 1px; font-weight: 500; }
 
+        /* --- Menú de Enlaces --- */
         .nav-menu {
             display: flex;
             flex-direction: column;
             padding: 0 15px;
             gap: 6px;
+            /* Permite hacer scroll independiente dentro del menú si hay muchas opciones */
             overflow-y: auto; 
             flex-grow: 1;
             
-            /* Oculta la barra de scroll en Firefox, IE y Edge */
+            /* Oculta la barra de scroll nativa para un diseño más limpio (Firefox, IE, Edge) */
             scrollbar-width: none;
             -ms-overflow-style: none;
         }
 
-        /* Oculta la barra de scroll en Chrome, Safari y Opera */
+        /* Oculta la barra de scroll nativa en Webkit (Chrome, Safari, Opera) */
         .nav-menu::-webkit-scrollbar {
             display: none;
         }
@@ -112,10 +128,12 @@
             color: #e4e4e7;
         }
 
+        /* Estilo para marcar en qué módulo se encuentra el usuario actualmente */
         .nav-item.active {
             background-color: #2d2a23;
             color: #c49a45;
         }
+        /* Pequeña barra indicadora a la derecha del ítem activo */
         .nav-item.active::after {
             content: '';
             position: absolute;
@@ -128,7 +146,7 @@
             border-radius: 4px;
         }
 
-        /* CONTENEDOR FIJO PARA EL PIE DEL SIDEBAR */
+        /* --- Pie del Sidebar (Acciones fijas en la parte inferior) --- */
         .sidebar-footer {
             padding: 15px 15px 20px 15px;
             display: flex;
@@ -138,16 +156,19 @@
             background-color: #18181b;
         }
 
-        /* --- CONTENIDO PRINCIPAL --- */
+        /* ===================================================================== */
+        /* 🖥️ 5. CONTENIDO PRINCIPAL Y ALERTAS DE DJANGO                       */
+        /* ===================================================================== */
         .main-content {
             flex-grow: 1;
             padding: 40px;
+            /* Aquí es donde el usuario hace scroll, la barra lateral queda fija */
             overflow-y: auto;
             animation: fadeInContent 0.3s ease-out forwards; 
             width: 100%;
         }
 
-        /* --- ALERTAS GLOBALES (MENSAJES DJANGO) --- */
+        /* --- Estilos para los mensajes flash (messages framework de Django) --- */
         .alert-container {
             margin-bottom: 25px;
         }
@@ -173,7 +194,9 @@
             border: 1px solid #cceadd; 
         }
 
-        /* --- OPTIMIZACIÓN DE ESPACIO PARA TABLETS --- */
+        /* ===================================================================== */
+        /* 📱 6. RESPONSIVIDAD (MEDIA QUERIES PARA TABLETS)                      */
+        /* ===================================================================== */
         @media (max-width: 1024px) {
             .sidebar {
                 width: 230px; 
@@ -254,6 +277,7 @@
     </nav>
 
     <main class="main-content">
+        
         {% if messages %}
             <div class="alert-container">
                 {% for message in messages %}
@@ -271,6 +295,7 @@
 
         {% block content %}
         {% endblock %}
+        
     </main>
 
 </body>
