@@ -1,8 +1,9 @@
 {% extends 'base_admin.html' %}
 
 {% block content %}
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+<!-- =========================================================================
+    🎯 BLOQUE 1: COMPONENTES DE ESTILOS VISUALES (HOJA DE ESTILOS INTERNA)
+========================================================================= -->
 <style>
     /* --- CONTENEDOR PRINCIPAL --- */
     .historial-container {
@@ -10,9 +11,10 @@
         font-family: 'Inter', sans-serif;
         background-color: #f9fafb;
         min-height: calc(100vh - 64px);
+        box-sizing: border-box;
     }
 
-    /* --- ENCABEZADO --- */
+    /* --- ENCABEZADO DE CONTEXTO --- */
     .header-seccion-pedidos {
         display: flex;
         justify-content: space-between;
@@ -38,7 +40,32 @@
         margin: 4px 0 0 0;
     }
 
-    /* --- SECCIÓN DE BÚSQUEDA --- */
+    /* --- ENLACE / BOTÓN DE RETORNO AL MENÚ --- */
+    .btn-volver-menu {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 20px;
+        background-color: #ffffff;
+        border: 1.5px solid #e5e7eb;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-volver-menu:hover {
+        background-color: #f8fafc;
+        border-color: #cbd5e1;
+    }
+
+    .btn-volver-menu i {
+        color: #c59b27;
+    }
+
+    /* --- CONTROLADORES DE BÚSQUEDA --- */
     .busqueda-wrapper-flex {
         display: flex;
         align-items: center;
@@ -74,6 +101,7 @@
         outline: none;
         transition: all 0.2s ease;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+        box-sizing: border-box;
     }
 
     .input-busqueda-custom:focus {
@@ -107,32 +135,7 @@
         border-color: #cbd5e1;
     }
 
-    /* --- BOTÓN VOLVER --- */
-    .btn-volver-menu {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 18px;
-        border-radius: 20px;
-        background-color: #ffffff;
-        border: 1.5px solid #e5e7eb;
-        color: #475569;
-        font-size: 13px;
-        font-weight: 600;
-        text-decoration: none;
-        transition: all 0.2s ease;
-    }
-
-    .btn-volver-menu:hover {
-        background-color: #f8fafc;
-        border-color: #cbd5e1;
-    }
-
-    .btn-volver-menu i {
-        color: #c59b27;
-    }
-
-    /* --- TARJETA DE LA TABLA --- */
+    /* --- TABLA ESTRUCTURAL DE COMANDAS --- */
     .tabla-card-container {
         background: #ffffff;
         border-radius: 14px;
@@ -166,7 +169,7 @@
         vertical-align: middle;
     }
 
-    /* --- BADGES DE ESTADOS --- */
+    /* --- BADGES DE INDICACIÓN DE ESTADO --- */
     .badge-estado {
         display: inline-flex;
         align-items: center;
@@ -188,7 +191,7 @@
         background-color: currentColor;
     }
 
-    /* --- BOTONES DE ACCIÓN --- */
+    /* --- ACCIONES DIRECTAS EN FILA --- */
     .btn-eliminar-pedido {
         background-color: #fef2f2;
         color: #dc2626;
@@ -218,6 +221,7 @@
         opacity: 0.6;
     }
 
+    /* --- CONTENEDORES DE INTERFAZ VACÍA --- */
     .estado-vacio-monitoreo {
         text-align: center;
         padding: 60px 20px;
@@ -230,13 +234,13 @@
         margin-bottom: 14px;
     }
 
-    /* --- ESTILOS MODERNOS Y SUTILES PARA EL POPUP DE CONFIRMACIÓN --- */
+    /* --- VENTANAS DE DIÁLOGO MODALES (SWEETALERT POPUP) --- */
     .swal2-popup-sutil {
         border-radius: 16px !important;
         padding: 24px !important;
         font-family: 'Inter', sans-serif !important;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03) !important;
-        width: 380px !important; /* Más compacto */
+        width: 380px !important;
     }
 
     .alerta-icono-sutil {
@@ -275,7 +279,10 @@
         transition: background-color 0.15s ease;
         margin-right: 8px !important;
     }
-    .btn-swal-sutil-cancel:hover { background-color: #e5e7eb !important; }
+    
+    .btn-swal-sutil-cancel:hover { 
+        background-color: #e5e7eb !important; 
+    }
 
     .btn-swal-sutil-confirm {
         background-color: #dc2626 !important;
@@ -288,11 +295,22 @@
         cursor: pointer;
         transition: background-color 0.15s ease;
     }
-    .btn-swal-sutil-confirm:hover { background-color: #b91c1c !important; }
+    
+    .btn-swal-sutil-confirm:hover { 
+        background-color: #b91c1c !important; 
+    }
 </style>
 
+<!-- Inyección Externa de la Librería de Alertas Globales -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+<!-- =========================================================================
+    🎯 BLOQUE 2: ESTRUCTURA MAQUETA HTML Y COMPONENTES JINJA2 / DJINGO
+========================================================================= -->
 <div class="historial-container">
     
+    <!-- 📌 SUB-BLOQUE: PANEL CABECERA -->
     <div class="header-seccion-pedidos">
         <div>
             <h2>Monitoreo en Tiempo Real</h2>
@@ -306,6 +324,7 @@
         </div>
     </div>
 
+    <!-- 📌 SUB-BLOQUE: CONTROLES DE ENTRADA Y ACCIONES DE FILTRADO -->
     <div class="busqueda-wrapper-flex">
         <div class="input-busqueda-relativo">
             <i class="fa-solid fa-magnifying-glass icono-lupa-inside"></i>
@@ -316,6 +335,7 @@
         </button>
     </div>
 
+    <!-- 📌 SUB-BLOQUE: CONTENEDOR CENTRAL DE REGISTROS -->
     <div class="tabla-card-container">
         {% if pedidos %}
             <table class="tabla-monitoreo" id="tablaPedidos">
@@ -383,87 +403,93 @@
     </div>
 </div>
 
+
+<!-- =========================================================================
+    🎯 BLOQUE 3: LOGICA INTERACTIVA Y RUTINAS EN JAVASCRIPT (FRONTEND RENDER)
+========================================================================= -->
 <script>
-// --- FUNCIÓN PARA NORMALIZAR TEXTO (Maneja errores de tipeo y acentos comunes) ---
-function normalizarTextoParaBusqueda(texto) {
-    return texto
-        .toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quita tildes
-        .replace(/preraci0on|preparaci0n|preparacion/g, "preparacion") // Mapea variantes erróneas comunes a la palabra base
-        .trim();
-}
+    // 🔥 FUNCIÓN DE EVALUACIÓN: Limpia y normaliza texto de búsqueda eliminando tildes y variantes comunes
+    function normalizarTextoParaBusqueda(texto) {
+        return texto
+            .toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/preraci0on|preparaci0n|preparacion/g, "preparacion")
+            .trim();
+    }
 
-// --- FILTRADO DINÁMICO MEJORADO ---
-document.getElementById('inputBuscarPedido').addEventListener('keyup', function() {
-    let filtro = normalizarTextoParaBusqueda(this.value);
-    let filas = document.querySelectorAll('.fila-pedido-datos');
+    // 🔥 MOTOR CONTROLADOR DEL FILTRADO: Monitoreo por teclado de la tabla en tiempo real
+    document.getElementById('inputBuscarPedido').addEventListener('keyup', function() {
+        const filtro = normalizarTextoParaBusqueda(this.value);
+        const filas = document.querySelectorAll('.fila-pedido-datos');
 
-    filas.forEach(fila => {
-        let textoFila = normalizarTextoParaBusqueda(fila.innerText);
-        if (textoFila.includes(filtro)) {
-            fila.style.display = '';
-        } else {
-            fila.style.display = 'none';
-        }
+        filas.forEach(fila => {
+            const textoFila = normalizarTextoParaBusqueda(fila.innerText);
+            if (textoFila.includes(filtro)) {
+                fila.style.display = '';
+            } else {
+                fila.style.display = 'none';
+            }
+        });
     });
-});
 
-function eliminarPedido(idPedido) {
-    Swal.fire({
-        html: `
-            <div class="alerta-icono-sutil">
-                <i class="fa-solid fa-circle-exclamation"></i>
-            </div>
-            <h2 class="alerta-titulo-sutil">¿Cancelar comanda?</h2>
-            <div class="alerta-cuerpo-sutil">
-                ¿Estás seguro de que deseas cancelar el <strong>Pedido #${idPedido}</strong>? Esta acción no se puede deshacer.
-            </div>
-        `,
-        showCancelButton: true,
-        reverseButtons: true, 
-        buttonsStyling: false,
-        customClass: {
-            popup: 'swal2-popup-custom swal2-popup-sutil',
-            confirmButton: 'btn-swal-sutil-confirm',
-            cancelButton: 'btn-swal-sutil-cancel'
-        },
-        confirmButtonText: 'Sí, cancelar',
-        cancelButtonText: 'No, mantener'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(`/pedidos/eliminar-api/${idPedido}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        title: '¡Cancelado!',
-                        text: data.message,
-                        icon: 'success',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                    
-                    const fila = document.getElementById(`fila-pedido-${idPedido}`);
-                    if(fila) {
-                        fila.style.transition = "all 0.4s ease";
-                        fila.style.opacity = "0";
-                        setTimeout(() => fila.remove(), 400);
+    // 🔥 INTERCONEXIÓN API: Ejecuta la cancelación del pedido vía asíncrona Fetch al Backend
+    function eliminarPedido(idPedido) {
+        Swal.fire({
+            html: `
+                <div class="alerta-icono-sutil">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                </div>
+                <h2 class="alerta-titulo-sutil">¿Cancelar comanda?</h2>
+                <div class="alerta-cuerpo-sutil">
+                    ¿Estás seguro de que deseas cancelar el <strong>Pedido #${idPedido}</strong>? Esta acción no se puede deshacer.
+                </div>
+            `,
+            showCancelButton: true,
+            reverseButtons: true, 
+            buttonsStyling: false,
+            customClass: {
+                popup: 'swal2-popup-custom swal2-popup-sutil',
+                confirmButton: 'btn-swal-sutil-confirm',
+                cancelButton: 'btn-swal-sutil-cancel'
+            },
+            confirmButtonText: 'Sí, cancelar',
+            cancelButtonText: 'No, mantener'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/pedidos/eliminar-api/${idPedido}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
                     }
-                } else {
-                    Swal.fire('Error', data.error, 'error');
-                }
-            })
-            .catch(error => {
-                Swal.fire('Error de red', 'No se pudo comunicar con el servidor.', 'error');
-            });
-        }
-    });
-}
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            title: '¡Cancelado!',
+                            text: data.message,
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        
+                        // Transición animada de salida antes de remover el nodo de la fila del DOM
+                        const fila = document.getElementById(`fila-pedido-${idPedido}`);
+                        if(fila) {
+                            fila.style.transition = "all 0.4s ease";
+                            fila.style.opacity = "0";
+                            setTimeout(() => fila.remove(), 400);
+                        }
+                    } else {
+                        Swal.fire('Error', data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    Swal.fire('Error de red', 'No se pudo comunicar con el servidor.', 'error');
+                });
+            }
+        });
+    }
 </script>
 {% endblock %}

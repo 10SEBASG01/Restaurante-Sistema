@@ -144,6 +144,7 @@
         color: #c59b27;
     }
 
+    /* --- SELECTOR DE MESAS PERSONALIZADO --- */
     .custom-dropdown-container {
         position: relative;
         display: inline-block;
@@ -227,7 +228,7 @@
         background-color: transparent !important;
     }
 
-    /* CONTENEDOR GRID DE PLATOS */
+    /* --- CONTENEDOR GRID DE PLATOS --- */
     .grid-productos-scroll {
         flex-grow: 1;
         overflow-y: auto;
@@ -240,7 +241,7 @@
         gap: 12px;
     }
 
-    /* TARJETAS DE PLATOS */
+    /* --- TARJETAS DE PRODUCTOS --- */
     .card-pedido-producto {
         background-color: #ffffff;
         border-radius: 12px;
@@ -329,7 +330,7 @@
         cursor: pointer;
     }
 
-    /* --- PANEL DERECHO: DETALLE DEL PEDIDO --- */
+    /* --- PANEL DERECHO: RESUMEN DE COMPRA --- */
     .panel-carrito {
         width: 295px;
         background-color: #ffffff;
@@ -360,7 +361,6 @@
         margin: 1px 0 0 0;
     }
 
-    /* ESTILO SUTIL PARA EL BOTÓN LIMPIAR (OCULTO POR DEFECTO) */
     .btn-limpiar-todo {
         font-size: 13px;
         font-weight: 600;
@@ -369,7 +369,7 @@
         border: none;
         padding: 4px 8px;
         cursor: pointer;
-        display: none; /* Se maneja dinámicamente con JS */
+        display: none; /* Controlado dinámicamente mediante JavaScript */
         align-items: center;
         gap: 5px;
         transition: opacity 0.2s ease;
@@ -476,7 +476,7 @@
         background-color: #fee2e2;
     }
 
-    /* ACCIONES INFERIORES */
+    /* --- ACCIONES INFERIORES Y CHECKOUT --- */
     .carrito-observaciones-box {
         padding: 8px 16px;
     }
@@ -551,6 +551,7 @@
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 
 <div class="pedidos-layout">
     
@@ -666,16 +667,17 @@
 
 </div>
 
+
 <script>
+    // Variable global reactiva de la comanda actual
     let carrito = [];
 
-    // --- EVALUAR SI HAY DATOS INGRESADOS EN EL SISTEMA ---
+    // 🔥 FUNCIÓN DE EVALUACIÓN: Valida cambios en inputs y variables para conmutar la visibilidad del botón 'Limpiar'
     function verificarEstadoDeDatos() {
         const idMesa = document.getElementById('select-mesa-id').value;
         const obs = document.getElementById('tx-observaciones').value.trim();
         const btnLimpiar = document.getElementById('btn-limpiar-carrito-completo');
 
-        // Si hay una mesa seleccionada, texto en observaciones o items en el carrito: mostrar botón
         if (idMesa !== "" || obs !== "" || carrito.length > 0) {
             btnLimpiar.style.display = 'flex';
         } else {
@@ -683,7 +685,7 @@
         }
     }
 
-    // --- LÓGICA DE INTERACTIVIDAD DEL DROPDOWN PERSONALIZADO ---
+    // 🔥 CONTEXTO INICIAL: Manejo interactivo de listeners DOM y dropdowns personalizados
     document.addEventListener("DOMContentLoaded", function() {
         const dropBtn = document.getElementById('customDropdownBtn');
         const dropUl = document.getElementById('customDropdownUl');
@@ -692,12 +694,14 @@
         const realInput = document.getElementById('select-mesa-id');
         const txObs = document.getElementById('tx-observaciones');
 
+        // Manejar apertura/cierre del selector de mesas
         dropBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             const isOpen = dropUl.classList.toggle('show');
             dropArrow.style.transform = isOpen ? 'translateY(-50%) rotate(180deg)' : 'translateY(-50%) rotate(0deg)';
         });
 
+        // Interceptar selección de filas dentro de la lista de mesas
         dropUl.addEventListener('click', function(e) {
             const targetItem = e.target.closest('li');
             if (!targetItem || targetItem.classList.contains('disabled-option')) return;
@@ -711,19 +715,20 @@
             dropUl.classList.remove('show');
             dropArrow.style.transform = 'translateY(-50%) rotate(0deg)';
             
-            verificarEstadoDeDatos(); // Comprobar cambios
+            verificarEstadoDeDatos();
         });
 
+        // Cerrar dropdown de mesas al hacer clic en cualquier sección externa
         document.addEventListener('click', function() {
             dropUl.classList.remove('show');
             dropArrow.style.transform = 'translateY(-50%) rotate(0deg)';
         });
 
-        // Escuchar cuando escriban en las observaciones
+        // Monitorear inserción dinámica en área de texto de observaciones
         txObs.addEventListener('input', verificarEstadoDeDatos);
     });
 
-    // --- MANEJO DEL CARRITO DE COMPRAS ---
+    // 🔥 MOTOR CONTROLADOR DEL CARRITO: Rutinas de mutación e inserción de platillos
     function agregarAlCarrito(id, nombre, precio, imgUrl) {
         const precioNum = parseFloat(precio.replace(',', '.'));
         const existente = carrito.find(item => item.id_platillo === id);
@@ -737,6 +742,7 @@
         verificarEstadoDeDatos();
     }
 
+    // Incrementa o reduce las porciones de un platillo específico de la comanda
     function cambiarCantidad(id, delta) {
         const item = carrito.find(i => i.id_platillo === id);
         if (item) {
@@ -749,6 +755,7 @@
         verificarEstadoDeDatos();
     }
 
+    // Re-dibuja e inyecta físicamente los nodos HTML del carrito actualizando totales de venta
     function renderizarCarrito() {
         const listaContenedor = document.getElementById('carrito-lista');
         const resumenCant = document.getElementById('carrito-resumen-cant');
@@ -800,7 +807,7 @@
         totalMonto.innerText = `$${acumTotal.toFixed(2)}`;
     }
 
-    // --- FILTRADO DE CATEGORÍAS ---
+    // 🔥 FILTRADO POR CATEGORÍA: Ocultamiento/Muestra visual instantánea en la grilla mediante selectores CSS
     document.querySelectorAll('.btn-cat-item').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.btn-cat-item').forEach(b => b.classList.remove('active'));
@@ -822,24 +829,23 @@
         });
     });
 
-    // --- ACCIÓN DE LIMPIEZA INMEDIATA (SIN MENSAJES DE CONFIRMACIÓN) ---
+    // 🔥 LIMPIEZA INMEDIATA: Resetea el estado completo de la UI de pedidos de forma directa sin cuadros de diálogo
     document.getElementById('btn-limpiar-carrito-completo').addEventListener('click', function() {
-        // Resetear variables y campos de forma directa
         carrito = [];
         document.getElementById('tx-observaciones').value = '';
         document.getElementById('select-mesa-id').value = '';
         document.getElementById('customDropdownLabel').textContent = 'Seleccionar Mesa';
         
-        // Actualizar UI
         renderizarCarrito();
-        verificarEstadoDeDatos(); // Ocultará el botón de inmediato ya que todo quedó vacío
+        verificarEstadoDeDatos();
     });
 
-    // --- ENVÍO A COCINA VÍA API ---
+    // 🔥 INTERCONEXIÓN API: Transmite los paquetes JSON al controlador asíncrono de Django
     document.getElementById('btn-enviar-comanda-cocina').addEventListener('click', function() {
         const idMesa = document.getElementById('select-mesa-id').value;
         const obs = document.getElementById('tx-observaciones').value;
 
+        // Regla de validación: Mesa requerida
         if (!idMesa) {
             Swal.fire({
                 title: 'Asignación Requerida',
@@ -851,6 +857,7 @@
             return;
         }
         
+        // Regla de validación: Contenido de comanda mínimo
         if (carrito.length === 0) {
             Swal.fire({
                 title: 'Comanda Vacía',
@@ -862,6 +869,7 @@
             return;
         }
 
+        // Envío asíncrono vía Fetch API
         fetch("{% url 'pedidos:guardar_pedido_api' %}", {
             method: "POST",
             headers: {
@@ -880,6 +888,7 @@
                     confirmButtonColor: '#c59b27',
                     confirmButtonText: 'Listo'
                 }).then(() => {
+                    // Limpieza integral post-despacho exitoso
                     carrito = [];
                     document.getElementById('tx-observaciones').value = '';
                     document.getElementById('select-mesa-id').value = '';
