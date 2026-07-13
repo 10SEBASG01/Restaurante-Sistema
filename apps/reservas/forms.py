@@ -38,10 +38,7 @@ class ReservaForm(forms.ModelForm):
     )
 
     class Meta:
-
         model = Reserva
-
-        # 🎯 CAMBIO AQUÍ: Agregamos nombres y apellidos, quitamos cliente
         fields = [
             'nombres',
             'apellidos',
@@ -56,143 +53,70 @@ class ReservaForm(forms.ModelForm):
             'estado',
             'observaciones'
         ]
-
         widgets = {
-            # 🎯 CAMBIO AQUÍ: Widgets para los nuevos campos
-            'nombres': forms.TextInput(attrs={'class': 'form-control'}),
-            'apellidos': forms.TextInput(attrs={'class': 'form-control'}),
-
-            'cedula': forms.TextInput(
-                attrs={
-                    'class': 'form-control',
-                    'maxlength': '10',
-                    'pattern': '\d{10}',
-                    'title': 'Ingrese exactamente 10 dígitos'
-                }
-            ),
-
-            'correo': forms.EmailInput(
-                attrs={
-                    'class': 'form-control',
-                    'placeholder': 'ejemplo@correo.com'
-                }
-            ),
-
-            'telefono': forms.TextInput(
-                attrs={
-                    'class': 'form-control',
-                    'maxlength': '10',
-                    'pattern': '\d{10}',
-                    'title': 'Ingrese exactamente 10 dígitos'
-                }
-            ),
-
-            'direccion': forms.TextInput(
-                attrs={
-                    'class': 'form-control'
-                }
-            ),
-
-            'personas': forms.NumberInput(
-                attrs={
-                    'class': 'form-control',
-                    'readonly': True,
-                    'style': 'background:#f3f4f6;'
-                }
-            ),
-
-            'estado': forms.Select(
-                attrs={
-                    'class': 'form-select'
-                }
-            ),
-
-            'observaciones': forms.Textarea(
-                attrs={
-                    'class': 'form-control',
-                    'rows': 4
-                }
-            )
+            'nombres': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombres del cliente'}),
+            'apellidos': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apellidos del cliente'}),
+            'cedula': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Cédula'}),
+            'correo': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Correo electrónico'}),
+            'telefono': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Teléfono'}),
+            'direccion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Dirección'}),
+            'personas': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'estado': forms.Select(attrs={'class': 'form-select'}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Notas adicionales...'})
         }
 
     def __init__(self, *args, **kwargs):
-
         super().__init__(*args, **kwargs)
+        
+        # 🎯 SOLUCIÓN 1: Volvemos a filtrar por is_active=True para que las eliminadas (1 y 2) desaparezcan.
+        mesas_activas = Mesa.objects.filter(is_active=True).order_by('numero')
+        
+        # 🎯 SOLUCIÓN 2: La tupla es (Valor_Para_Backend, Etiqueta_Para_Frontend). 
+        # Enviamos el número limpio en la etiqueta para que tu diseño no diga "Mesa Mesa".
+        opciones = [(f"Mesa {m.numero}", f"{m.numero}") for m in mesas_activas]
 
-        # Mostrar TODAS las mesas
-        mesas_disponibles = Mesa.objects.all().order_by('numero')
-
-        opciones = [
-            ('', 'Seleccione una mesa')
-        ]
-
-        self.mesas_capacidad = {}
-
-        for mesa in mesas_disponibles:
-
-            self.mesas_capacidad[
-                f"Mesa {mesa.numero}"
-            ] = mesa.capacidad
-
-            opciones.append(
-                (
-                    f"Mesa {mesa.numero}",
-                    f"Mesa {mesa.numero} - {mesa.capacidad} personas"
-                )
-            )
-
-        # Si estamos editando una reserva
-        if self.instance and self.instance.pk:
-
-            mesa_actual = self.instance.mesa
-
-            existe = any(
-                opcion[0] == mesa_actual
-                for opcion in opciones
-            )
-
-            if not existe:
-
-                opciones.append(
-                    (
-                        mesa_actual,
-                        f"{mesa_actual} (Actual)"
-                    )
-                )
+        # Control de borde para editar reservas antiguas con mesas que ya no existen
+        if self.instance and self.instance.pk and self.instance.mesa:
+            if not any(opt[0] == self.instance.mesa for opt in opciones):
+                numero_solo = self.instance.mesa.replace('Mesa ', '')
+                opciones.append((self.instance.mesa, f"{numero_solo} (No disponible)"))
 
         self.fields['mesa'].choices = opciones
 
-    # 🔥 VALIDACIÓN DE CHOQUE DE HORARIOS (1 Hora Exacta)
+    # 🔥 VALIDACIONES DEL FORMULARIO
     def clean(self):
         cleaned_data = super().clean()
         fecha = cleaned_data.get('fecha')
         hora = cleaned_data.get('hora')
         mesa = cleaned_data.get('mesa')
         estado = cleaned_data.get('estado')
+        cedula = cleaned_data.get('cedula')
 
-        if fecha and hora and mesa and estado != 'Cancelada':
+        # Validación de cédula 
+        if cedula and cedula.isdigit():
+            if int(cedula) == 0:
+                self.add_error('cedula', 'La cédula no puede ser cero, ingrese un valor entero positivo a partir del uno.')
+
+        # Validación de choque de horarios
+        if fecha and hora and mesa and estado != 'CANCELADA':
             tiempo_reserva = datetime.combine(fecha, hora)
             
-            # Margen de 59 minutos antes y después para asegurar la hora exacta
             rango_inicio = (tiempo_reserva - timedelta(minutes=59)).time()
             rango_fin = (tiempo_reserva + timedelta(minutes=59)).time()
 
-            # Buscar conflictos en la base de datos
             choques = Reserva.objects.filter(
                 mesa=mesa,
                 fecha=fecha,
                 hora__gte=rango_inicio,
                 hora__lte=rango_fin
-            ).exclude(estado='Cancelada') 
+            ).exclude(estado='CANCELADA') 
             
-            # Ignorar la reserva actual si estamos editando
             if self.instance and self.instance.pk:
                 choques = choques.exclude(pk=self.instance.pk)
 
-            # Si existe un cruce, lanzamos el error al usuario
             if choques.exists():
                 raise ValidationError(
-                    "¡Choque de horarios! Esta mesa ya tiene una reserva en ese rango. Las reservas duran 1 hora exacta."
+                    "¡Choque de horarios! Esta mesa ya tiene una reserva activa en ese rango de tiempo."
                 )
 
         return cleaned_data

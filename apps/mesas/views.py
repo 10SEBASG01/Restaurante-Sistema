@@ -162,7 +162,20 @@ def cambiar_estado_mesa(request, pk):
     if request.method == 'POST':
         form = CambiarEstadoMesaForm(request.POST, instance=mesa)
         if form.is_valid():
-            mesa_actualizada = form.save()
+            # LÍNEA CLAVE: commit=False nos permite modificar la instancia antes de guardar
+            mesa_actualizada = form.save(commit=False)
+            
+            # --- LÓGICA DE LIMPIEZA AUTOMÁTICA ---
+            # Si la mesa pasa a ser 'libre' (se cobró/canceló), limpiamos la data del cliente y mesero
+            if mesa_actualizada.estado == 'libre':
+                mesa_actualizada.mesero_assigned = None
+                mesa_actualizada.cliente_nombre = None
+                mesa_actualizada.cliente_cedula = None
+                mesa_actualizada.cliente_correo = None
+                mesa_actualizada.cliente_direccion = None
+                
+            # Ahora sí, guardamos los cambios en la base de datos
+            mesa_actualizada.save()
             
             Auditoria.objects.create(
                 id_usuario=request.user,

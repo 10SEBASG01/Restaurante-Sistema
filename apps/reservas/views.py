@@ -115,29 +115,25 @@ def crear_reserva(request):
             reserva = form.save()
 
             try:
+                numero_mesa = int(reserva.mesa.replace('Mesa ', ''))
+                mesa = Mesa.objects.get(numero=numero_mesa)
 
-                numero_mesa = int(
-                    reserva.mesa.replace(
-                        'Mesa ',
-                        ''
-                    )
-                )
-
-                mesa = Mesa.objects.get(
-                    numero=numero_mesa
-                )
-
-                mesa.estado = 'reservada'
-
-                # ==========================
-                # DATOS TEMPORALES DEL CLIENTE
-                # ==========================
-                
-                # 🎯 CAMBIO AQUÍ: Concatenamos para no romper el modelo Mesa
-                mesa.cliente_nombre = f"{reserva.nombres} {reserva.apellidos}"
-                mesa.cliente_cedula = reserva.cedula
-                mesa.cliente_correo = reserva.correo
-                mesa.cliente_direccion = reserva.direccion
+                # 🎯 LÓGICA DE ESTADOS Y LIMPIEZA
+                if reserva.estado == 'CONFIRMADA':
+                    # Si por alguna razón la crean directamente como confirmada
+                    mesa.estado = 'ocupada'
+                    mesa.cliente_nombre = f"{reserva.nombres} {reserva.apellidos}"
+                    mesa.cliente_cedula = reserva.cedula
+                    mesa.cliente_correo = reserva.correo
+                    mesa.cliente_direccion = reserva.direccion
+                else:
+                    # Lo normal: se crea como PENDIENTE
+                    mesa.estado = 'reservada'
+                    # NO guardamos los datos en la mesa aún, el cliente no ha llegado
+                    mesa.cliente_nombre = None
+                    mesa.cliente_cedula = None
+                    mesa.cliente_correo = None
+                    mesa.cliente_direccion = None
 
                 mesa.save()
 
@@ -210,23 +206,33 @@ def editar_reserva(request, pk):
             # ==========================
 
             try:
+                numero_mesa = int(reserva_actualizada.mesa.replace('Mesa ', ''))
+                mesa = Mesa.objects.get(numero=numero_mesa)
 
-                numero_mesa = int(
-                    reserva_actualizada.mesa.replace(
-                        'Mesa ',
-                        ''
-                    )
-                )
+                # 🎯 LÓGICA DEPENDIENDO DEL NUEVO ESTADO DE LA RESERVA
+                if reserva_actualizada.estado == 'CONFIRMADA':
+                    # El cliente llegó: ocupamos la mesa y guardamos la data
+                    mesa.estado = 'ocupada'
+                    mesa.cliente_nombre = f"{reserva_actualizada.nombres} {reserva_actualizada.apellidos}"
+                    mesa.cliente_cedula = reserva_actualizada.cedula
+                    mesa.cliente_correo = reserva_actualizada.correo
+                    mesa.cliente_direccion = reserva_actualizada.direccion
 
-                mesa = Mesa.objects.get(
-                    numero=numero_mesa
-                )
+                elif reserva_actualizada.estado == 'CANCELADA':
+                    # La reserva se canceló: liberamos la mesa y limpiamos la basura temporal
+                    mesa.estado = 'libre'
+                    mesa.cliente_nombre = None
+                    mesa.cliente_cedula = None
+                    mesa.cliente_correo = None
+                    mesa.cliente_direccion = None
 
-                # 🎯 CAMBIO AQUÍ: Concatenamos
-                mesa.cliente_nombre = f"{reserva_actualizada.nombres} {reserva_actualizada.apellidos}"
-                mesa.cliente_cedula = reserva_actualizada.cedula
-                mesa.cliente_correo = reserva_actualizada.correo
-                mesa.cliente_direccion = reserva_actualizada.direccion
+                else:
+                    # Si vuelve a estar PENDIENTE por alguna corrección
+                    mesa.estado = 'reservada'
+                    mesa.cliente_nombre = None
+                    mesa.cliente_cedula = None
+                    mesa.cliente_correo = None
+                    mesa.cliente_direccion = None
 
                 mesa.save()
 
@@ -303,10 +309,10 @@ def eliminar_reserva(request, pk):
 
             mesa.estado = 'libre'
 
-            mesa.cliente_nombre = ''
-            mesa.cliente_cedula = ''
-            mesa.cliente_correo = ''
-            mesa.cliente_direccion = ''
+            mesa.cliente_nombre = None
+            mesa.cliente_cedula = None
+            mesa.cliente_correo = None
+            mesa.cliente_direccion = None
 
             mesa.save()
 

@@ -39,7 +39,6 @@ class ReservaPublicaForm(forms.ModelForm):
 
     class Meta:
         model = Reserva
-        # 🎯 CAMBIO AQUÍ: Quitamos 'cliente' y ponemos 'nombres' y 'apellidos'
         fields = [
             'nombres',
             'apellidos',
@@ -55,7 +54,6 @@ class ReservaPublicaForm(forms.ModelForm):
         ]
 
         widgets = {
-            # 🎯 CAMBIO AQUÍ: Agregamos los widgets para los nuevos campos
             'nombres': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Juan Carlos'}),
             'apellidos': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Pérez Mendoza'}),
             
@@ -89,7 +87,8 @@ class ReservaPublicaForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['mesa'].queryset = Mesa.objects.all().order_by('numero')
+        # 🎯 LA SOLUCIÓN: Solo cargar las mesas que siguen activas
+        self.fields['mesa'].queryset = Mesa.objects.filter(is_active=True).order_by('numero')
 
     def clean_mesa(self):
         mesa_obj = self.cleaned_data.get('mesa')
@@ -102,6 +101,12 @@ class ReservaPublicaForm(forms.ModelForm):
         fecha = cleaned_data.get('fecha')
         hora = cleaned_data.get('hora')
         mesa = cleaned_data.get('mesa') 
+        cedula = cleaned_data.get('cedula')
+
+        # Control estricto de identificaciones (solo enteros positivos a partir de 1)
+        if cedula and cedula.isdigit():
+            if int(cedula) == 0:
+                self.add_error('cedula', 'La cédula no puede ser cero, ingrese un valor entero positivo a partir del uno.')
 
         if fecha and hora and mesa:
             tiempo_reserva = datetime.combine(fecha, hora)

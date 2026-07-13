@@ -83,9 +83,9 @@ def reserva_publica(request):
     else:
         form = ReservaPublicaForm()
 
-    # 🎯 CORRECCIÓN: Traemos TODAS las mesas, no solo las 'libres'.
+    # 🎯 CORRECCIÓN: Traemos solo las mesas ACTIVAS.
     # Mantenemos el nombre de la variable 'mesas_libres' para no romper tu código en HTML
-    mesas_libres = Mesa.objects.all().order_by('numero')
+    mesas_libres = Mesa.objects.filter(is_active=True).order_by('numero')
 
     context = {
         'titulo': 'Reservar Mesa',
