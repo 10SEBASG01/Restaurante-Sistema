@@ -113,7 +113,7 @@
         box-shadow: 0 0 0 2px rgba(196, 154, 69, 0.2);
     }
 
-    .mesa-card i {
+    .mesa-card i.fa-table {
         font-size: 24px;
         color: #c49a45;
         margin-bottom: 8px;
@@ -131,6 +131,14 @@
         color: #7a7a7a; 
         font-size: 12px; 
         display: block;
+    }
+
+    .mesa-zona {
+        color: #94a3b8;
+        font-size: 11px;
+        display: block;
+        margin-top: 5px;
+        font-weight: 500;
     }
 
     #mesa-seleccionada {
@@ -304,34 +312,41 @@
             {{ form.mesa }}
         </div>
 
+        <!-- CÓDIGO DE MESAS INTEGRADO -->
         <div class="panel-mesas">
             <h3><i class="fa-solid fa-chair"></i> Distribución de Mesas Libres</h3>
-
             <div class="mesas-selector">
-                {% for value,label in form.mesa.field.choices %}
-                    {% if value %}
-                    <div class="mesa-card" data-id="{{ value }}" onclick="seleccionarMesa('{{ value }}', this)">
+                {% for mesa in mesas_libres %}
+                    <div class="mesa-card" data-id="Mesa {{ mesa.numero }}" onclick="seleccionarMesa('Mesa {{ mesa.numero }}', this)">
                         <i class="fa-solid fa-table"></i>
-                        <div class="mesa-name">Mesa {{ value }}</div>
-                        <small class="mesa-desc" data-raw="{{ label }}">{{ label }}</small>
+                        <div class="mesa-name">Mesa {{ mesa.numero }}</div>
+                        <small>{{ mesa.capacidad }} personas</small>
+                        <span class="mesa-zona">
+                            <i class="fa-solid fa-location-dot" style="font-size: 9px; margin-bottom:0; display:inline;"></i> 
+                            {% if mesa.ubicacion %}{{ mesa.ubicacion.nombre_zona }}{% else %}Sin Zona{% endif %}
+                        </span>
                     </div>
-                    {% endif %}
+                {% empty %}
+                    <div style="grid-column: 1 / -1; text-align: center; color: #9ca3af; padding: 20px;">
+                        <p>No hay mesas disponibles en este momento.</p>
+                    </div>
                 {% endfor %}
             </div>
-
-            <div id="mesa-seleccionada">
-                Selecciona una mesa disponible de la lista
-            </div>
-
+            
+            <div id="mesa-seleccionada">Selecciona una mesa disponible de la lista</div>
+            
             {% if form.mesa.errors %}
                 <div class="error-label" style="margin-top: 15px;">
                     {% for error in form.mesa.errors %}
-                        <i class="fa-solid fa-triangle-exclamation"></i> Error en la mesa: {{ error }}<br>
+                        <i class="fa-solid fa-triangle-exclamation"></i> {{ error }}<br>
                     {% endfor %}
                 </div>
+            {% elif form.personas.errors %}
+                <div class="error-label" style="margin-top: 15px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Por favor, seleccione una mesa válida de la lista.
+                </div>
             {% endif %}
-
-        </div>
+        </div> 
 
         <div class="form-actions">
             <a href="{% url 'reservas:lista' %}" class="btn-cancel"><i class="fa-solid fa-xmark"></i> Cancelar</a>
@@ -343,40 +358,33 @@
 
 <script>
 function seleccionarMesa(valor, elemento) {
+    // Limpiar selección previa
     document.querySelectorAll('.mesa-card').forEach(card => card.classList.remove('selected'));
     elemento.classList.add('selected');
     
+    // Obtener referencias a los inputs ocultos o form
     let inputMesa = document.getElementById('{{ form.mesa.id_for_label }}') || document.getElementById('id_mesa');
     let inputPersonas = document.getElementById('{{ form.personas.id_for_label }}') || document.getElementById('id_personas');
 
+    // Asignar el valor de la mesa seleccionada al input
     if (inputMesa) {
         inputMesa.value = valor;
     }
 
-    let textoPersonas = elemento.querySelector('small.mesa-desc').getAttribute('data-raw');
+    // Extraer la capacidad directamente del innerText de la etiqueta small
+    let textoPersonas = elemento.querySelector('small').innerText;
     let numeros = textoPersonas.match(/\d+/g);
     if (numeros && inputPersonas) {
-        inputPersonas.value = numeros[numeros.length - 1]; 
+        // Tomamos el primer número que encuentre (ej: "4" de "4 personas")
+        inputPersonas.value = numeros[0]; 
     }
     
+    // Actualizar texto descriptivo
     let nombreMesa = elemento.querySelector('.mesa-name').innerText;
     document.getElementById('mesa-seleccionada').innerHTML = 'Mesa seleccionada: ' + nombreMesa;
 }
 
 window.addEventListener('DOMContentLoaded', function() {
-    // Formatear textos de capacidad
-    document.querySelectorAll('.mesa-card').forEach(card => {
-        let small = card.querySelector('small.mesa-desc');
-        if (small) {
-            let texto = small.getAttribute('data-raw');
-            let numeros = texto.match(/\d+/g);
-            if (numeros && numeros.length > 1) {
-                let capacidad = numeros[numeros.length - 1];
-                small.innerText = capacidad + " personas";
-            }
-        }
-    });
-
     // Mantener la selección si recarga por validación de formulario
     let inputMesa = document.getElementById('{{ form.mesa.id_for_label }}') || document.getElementById('id_mesa');
     if (inputMesa && inputMesa.value) {
@@ -389,11 +397,11 @@ window.addEventListener('DOMContentLoaded', function() {
                 let nombreMesa = card.querySelector('.mesa-name').innerText;
                 document.getElementById('mesa-seleccionada').innerHTML = 'Mesa seleccionada: ' + nombreMesa;
                 
-                let texto = card.querySelector('small.mesa-desc').getAttribute('data-raw');
+                let texto = card.querySelector('small').innerText;
                 let numeros = texto.match(/\d+/g);
                 let inputPersonas = document.getElementById('{{ form.personas.id_for_label }}') || document.getElementById('id_personas');
                 if (numeros && inputPersonas) {
-                    inputPersonas.value = numeros[numeros.length - 1];
+                    inputPersonas.value = numeros[0];
                 }
             }
         });

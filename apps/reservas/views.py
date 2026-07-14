@@ -120,16 +120,13 @@ def crear_reserva(request):
 
                 # 🎯 LÓGICA DE ESTADOS Y LIMPIEZA
                 if reserva.estado == 'CONFIRMADA':
-                    # Si por alguna razón la crean directamente como confirmada
                     mesa.estado = 'ocupada'
                     mesa.cliente_nombre = f"{reserva.nombres} {reserva.apellidos}"
                     mesa.cliente_cedula = reserva.cedula
                     mesa.cliente_correo = reserva.correo
                     mesa.cliente_direccion = reserva.direccion
                 else:
-                    # Lo normal: se crea como PENDIENTE
                     mesa.estado = 'reservada'
-                    # NO guardamos los datos en la mesa aún, el cliente no ha llegado
                     mesa.cliente_nombre = None
                     mesa.cliente_cedula = None
                     mesa.cliente_correo = None
@@ -167,7 +164,8 @@ def crear_reserva(request):
         {
             'form': form,
             'reserva': None,
-            'titulo': 'Nueva Reserva'
+            'titulo': 'Nueva Reserva',
+            'mesas_libres': Mesa.objects.filter(is_active=True).order_by('numero') # 🎯 Pasamos las mesas al template
         }
     )
 
@@ -187,7 +185,6 @@ def editar_reserva(request, pk):
         pk=pk
     )
     
-    # Guardamos el estado anterior para saber si lo cambiaron
     estado_anterior = reserva.get_estado_display()
 
     if request.method == 'POST':
@@ -201,17 +198,11 @@ def editar_reserva(request, pk):
 
             reserva_actualizada = form.save()
 
-            # ==========================
-            # ACTUALIZAR DATOS EN LA MESA
-            # ==========================
-
             try:
                 numero_mesa = int(reserva_actualizada.mesa.replace('Mesa ', ''))
                 mesa = Mesa.objects.get(numero=numero_mesa)
 
-                # 🎯 LÓGICA DEPENDIENDO DEL NUEVO ESTADO DE LA RESERVA
                 if reserva_actualizada.estado == 'CONFIRMADA':
-                    # El cliente llegó: ocupamos la mesa y guardamos la data
                     mesa.estado = 'ocupada'
                     mesa.cliente_nombre = f"{reserva_actualizada.nombres} {reserva_actualizada.apellidos}"
                     mesa.cliente_cedula = reserva_actualizada.cedula
@@ -219,7 +210,6 @@ def editar_reserva(request, pk):
                     mesa.cliente_direccion = reserva_actualizada.direccion
 
                 elif reserva_actualizada.estado == 'CANCELADA':
-                    # La reserva se canceló: liberamos la mesa y limpiamos la basura temporal
                     mesa.estado = 'libre'
                     mesa.cliente_nombre = None
                     mesa.cliente_cedula = None
@@ -227,7 +217,6 @@ def editar_reserva(request, pk):
                     mesa.cliente_direccion = None
 
                 else:
-                    # Si vuelve a estar PENDIENTE por alguna corrección
                     mesa.estado = 'reservada'
                     mesa.cliente_nombre = None
                     mesa.cliente_cedula = None
@@ -239,7 +228,6 @@ def editar_reserva(request, pk):
             except Exception:
                 pass
 
-            # 🎯 AUDITORÍA: Edición de reserva
             detalle_audit = f"Actualizó datos de la reserva {reserva_actualizada.codigo} de {reserva_actualizada.nombres} {reserva_actualizada.apellidos}."
             if estado_anterior != reserva_actualizada.get_estado_display():
                 detalle_audit += f" (Estado pasó a {reserva_actualizada.get_estado_display()})"
@@ -272,7 +260,8 @@ def editar_reserva(request, pk):
         {
             'form': form,
             'reserva': reserva,
-            'titulo': 'Editar Reserva'
+            'titulo': 'Editar Reserva',
+            'mesas_libres': Mesa.objects.filter(is_active=True).order_by('numero') # 🎯 Pasamos las mesas al template
         }
     )
 
@@ -319,14 +308,11 @@ def eliminar_reserva(request, pk):
         except Exception:
             pass
             
-        # 🎯 Capturamos los datos antes de borrar la reserva para la auditoría
         codigo_reserva = reserva.codigo
-        # 🎯 CAMBIO AQUÍ
         cliente_reserva = f"{reserva.nombres} {reserva.apellidos}"
 
         reserva.delete()
         
-        # 🎯 AUDITORÍA: Eliminación de reserva
         Auditoria.objects.create(
             id_usuario=request.user,
             modulo='reservas',
