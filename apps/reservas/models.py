@@ -1,3 +1,13 @@
+"""
+Módulo de modelos de datos para la gestión de Reservas.
+
+Define la estructura central para el almacenamiento de las reservas de mesas. 
+Implementa reglas de negocio directamente en la capa de datos (Fat Models), 
+como la generación automática de códigos serializados, validación estricta de 
+identificaciones (cédulas) mediante expresiones regulares, y prevención de 
+duplicidad de registros a nivel de base de datos.
+"""
+
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
@@ -5,24 +15,33 @@ from django.utils import timezone
 
 
 class Reserva(models.Model):
+    """
+    Entidad principal que representa una reserva agendada en el sistema.
+    
+    Desacopla la información del cliente (nombres, apellidos, contacto) de 
+    una tabla de usuarios externa para permitir reservas rápidas, mientras 
+    mantiene controles estrictos sobre la disponibilidad de las mesas.
+    """
 
+    # Opciones predefinidas para el ciclo de vida de la reserva
     ESTADOS = [
         ('PENDIENTE', 'Pendiente'),
         ('CONFIRMADA', 'Confirmada'),
         ('CANCELADA', 'Cancelada'),
     ]
 
+    # Identificador alfanumérico único generado automáticamente (ej. R-0001)
     codigo = models.CharField(
         max_length=20,
         unique=True,
         blank=True
     )
 
-    # 🎯 CAMBIO AQUÍ: Separamos el cliente
+    # 🎯 Datos personales del cliente (separados para mejor estructuración)
     nombres = models.CharField(max_length=150)
     apellidos = models.CharField(max_length=150)
 
-    # Validadores para exigir exactamente 10 números
+    # Validación a nivel de base de datos y formulario para asegurar exactamente 10 dígitos
     cedula = models.CharField(
         max_length=10,
         validators=[
@@ -41,6 +60,7 @@ class Reserva(models.Model):
         max_length=255
     )
 
+    # Validación de formato telefónico estándar de 10 dígitos
     telefono = models.CharField(
         max_length=10,
         validators=[
@@ -51,12 +71,12 @@ class Reserva(models.Model):
         ]
     )
 
+    # Parámetros temporales y logísticos de la reserva
     fecha = models.DateField()
-
     hora = models.TimeField()
-
     personas = models.PositiveIntegerField()
 
+    # Almacena el identificador descriptivo de la mesa (ej. "Mesa 5")
     mesa = models.CharField(
         max_length=50
     )
@@ -72,13 +92,21 @@ class Reserva(models.Model):
         null=True
     )
 
+    # Auditoría básica: Timestamp de creación del registro
     fecha_registro = models.DateTimeField(
         auto_now_add=True
     )
 
     class Meta:
+        """
+        Metadatos del modelo: Define el ordenamiento por defecto y 
+        las restricciones de integridad estructural (constraints).
+        """
+        # Ordena las consultas cronológicamente por defecto
         ordering = ['fecha', 'hora']
 
+        # Restricción a nivel de motor de base de datos para evitar que 
+        # exista más de un registro con la misma mesa, fecha y hora exacta.
         constraints = [
             models.UniqueConstraint(
                 fields=['mesa', 'fecha', 'hora'],
@@ -87,19 +115,31 @@ class Reserva(models.Model):
         ]
 
     def __str__(self):
-        # 🎯 CAMBIO AQUÍ: Reflejar nombres y apellidos en el panel admin
+        """
+        Representación en cadena del objeto.
+        Útil para la visualización rápida en el panel de administración y logs.
+        """
         return f"{self.codigo} - {self.nombres} {self.apellidos}"
 
     def clean(self):
-
-        # Evitar que la cédula sea cero
+        """
+        Método de validación personalizada del modelo.
+        Se ejecuta antes de guardar para asegurar el cumplimiento de las reglas de negocio.
+        """
+        
+        # ======================================
+        # CONTROL ESTRICTO DE IDENTIFICACIONES
+        # ======================================
+        # Evita el almacenamiento del valor cero. Solo se permiten números enteros positivos a partir del uno.
         if self.cedula and self.cedula.isdigit():
             if int(self.cedula) == 0:
                 raise ValidationError({
-                    'cedula': 'La cédula no puede ser cero, ingrese un número válido.'
+                    'cedula': 'La cédula no puede ser cero, ingrese un número válido entero y positivo.'
                 })
 
         # 🔥 LÓGICA DE TIEMPO COMENTADA PARA DAR LIBERTAD DE REGISTRO
+        # (Se mantiene comentado para permitir al administrador agendar reservas pasadas 
+        # si es necesario para cuadrar el sistema).
         # hoy = timezone.localdate()
         # 
         # if self.fecha < hoy:
@@ -116,17 +156,17 @@ class Reserva(models.Model):
         #         })
 
         # ======================================
-        # NO PERMITIR DOS RESERVAS EXACTAMENTE IGUALES
-        # (El margen de 1 hora ya lo maneja forms.py)
+        # PREVENCIÓN DE DUPLICIDAD EXACTA
         # ======================================
-
+        # Asegura que no se guarde una reserva en la misma mesa, misma fecha y mismo segundo.
+        # (El margen preventivo de 1 hora se gestiona en la capa de formularios).
         reserva_existente = Reserva.objects.filter(
             mesa=self.mesa,
             fecha=self.fecha,
             hora=self.hora
         )
 
-        # Si se está editando, excluir la reserva actual
+        # Si estamos editando un registro existente (tiene Primary Key), lo excluimos del chequeo
         if self.pk:
             reserva_existente = reserva_existente.exclude(pk=self.pk)
 
@@ -136,17 +176,25 @@ class Reserva(models.Model):
             })
 
     def save(self, *args, **kwargs):
-
+        """
+        Sobreescritura del método de guardado.
+        Fuerza la ejecución de las validaciones y genera el código secuencial 
+        único para las nuevas reservas antes de realizar el INSERT en la base de datos.
+        """
+        # Fuerza las validaciones del método clean()
         self.full_clean()
 
+        # Generación dinámica del código si es un nuevo registro
         if not self.codigo:
             ultimo = Reserva.objects.order_by('-id').first()
 
             if ultimo:
+                # Extrae el número del último código, lo incrementa y lo formatea a 4 dígitos
                 numero = int(ultimo.codigo.replace('R-', '')) + 1
             else:
                 numero = 1
 
             self.codigo = f"R-{numero:04d}"
 
+        # Llama al método save() original de la clase padre
         super().save(*args, **kwargs)

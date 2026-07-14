@@ -1,35 +1,32 @@
-from django.urls import path
+"""
+Enrutamiento de URLs para la aplicación 'publico'.
 
+Define los endpoints accesibles para clientes no autenticados, 
+incluyendo la página de aterrizaje (landing page), el menú digital y el portal de reservas.
+"""
+
+from django.urls import path
 from . import views
 
+# Espacio de nombres para las URLs de esta aplicación
 app_name = 'publico'
 
 urlpatterns = [
-
     # =====================================
-    # PÁGINA PRINCIPAL
+    # PÁGINA PRINCIPAL (Landing Page)
     # =====================================
-
+    # URL: /publico/inicio/
     path('inicio/', views.inicio_publico, name='inicio'),
 
     # =====================================
-    # MENÚ PÚBLICO
+    # MENÚ PÚBLICO (Catálogo digital)
     # =====================================
-
-    path(
-        'menu/',
-        views.menu_publico,
-        name='menu_publico'
-    ),
+    # URL: /publico/menu/
+    path('menu/', views.menu_publico, name='menu_publico'),
 
     # =====================================
-    # RESERVA PÚBLICA
+    # RESERVA PÚBLICA (Agendamiento web)
     # =====================================
-
-    path(
-        'reservar/',
-        views.reserva_publica,
-        name='reserva_publica'
-    ),
-
+    # URL: /publico/reservar/
+    path('reservar/', views.reserva_publica, name='reserva_publica'),
 ]

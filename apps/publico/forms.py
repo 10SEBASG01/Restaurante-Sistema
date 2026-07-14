@@ -1,3 +1,10 @@
+"""
+Formularios públicos del sistema.
+
+Este módulo contiene la lógica de interfaz y validación de datos ingresados 
+por el cliente final, específicamente para el agendamiento de reservas web.
+"""
+
 from datetime import datetime, timedelta
 from django import forms
 from django.core.exceptions import ValidationError
@@ -5,52 +12,40 @@ from apps.reservas.models import Reserva
 from apps.mesas.models import Mesa
 
 class ReservaPublicaForm(forms.ModelForm):
+    """
+    Formulario para la creación de reservas por parte de los clientes.
+    
+    Incluye widgets personalizados con clases de Bootstrap para el frontend 
+    y validaciones estrictas de horarios, disponibilidad de mesas e identificaciones.
+    """
 
     fecha = forms.DateField(
         input_formats=['%Y-%m-%d'],
         widget=forms.DateInput(
             format='%Y-%m-%d',
-            attrs={
-                'type': 'date',
-                'class': 'form-control'
-            }
+            attrs={'type': 'date', 'class': 'form-control'}
         )
     )
 
     hora = forms.TimeField(
         widget=forms.TimeInput(
             format='%H:%M',
-            attrs={
-                'type': 'time',
-                'class': 'form-control'
-            }
+            attrs={'type': 'time', 'class': 'form-control'}
         )
     )
 
     mesa = forms.ModelChoiceField(
+        # Inicialmente vacío, se puebla dinámicamente en el método __init__
         queryset=Mesa.objects.none(),  
-        widget=forms.Select(
-            attrs={
-                'class': 'form-select'
-            }
-        ),
+        widget=forms.Select(attrs={'class': 'form-select'}),
         empty_label="Seleccione una mesa"
     )
 
     class Meta:
         model = Reserva
         fields = [
-            'nombres',
-            'apellidos',
-            'cedula',
-            'correo',
-            'telefono',
-            'direccion',
-            'fecha',
-            'hora',
-            'personas',
-            'mesa',
-            'observaciones'
+            'nombres', 'apellidos', 'cedula', 'correo', 'telefono',
+            'direccion', 'fecha', 'hora', 'personas', 'mesa', 'observaciones'
         ]
 
         widgets = {
@@ -86,34 +81,53 @@ class ReservaPublicaForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """
+        Constructor del formulario. Se sobreescribe para asegurar que 
+        solo se muestren al cliente las mesas que están actualmente activas en el sistema.
+        """
         super().__init__(*args, **kwargs)
-        # 🎯 LA SOLUCIÓN: Solo cargar las mesas que siguen activas
         self.fields['mesa'].queryset = Mesa.objects.filter(is_active=True).order_by('numero')
 
     def clean_mesa(self):
+        """
+        Limpia y transforma el dato de la mesa seleccionada,
+        guardando un string descriptivo (ej. "Mesa 5") en lugar del objeto complejo.
+        """
         mesa_obj = self.cleaned_data.get('mesa')
         if mesa_obj:
             return f"Mesa {mesa_obj.numero}"
         return mesa_obj
 
     def clean(self):
+        """
+        Validación general y lógica de negocio cruzada.
+        - Verifica reglas estrictas para identificaciones.
+        - Previene choques de reservas calculando rangos de 1 hora.
+        """
         cleaned_data = super().clean()
         fecha = cleaned_data.get('fecha')
         hora = cleaned_data.get('hora')
         mesa = cleaned_data.get('mesa') 
         cedula = cleaned_data.get('cedula')
 
-        # Control estricto de identificaciones (solo enteros positivos a partir de 1)
+        # Control estricto de identificaciones: 
+        # Cero no es un valor permitido, solo números enteros positivos a partir de uno.
         if cedula and cedula.isdigit():
             if int(cedula) == 0:
-                self.add_error('cedula', 'La cédula no puede ser cero, ingrese un valor entero positivo a partir del uno.')
+                self.add_error(
+                    'cedula', 
+                    'La cédula no puede ser cero, ingrese un valor entero positivo a partir del uno.'
+                )
 
+        # Validación de solapamiento de horarios para la mesa seleccionada
         if fecha and hora and mesa:
             tiempo_reserva = datetime.combine(fecha, hora)
             
+            # Se establece un margen de ocupación de casi 1 hora por reserva (59 minutos)
             rango_inicio = (tiempo_reserva - timedelta(minutes=59)).time()
             rango_fin = (tiempo_reserva + timedelta(minutes=59)).time()
 
+            # Busca reservas existentes en ese rango de tiempo para esa mesa
             choques = Reserva.objects.filter(
                 mesa=mesa,
                 fecha=fecha,
@@ -121,12 +135,15 @@ class ReservaPublicaForm(forms.ModelForm):
                 hora__lte=rango_fin
             ).exclude(estado='CANCELADA') 
             
+            # Si se está editando una reserva existente, se excluye a sí misma de la validación
             if self.instance and self.instance.pk:
                 choques = choques.exclude(pk=self.instance.pk)
 
+            # Si hay resultados, la mesa está ocupada en ese rango horario
             if choques.exists():
                 raise ValidationError(
-                    "Lo sentimos, esta mesa ya fue reservada en este horario. Por favor, elige otra mesa o cambia la hora (nuestras reservas duran 1 hora)."
+                    "Lo sentimos, esta mesa ya fue reservada en este horario. "
+                    "Por favor, elige otra mesa o cambia la hora (nuestras reservas duran 1 hora)."
                 )
 
         return cleaned_data
